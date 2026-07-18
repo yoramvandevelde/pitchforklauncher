@@ -17,12 +17,7 @@
  */
 
 import 'dart:async';
-import 'dart:isolate';
 
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/unsplash_service.dart';
@@ -38,68 +33,27 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Paint.enableDithering = true;
 
-  await Firebase.initializeApp();
-  final firebaseCrashlytics = FirebaseCrashlytics.instance;
-
-  FlutterError.onError = firebaseCrashlytics.recordFlutterError;
-  Isolate.current.addErrorListener(RawReceivePort((List<dynamic> pair) async => await firebaseCrashlytics.recordError(
-        pair.first,
-        pair.last as StackTrace,
-      )).sendPort);
-
   runZonedGuarded<void>(() async {
-    final firebaseAnalytics = FirebaseAnalytics.instance;
     final sharedPreferences = await SharedPreferences.getInstance();
     final imagePicker = ImagePicker();
     final fLauncherChannel = FLauncherChannel();
-    final remoteConfig = await _initFirebaseRemoteConfig();
     final fLauncherDatabase = FLauncherDatabase(connect());
     final unsplashService = UnsplashService(
       UnsplashClient(
         settings: ClientSettings(
           debug: kDebugMode,
-          credentials: AppCredentials(
-            accessKey: remoteConfig.getString("unsplash_access_key"),
-            secretKey: remoteConfig.getString("unsplash_secret_key"),
-          ),
+          credentials: AppCredentials(accessKey: "", secretKey: ""),
         ),
       ),
     );
     runApp(
       FLauncherApp(
         sharedPreferences,
-        firebaseCrashlytics,
-        firebaseAnalytics,
         imagePicker,
         fLauncherChannel,
         fLauncherDatabase,
         unsplashService,
-        remoteConfig,
       ),
     );
-  }, firebaseCrashlytics.recordError);
-}
-
-Future<FirebaseRemoteConfig> _initFirebaseRemoteConfig() async {
-  final remoteConfig = FirebaseRemoteConfig.instance;
-  await remoteConfig.setDefaults({"unsplash_enabled": false, "unsplash_access_key": "", "unsplash_secret_key": ""});
-  await remoteConfig.setConfigSettings(
-    RemoteConfigSettings(
-      fetchTimeout: Duration(minutes: 1),
-      minimumFetchInterval: kReleaseMode ? Duration(hours: 6) : Duration.zero,
-    ),
-  );
-  await remoteConfig.ensureInitialized().catchError((error, stackTrace) async {
-    if (!(error is FormatException && error.message == "Invalid envelope")) {
-      await FirebaseCrashlytics.instance.recordError(error, stackTrace);
-    }
-  });
-  remoteConfig.fetchAndActivate().catchError((error, stackTrace) async {
-    if (!(error is FormatException && error.message == "Invalid envelope")) {
-      await FirebaseCrashlytics.instance.recordError(error, stackTrace);
-    }
-    return false;
-  });
-
-  return remoteConfig;
+  }, (error, stackTrace) => debugPrint("$error\n$stackTrace"));
 }
