@@ -309,6 +309,15 @@ class MockFLauncherChannel extends _i1.Mock implements _i7.FLauncherChannel {
         returnValueForMissingStub: _i8.Future<void>.value(),
       ) as _i8.Future<void>);
   @override
+  _i8.Future<void> openAccessibilitySettings() => (super.noSuchMethod(
+        Invocation.method(
+          #openAccessibilitySettings,
+          [],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
   _i8.Future<void> openAppInfo(String? packageName) => (super.noSuchMethod(
         Invocation.method(
           #openAppInfo,
@@ -531,6 +540,15 @@ class MockAppsService extends _i1.Mock implements _i12.AppsService {
   _i8.Future<void> openSettings() => (super.noSuchMethod(
         Invocation.method(
           #openSettings,
+          [],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
+  _i8.Future<void> openAccessibilitySettings() => (super.noSuchMethod(
+        Invocation.method(
+          #openAccessibilitySettings,
           [],
         ),
         returnValue: _i8.Future<void>.value(),

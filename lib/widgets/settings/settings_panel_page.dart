@@ -81,6 +81,16 @@ class SettingsPanelPage extends StatelessWidget {
                 ),
                 onPressed: () => context.read<AppsService>().openSettings(),
               ),
+              TextButton(
+                child: Row(
+                  children: [
+                    Icon(Icons.home_outlined),
+                    Container(width: 8),
+                    Text("Set as Home button target", style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+                onPressed: () => context.read<AppsService>().openAccessibilitySettings(),
+              ),
               Divider(),
               SwitchListTile(
                 contentPadding: EdgeInsets.symmetric(horizontal: 8),

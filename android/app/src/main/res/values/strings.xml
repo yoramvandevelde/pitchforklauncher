@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">Lets FLauncher open when you press Home, without replacing your device\'s default launcher.</string>
+</resources>

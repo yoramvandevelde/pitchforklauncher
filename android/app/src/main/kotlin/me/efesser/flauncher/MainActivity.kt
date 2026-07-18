@@ -52,6 +52,7 @@ class MainActivity : FlutterActivity() {
                 "applicationExists" -> result.success(applicationExists(call.arguments as String))
                 "launchApp" -> result.success(launchApp(call.arguments as String))
                 "openSettings" -> result.success(openSettings())
+                "openAccessibilitySettings" -> result.success(openAccessibilitySettings())
                 "openAppInfo" -> result.success(openAppInfo(call.arguments as String))
                 "uninstallApp" -> result.success(uninstallApp(call.arguments as String))
                 "isDefaultLauncher" -> result.success(isDefaultLauncher())
@@ -161,6 +162,13 @@ class MainActivity : FlutterActivity() {
 
     private fun openSettings() = try {
         startActivity(Intent(Settings.ACTION_SETTINGS))
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    private fun openAccessibilitySettings() = try {
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         true
     } catch (e: Exception) {
         false
