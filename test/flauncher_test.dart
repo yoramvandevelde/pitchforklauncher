@@ -155,8 +155,6 @@ void main() {
       CategoryWithApps(fakeCategory(name: "Favorites", order: 0), []),
       CategoryWithApps(fakeCategory(name: "Applications", order: 1), []),
     ]);
-    when(settingsService.crashReportsEnabled).thenReturn(false);
-    when(settingsService.analyticsEnabled).thenReturn(false);
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
     await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);

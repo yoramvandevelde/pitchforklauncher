@@ -19,9 +19,6 @@
 import 'dart:math';
 
 import 'package:drift/drift.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/providers/apps_service.dart';
@@ -35,9 +32,6 @@ import 'package:mockito/annotations.dart';
   WallpaperService,
   AppsService,
   SettingsService,
-  FirebaseCrashlytics,
-  FirebaseAnalytics,
-  FirebaseRemoteConfig,
   UnsplashService,
 ], customMocks: [
   MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
