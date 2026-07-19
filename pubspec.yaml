@@ -28,7 +28,7 @@ dev_dependencies:
 
   build_runner: ^2.3.3
   lints: ^1.0.1
-  mockito: ^5.3.2
+  mockito: ^5.4.1
   drift_dev: ^2.10.0
   network_image_mock: ^2.1.1
   transparent_image: ^2.0.1
