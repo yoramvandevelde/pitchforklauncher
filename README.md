@@ -28,6 +28,10 @@ The project is still at an early development stage and may be unstable. It curre
 
 ## Set FLauncher as default launcher
 
+This fork also ships a third option not listed below: a built-in `HomeButtonAccessibilityService`
+that intercepts the Home button (and the remote's YouTube button) without needing Button Mapper
+or disabling the stock launcher. See `DRIFT.md` for how it works.
+
 ### Method 1: remap the Home button
 This is the "safer" and easiest way. Use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap the Home button of the remote to launch FLauncher.
 
@@ -56,7 +60,7 @@ $ adb shell pm enable com.google.android.tungsten.setupwraith
 ```
 
 #### Known issues
-On Chromecast with Google TV (maybe others), the "YouTube" remote button will stop working if the default launcher is disabled. As a workaround, you can use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap it correctly.
+On Chromecast with Google TV (maybe others), the "YouTube" remote button will stop working if the default launcher is disabled. As a workaround, you can use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap it correctly. (This fork's built-in Home-button override handles the YouTube button itself — see `DRIFT.md` — so Button Mapper isn't needed if that's enabled.)
 
 ## Wallpaper
 Because Android's `WallpaperManager` is not available on some Android TV devices, FLauncher implements its own wallpaper management method.

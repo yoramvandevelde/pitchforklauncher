@@ -28,6 +28,11 @@ Not fixed for now — acceptable as-is.
 ## Other open items
 
 - Upgrade Flutter from 3.7.5 (current pinned version, see `.fvmrc`) to the latest stable release.
-- Test the Home-button-override approach on the real Google TV Streamer 4K, not just the
-  `GoogleTV_API31` emulator — confirm accessibility-service key interception behaves the same on
-  real hardware/remote as it does with adb-injected key events on the emulator.
+- The YouTube-button keycode in `HomeButtonAccessibilityService.kt` (190 / `KEYCODE_BUTTON_3`) was
+  identified empirically on one specific Google TV Streamer 4K remote. Other Google TV
+  devices/remotes may send a different code for that button, in which case it won't do anything
+  until re-identified (temporarily log all key events in `onKeyEvent` and press the button again).
+
+~~Test the Home-button-override approach on the real Google TV Streamer 4K, not just the
+`GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube
+button override.

@@ -33,8 +33,15 @@ launcher works, but breaks the remote's dedicated YouTube button.
 Instead, `HomeButtonAccessibilityService` (an `AccessibilityService` with
 `flagRequestFilterKeyEvents`) intercepts `KEYCODE_HOME` directly and brings FLauncher to the
 front, the same technique other third-party TV launchers (e.g. Projectivy Launcher) use. This
-keeps the stock launcher (and the YouTube button) intact. A "Set as Home button target" button in
-Settings opens Android's Accessibility settings so the user can enable it.
+keeps the stock launcher intact. A "Set as Home button target" button in Settings opens Android's
+Accessibility settings so the user can enable it.
+
+The same service also intercepts the remote's dedicated YouTube button and launches
+`com.google.android.youtube.tv` directly, so the button keeps working even if you do disable the
+stock launcher (README "Method 2") — normally that's what breaks it. The button doesn't send a
+standard Android keycode; on this Google TV Streamer remote it's `KEYCODE_BUTTON_3` (190),
+identified by temporarily logging every key event the service saw. Other remotes/devices may use
+a different code — check `HomeButtonAccessibilityService.kt` if the button doesn't do anything.
 
 Known trade-off: because FLauncher isn't the *actual* resolved default launcher in this setup,
 pressing Back while at FLauncher's home screen pops through to the stock launcher instead of
@@ -42,8 +49,10 @@ staying put. See `TODO.md`.
 
 The original README's "Method 2" (disable the stock launcher) is still there as a documented
 option — `justfile` has `disable-default-launcher` / `restore-default-launcher` recipes to toggle
-it via adb, for anyone who prefers that trade-off (real default-launcher behavior, no working
-YouTube button) over the accessibility-service approach.
+it via adb, for anyone who prefers that trade-off (real default-launcher behavior, Back does
+nothing on the home screen) over the accessibility-service approach. The YouTube button keeps
+working either way now, since the service handles it directly rather than relying on the stock
+launcher.
 
 ## Picsum wallpaper source
 
