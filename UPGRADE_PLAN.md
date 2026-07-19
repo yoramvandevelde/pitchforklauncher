@@ -10,9 +10,10 @@ rather than one big jump that makes it impossible to tell which change broke wha
   `upgrade/phase2-flutter-sdk`, ...), not directly on `master`.
 - After each phase: `fvm flutter analyze` clean, full test suite green (currently 129 tests),
   then an actual smoke test on real hardware before moving on.
-- Commit within the phase branch as needed, merge into `master` once the phase is confirmed
-  working, then branch the next phase off the updated `master` — so a bad phase can be reverted
-  independently without losing the good ones before it.
+- Commit within the phase branch, push, and open a PR into `master` — don't merge it as the
+  agent. The user reviews and merges each phase's PR themselves (also runs it through Codex
+  review as a second pass) before the next phase branches off the updated `master`. This gives
+  each phase an actual multi-step review checkpoint, not just an automated test pass.
 
 ## Known landmines (found while scoping this, not yet hit)
 
@@ -44,24 +45,65 @@ starting, rather than being a surprise mid-upgrade:
 Do this before touching the Flutter SDK version, so a build failure here is unambiguously a
 Gradle/Android problem, not tangled up with Dart/Flutter changes.
 
-- [ ] **Research at this step:** current recommended AGP + Gradle + Kotlin trio for targeting
+- [x] **Research at this step:** current recommended AGP + Gradle + Kotlin trio for targeting
       compileSdk 34 (Android 14, matching the real Streamer's current OS — see AGENTS.md). AGP 7.1.1
       is old enough that this is likely AGP 8.x + Gradle 8.x + Kotlin 1.9.x or newer, but confirm
       against Flutter's own compatibility notes at the time, since these move faster than this plan
       will stay accurate.
-- [ ] Bump `android/gradle/wrapper/gradle-wrapper.properties` (`distributionUrl`).
-- [ ] Bump the AGP classpath in `android/build.gradle`.
-- [ ] Flutter moved Kotlin version configuration from `android/build.gradle`'s `ext.kotlin_version`
-      to `android/settings.gradle` at some point (part of a broader move away from the old
-      imperative `apply plugin:` style to a declarative `plugins {}` block) — check whether the
-      Flutter version we're targeting in Phase 2 expects this and migrate the Android project
-      files' structure accordingly, not just the version numbers.
-- [ ] Bump `compileSdkVersion` and `targetSdkVersion` in `android/app/build.gradle` to 34.
-      `webview_flutter` (current version already, before even upgrading it further) wants
-      `minSdkVersion` 24+; current is 21 — bump this too, it doesn't affect the personal-use
-      target device.
-- [ ] Build (`just build-install <device>`) against the *current* Flutter 3.7.5 to confirm the
-      Android side alone still compiles. Install and smoke-test on real hardware.
+- [x] Bump `android/gradle/wrapper/gradle-wrapper.properties` (`distributionUrl`) → Gradle 8.4.
+- [x] Bump the AGP classpath in `android/build.gradle` → 8.3.0, Kotlin → 1.9.22.
+- [x] ~~Flutter moved Kotlin version configuration from `android/build.gradle`'s `ext.kotlin_version`
+      to `android/settings.gradle`~~ — not needed yet. The old imperative `apply plugin:` /
+      `ext.kotlin_version` style still works fine under AGP 8.3; that structural migration is tied
+      to newer Flutter project templates, not to the AGP/Gradle version itself. Left for Phase 2 if
+      the Flutter version we land on there actually requires it.
+- [x] Bump `compileSdkVersion` to 35 (see landmine below — forced by `sqlite3_flutter_libs`,
+      not originally planned for Phase 1) and `targetSdkVersion` to 34 in `android/app/build.gradle`.
+      Also bumped `minSdkVersion` 21 → 24 (`webview_flutter` wants 24+; doesn't affect the
+      personal-use target device).
+- [x] Build (`just build-install <device>`) — see landmines below for what it actually took to get
+      this compiling. `fvm flutter analyze` clean, all 129 tests still passing.
+- [x] Install and smoke-test on real hardware — confirmed on the real Google TV Streamer 4K:
+      app launch, button remapping (hotkeys), and the Picsum wallpaper fetch (network I/O) all
+      still work. Not an exhaustive pass, but covers the newest feature and the most invasive
+      toolchain change, which was judged good enough to merge this phase.
+
+### Landmines actually hit in Phase 1 (not anticipated above)
+
+- **Flutter 3.7.5's bundled `flutter.gradle` cannot run under Gradle 8 at all** — not a version
+  mismatch, a hard failure (`No signature of method: Jar.destinationDir()`, an API Gradle 8 removed
+  outright). AGP 8.x requires Gradle 8.x, and compileSdk 34 requires AGP 8.x — so Gradle 8 wasn't
+  optional once compileSdk 34 was the target, which meant staying on 3.7.5 wasn't compatible with
+  the rest of this phase's goal. The fix stayed inside this phase's spirit anyway: Flutter shipped
+  the Gradle-8 fix as a **hotfix cherry-pick within the same 3.7 branch**, in 3.7.12 (confirmed via
+  `gh api repos/flutter/flutter/compare/3.7.5...3.7.12` — 15 commits, all cherry-picked tooling
+  hotfixes, no Dart/Flutter API changes). Bumped `.fvmrc` to 3.7.12. This is still "Flutter SDK
+  untouched" in the sense that matters for Phase 1/2 separation — no language or framework surface
+  changed, only tooling bugfixes.
+- **AGP 8.0+ requires an explicit `namespace` in every module's build.gradle, with no manifest
+  fallback** (`android:package` in `AndroidManifest.xml` is ignored). This broke every plugin whose
+  Android implementation predates that requirement: `flutter_plugin_android_lifecycle`,
+  `image_picker_android`, `package_info_plus`, `shared_preferences_android`, `webview_flutter_android`.
+  Each needed bumping to its first version that declares `namespace` in `android/build.gradle`,
+  while staying within this project's Dart <3.0.0 / Flutter 3.7.x SDK ceiling (still pre-Phase-3 in
+  spirit — these are the *minimum* version bumps needed for AGP 8 to configure at all, not a general
+  dependency refresh):
+  - `flutter_plugin_android_lifecycle` (transitive) → 2.0.17
+  - `package_info_plus` `^3.0.3` → `^4.0.0`
+  - `shared_preferences` `^2.0.18` → `^2.2.2`
+  - `image_picker` `^0.8.6+3` → `^1.0.4`
+  - `path_provider` `^2.0.13` → `^2.1.1` (bumped alongside the others; its Android impl needed the
+    same fix)
+  - `webview_flutter` `^4.0.5` → `^4.4.2`
+- **`sqlite3_flutter_libs` (already at the latest version this project's Dart-2.19 ceiling allows,
+  0.5.42) requires `compileSdk` 35**, not 34 — a 16KB-page-size native library packaging
+  requirement Android enforces from API 35 tooling onward. This is why `compileSdkVersion` ended up
+  at 35 instead of the originally planned 34; `targetSdkVersion` stayed at 34 (compileSdk ahead of
+  targetSdk is normal and doesn't change runtime behavior on the device).
+- **JDK 17 + AGP 8 surfaced a latent Java/Kotlin JVM-target mismatch**
+  (`compileDebugJavaWithJavac` defaulting to 1.8 vs `compileDebugKotlin` defaulting to 17) that
+  Flutter's own Gradle defaults hadn't pinned down. Fixed by explicitly setting both to 17 in
+  `android/app/build.gradle` (`compileOptions` + `kotlinOptions.jvmTarget`).
 
 ## Phase 2 — Flutter SDK, one or two stops at a time
 
