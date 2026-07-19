@@ -133,6 +133,21 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       `drift`/`drift_dev`/`sqlite3` bump just to get codegen running again (also below).
       `fvm flutter analyze` clean, all 129 tests passing, build succeeds, confirmed not
       regressing on real hardware *with the revert in place*.
+- [x] A version past the Android-TV-relevant edge-to-edge `SystemUiMode` default change and the
+      Material 3 token update (roughly Flutter 3.27) — landed on 3.27.4 (latest patch in that
+      branch, Dart 3.6.2). `sdk: ">=3.6.0 <3.7.0"` / `flutter: ">=3.27.4 <3.28.0"`. Latest stable
+      at the time this stop was picked was 3.44.6 — 3.27.4 is roughly the midpoint of the
+      remaining 3.16.9→3.44.6 gap.
+      `ThemeData.backgroundColor` (flagged as a future landmine at the 3.16.9 stop) and
+      `Paint.enableDithering` were both hard removed at this version — see landmines below.
+      Also needed a chain of dev-tooling-only fixes (not runtime code) to get
+      `build_runner`/`mockito` codegen and `flutter test` working again under the Flutter-bundled
+      Dart 3.6.2 — see landmines below, this is the bulk of what this stop actually took.
+      `fvm flutter analyze` clean, all 129 tests passing, build succeeds, smoke-tested on the
+      `GoogleTV_API34` emulator (app grid renders, wallpaper loads, Settings panel opens with
+      correct theming, Back from Settings top level to home works without freezing — the real
+      Google TV Streamer 4K hardware was in active use during this stop, so hardware confirmation
+      is still pending before merge).
 - [ ] One or two more stops of your choosing spaced through the remaining gap (check
       `docs.flutter.dev/release/release-notes` for what each covers) — the point isn't to hit every
       single version, just to avoid one undifferentiated leap.
@@ -248,6 +263,72 @@ At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` 
   usage in `lib/database.dart` is apparently unaffected, but worth keeping in mind as something
   Phase 3's planned `sqlite3` 3.x check should re-verify more thoroughly (schema/migration tests
   passed here, but this wasn't a deliberate, deep review of that bump).
+
+### Landmines actually hit at the 3.27.4 stop (not anticipated above)
+
+- **`ThemeData.backgroundColor` and `Theme.of(context).backgroundColor` were hard removed** (this
+  was flagged as expected at this stop already). Folded into `colorScheme.surface` instead —
+  added `surface: _swatch[400]` to the `ColorScheme.fromSwatch(...).copyWith(...)` call in
+  `lib/flauncher_app.dart`, and changed `lib/widgets/right_panel_dialog.dart` to read
+  `Theme.of(context).colorScheme.surface` instead of the removed getter. Same pattern as the
+  `accentColor` → `colorScheme.secondary` fix from the 3.10.7 stop.
+- **`Paint.enableDithering` (the static setter in `lib/main.dart`) was removed.** Dithering is
+  now always on by default (Impeller couldn't support a global toggle, so the option was dropped
+  entirely rather than just deprecated further) — the line was simply deleted, nothing to
+  replace it with.
+- **A chain of dev-tooling-only breakage, nothing to do with the app's own code, needed to get
+  `build_runner` and `flutter test` working again under this stop's bundled Dart (3.6.2):**
+  1. `pub run build_runner build` failed outright with `Could not find a command named
+     ".../frontend_server.dart.snapshot"` — the Flutter-bundled Dart SDK from this stop onward no
+     longer ships that JIT snapshot at all (only `frontend_server_aot.dart.snapshot`), but the
+     transitively-pinned `frontend_server_client` 3.2.0 (pulled in via `build_daemon` →
+     `build_runner`) only knew how to start the frontend server from the JIT one. Fixed via a
+     `dependency_overrides: frontend_server_client: ^4.0.0` in `pubspec.yaml` — that version
+     prefers the AOT snapshot when present. This is a transitive dev-only package we don't import
+     directly, so a `dependency_overrides` pin (with a comment explaining why) was used instead of
+     dragging it into `dev_dependencies` as a fake direct dependency.
+  2. With that fixed, build_runner's own *build script precompile* step then failed differently:
+     `build_runner_core` 7.2.7/7.2.8's `BuildForInputLogger implements Logger` was missing an
+     override for `Logger.onLevelChanged` — a member the `logging` package added in 1.2.0.
+     `logging` only reached 1.2.0+ transitively as a side effect of chasing fix #1 above (an
+     unconstrained `pub upgrade build_daemon --unlock-transitive` pulled it in), and
+     `build_runner_core` had a matching fix for exactly this in 7.2.9. Rather than leave that as a
+     second override, this one was resolved by letting `pub upgrade` (full, unconstrained) settle
+     everything at once — see #3.
+  3. That, in turn, resolved `build_resolvers` to a version that itself couldn't co-exist with
+     `build_runner_core` 8.0.0 (`Conflicting outputs: Both build_resolvers:transitive_digests and
+     build_resolvers:transitive_digests may output lib/flauncher.dart.transitive_digest` — the
+     same builder registered twice). This turned out to be a real bug fixed in `build_runner`
+     2.5.1 ("don't run builders with multiple outputs once per output"), but 2.5.0+ requires Dart
+     `^3.7.0` — one minor above this stop's bundled 3.6.2, so that fix isn't reachable here.
+     **What actually resolved it**: running a full unconstrained `fvm flutter pub upgrade` (no
+     package names) let pub's resolver settle on a mutually-compatible combination
+     (`build_resolvers` 2.4.4, `build_runner` 2.4.15, `build_runner_core` 8.0.0) that doesn't hit
+     the bug in practice, without needing 2.5.1's actual fix. This also dragged `analyzer` all the
+     way to 7.7.1 as a side effect, which promptly broke `mockito` 5.4.1's generated-mock builder
+     (`InterfaceElement` vs `InterfaceElementImpl` assignment errors — an internal API mockito
+     relies on that changed within analyzer 7.x despite mockito's own `analyzer: >=6.9.0 <8.0.0`
+     constraint technically allowing it). Fixing *that* properly needs `mockito` 5.5.1+, which
+     itself requires `analyzer: ^8.1.0` — a bigger jump than this stop should be making for a
+     dev-only tool. **Decision: reverted `pubspec.lock` back to the pre-upgrade baseline and did
+     this surgically instead** — `dependency_overrides` for `frontend_server_client: ^4.0.0` only
+     (fix #1), nothing else. That alone was sufficient: `build_runner` 2.4.9's own bundled
+     `build_runner_core`/`build_resolvers` versions (7.2.7/2.2.0) don't hit the conflicting-outputs
+     bug when `frontend_server_client` is the only thing bumped — the bug in #2/#3 above only
+     appeared once the broad `pub upgrade` cascade was already in motion. Lesson for future stops:
+     prefer the narrowest possible fix and re-test before reaching for a broad `pub upgrade`; the
+     broad upgrade here manufactured two additional problems that a scoped fix didn't have.
+  4. Separately, `flutter test` (not `build_runner`) failed to *compile* on this macOS dev host
+     with `Type 'UnmodifiableUint8ListView' not found` in `win32`'s `Guid` class —
+     `path_provider_windows`/`shared_preferences_windows` (desktop federated implementations,
+     unused on Android but still compiled for host-side `flutter test`) pull in `win32`, and
+     `win32` 4.1.4's code referenced a `dart:typed_data` class removed from the SDK at Dart 3.6.
+     Fixed via a second `dependency_overrides` entry: `win32: ">=5.5.1 <5.11.0"` — 5.5.1 is the
+     first version that migrated away from `UnmodifiableUint8ListView`, and the upper bound is
+     needed because win32 5.11.0+ requires Dart `^3.7.0` (same ceiling as the build_runner 2.5.x
+     line above) and fails to even parse otherwise ("The specified language version is too high").
+  Net result: two narrow, commented `dependency_overrides` entries for dev/build-only transitive
+  packages, no changes to any package actually shipped in the APK.
 
 ## Phase 3 — Dependencies
 

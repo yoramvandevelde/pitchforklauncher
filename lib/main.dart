@@ -33,7 +33,6 @@ import 'flauncher_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Paint.enableDithering = true;
 
   runZonedGuarded<void>(() async {
     final sharedPreferences = await SharedPreferences.getInstance();

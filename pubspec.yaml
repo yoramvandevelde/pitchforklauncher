@@ -4,8 +4,8 @@ description: Flutter-based Android TV launcher.
 version: 0.0.1
 
 environment:
-  sdk: ">=3.2.0 <3.3.0"
-  flutter: ">=3.16.9 <3.17.0"
+  sdk: ">=3.6.0 <3.7.0"
+  flutter: ">=3.27.4 <3.28.0"
 
 dependencies:
   flutter:
@@ -37,3 +37,17 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+
+dependency_overrides:
+  # build_runner 2.4.9's frontend_server_client (3.2.0) only knows how to start the
+  # frontend server from its JIT snapshot, which the Flutter-bundled Dart SDK no longer
+  # ships from this stop onward -- `pub run build_runner` fails outright without this.
+  # frontend_server_client 4.0.0 prefers the AOT snapshot, which is present.
+  frontend_server_client: ^4.0.0
+  # Transitively pulled in by path_provider_windows/shared_preferences_windows (desktop
+  # federated implementations we don't use on Android, but still compiled for `flutter test`
+  # on this macOS dev host). win32 4.1.4's Guid class references
+  # dart:typed_data's UnmodifiableUint8ListView, removed from the SDK at this Dart version.
+  # 5.5.1 is the first version that migrated away from it; pinned below 5.11.0 since that's
+  # where win32 starts requiring a newer Dart SDK than this Flutter stop bundles.
+  win32: ">=5.5.1 <5.11.0"

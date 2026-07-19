@@ -98,12 +98,10 @@ class FLauncherApp extends StatelessWidget {
             brightness: Brightness.dark,
             primarySwatch: _swatch,
             colorScheme: ColorScheme.fromSwatch(primarySwatch: _swatch, brightness: Brightness.dark)
-                .copyWith(secondary: _swatch[200]),
+                .copyWith(secondary: _swatch[200], surface: _swatch[400]),
             cardColor: _swatch[300],
             canvasColor: _swatch[300],
             dialogBackgroundColor: _swatch[400],
-            // ignore: deprecated_member_use
-            backgroundColor: _swatch[400],
             scaffoldBackgroundColor: _swatch[400],
             textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
             appBarTheme: AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),
