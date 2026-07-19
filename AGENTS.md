@@ -22,7 +22,7 @@ This file is about *working on the code* — toolchain, commands, conventions.
 - **Regenerate mocks after touching `test/mocks.dart`** (the `@GenerateMocks([...])` list) or any
   class it mocks:
   ```shell
-  fvm flutter pub run build_runner build --delete-conflicting-outputs
+  fvm flutter pub run build_runner build
   ```
 - **Run tests** with `fvm flutter test`. Widget tests that navigate FLauncher's Settings panels
   drive focus with `tester.sendKeyEvent(LogicalKeyboardKey.arrowDown)` — inserting or reordering a

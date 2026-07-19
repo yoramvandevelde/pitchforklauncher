@@ -499,7 +499,7 @@ confusing dev-tooling dead end.
    past 3.44.x, or possibly worth doing proactively early in Phase 3/4 instead of waiting for a
    forced break.
 
-Phase 2 is now complete — Flutter 3.7.5 → 3.44.6, latest stable, all four stepping stones landed
+Phase 2 is now complete — Flutter 3.7.5 → 3.44.6, latest stable, all five stepping stones landed
 and hardware-confirmed.
 
 ## Phase 3 — Dependencies
@@ -540,10 +540,16 @@ the Flutter/Dart SDK, so bumping dependencies first would just get capped by the
       the remote-button remapping feature built this session (including the Back-button-inside-a-
       dialog case that was buggy before — that's exactly the kind of thing a Flutter upgrade could
       silently re-break).
-- [ ] Update `TODO.md` (remove the "upgrade Flutter" item) and `AGENTS.md`'s toolchain section
-      once versions have actually moved.
+- [x] Update `TODO.md` (remove the "upgrade Flutter" item) — done alongside the 3.44.6 Phase 2
+      stop's Codex review fixes. `AGENTS.md`'s toolchain section turned out not to need any
+      version-specific updates (it's written generically, no hardcoded Flutter/AGP/Gradle/Kotlin
+      version numbers) — it did have one stale `build_runner --delete-conflicting-outputs`
+      reference, fixed while doing this end-of-Phase-2 docs pass.
 
 ## Phase 5 — optional / later
 
-- [ ] compileSdk/targetSdk 35 (Android 15), only if there's an actual reason to — 34 already
+- [x] `compileSdkVersion` — already at 36, forced early during the Phase 2 3.35.7 stop (AndroidX
+      Core cascade, see that stop's landmines). Nothing left to do here.
+- [ ] `targetSdkVersion` 34 → 35+ (Android 15), only if there's an actual reason to — 34 already
       matches the real Streamer's current shipping OS (see AGENTS.md), so this isn't urgent.
+      `compileSdk` being ahead of `targetSdk` is normal and doesn't change runtime behavior.
