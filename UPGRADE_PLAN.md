@@ -120,11 +120,19 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       Google TV Streamer 4K hardware (thorough manual navigation pass through every menu,
       including a freshly-created app grid, plus the button-remapping and wallpaper-change
       regression checks from the previous phase).
-- [ ] A version at/after Material 3 became the default (roughly Flutter 3.16) — this is where the
-      "known landmines" above (`WillPopScope`, deprecated `ThemeData` fields) will actually surface
-      as build failures. Fix `PopScope` migration and the theme here, deliberately, with the app
-      running on real hardware to verify Back-button behavior specifically (that's core, tested
-      functionality — don't just make it compile, re-verify the actual behavior).
+- [x] A version at/after Material 3 became the default (roughly Flutter 3.16) — landed on 3.16.9
+      (latest patch in that branch). `sdk: ">=3.2.0 <3.3.0"` / `flutter: ">=3.16.9 <3.17.0"`.
+      `useMaterial3` becoming the default was handled by pinning `useMaterial3: false` explicitly
+      — adopting Material 3 is a separate design decision, not something that should silently
+      ride along with an SDK bump. `ThemeData.backgroundColor` is still only deprecated (not
+      removed) at this version too — left alone, as planned, for a later stop.
+      **`WillPopScope` → `PopScope` migration was attempted, caused a real freeze on real
+      hardware, and was reverted** — `WillPopScope` is still only deprecated here, not a hard
+      error, so this is deferred rather than blocking. See landmines below for the full story
+      (this is the one worth reading before trying again). Also needed an unplanned
+      `drift`/`drift_dev`/`sqlite3` bump just to get codegen running again (also below).
+      `fvm flutter analyze` clean, all 129 tests passing, build succeeds, confirmed not
+      regressing on real hardware *with the revert in place*.
 - [ ] One or two more stops of your choosing spaced through the remaining gap (check
       `docs.flutter.dev/release/release-notes` for what each covers) — the point isn't to hit every
       single version, just to avoid one undifferentiated leap.
@@ -157,6 +165,89 @@ At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` 
   nothing else is above), not from every other row (which correctly keeps "stays on the same
   row" behavior, verified by another existing test). Deliberately right-only, no symmetric
   left-side shortcut exists (nothing sits at the top-left).
+- **Code review (GitHub Copilot, on the draft PR) caught a real latent bug in the fix above**:
+  `findCandidatesAboveOnSameSide` matched *any* node above-and-right, not just the topmost one.
+  It happened to still pass both existing tests only because of that test data's specific
+  geometry (a 5-item row extends further right than a 2-item row above it, so nothing in the
+  shorter row was ever actually "to the right" of the longer row's last item) — with 3+ rows, or
+  different item counts, it could have matched an app card in a nearer row instead of the header,
+  silently violating the "topmost row only" intent stated in its own comment. Fixed by keeping
+  only the minimum-Y candidates among the above-and-right matches, so the header wins whenever
+  it's actually a candidate.
+
+### Landmines actually hit at the 3.16.9 stop (not anticipated above)
+
+- **`PopScope` migration attempted, caused a real freeze on real hardware, reverted to
+  `WillPopScope` for now.** Long entry, deliberately — this is exactly the kind of thing to read
+  before trying again, not just a line to check off.
+
+  `PopScope`'s API is structurally different from `WillPopScope`, not a drop-in rename —
+  `onWillPop` was an awaitable `Future<bool> Function()` that could still prevent the pop at the
+  moment it was called; `PopScope.canPop` is synchronous and decided in advance, and
+  `onPopInvoked(bool didPop)` only fires *after* the pop attempt already happened or was blocked
+  by `canPop`. Both of this app's usages (`lib/flauncher_app.dart`'s Back-button/ambient-mode
+  logic, `lib/widgets/settings/settings_panel.dart`'s nested-Navigator-aware dialog dismissal)
+  depend on an async check (`AppsService.isDefaultLauncher()` over a platform channel, and nested
+  `Navigator.maybePop()`, respectively) to decide whether to allow the pop — impossible to
+  express as a synchronous `canPop`. Migrated both to the standard async pattern: `canPop: false`
+  unconditionally (block every pop up front), then do the async check inside `onPopInvoked` and
+  manually trigger the equivalent of "the pop succeeding" ourselves (`SystemNavigator.pop()` /
+  `Navigator.of(context).maybePop()`) if it should have been allowed — since `canPop: false`
+  means the original pop never actually goes through on its own anymore. `flutter analyze` and
+  all 129 widget/unit tests were clean with this in place — the bug never showed up in
+  automated testing, only on real hardware.
+
+  **The freeze, as reproduced on real Google TV Streamer 4K hardware**: open FLauncher's
+  Settings ("menu"), and from the Settings panel's *top level* (not a sub-page), press Back to
+  return to FLauncher's home screen — the app freezes completely. No crash, no ANR, the Activity
+  stays `mResumed=true`. Confirmed via `adb bugreport`: `Choreographer.mLastFrameTime` was over
+  4 minutes stale with `mFrameScheduled=false` (nothing was even asking for a new frame), and
+  `WindowManagerShell`/`BLASTSyncEngine` logged `Unfinished container` entries for FLauncher's
+  own task — i.e. the window manager was left waiting on a sync transaction from FLauncher's
+  window that never completed. Worth noting for future debugging: even the remote's dedicated
+  YouTube button stopped working once frozen — that's handled entirely natively by
+  `HomeButtonAccessibilityService` with no Dart/platform-channel involvement at all, so its
+  failure too points at something blocking at the window/rendering level, not just a stuck Dart
+  `Future`. Also found, and left in place since it's correct regardless: this app's manifest
+  never declared `android:enableOnBackInvokedCallback`, yet `logcat` showed Android's
+  `CoreBackPreview` registering a predictive-back `OnBackInvokedCallback` for the app anyway —
+  the documented recommendation for any app using `PopScope` on Android 13+ is to declare that
+  flag explicitly; this was added during the investigation but reverted along with `PopScope`
+  itself, since testing it in combination with `WillPopScope` (the reverted state) is untested
+  territory of its own.
+
+  No Dart exception, no native exception, nothing in `logcat` across two separate live-captured
+  reproductions (via `adb logcat -d` immediately after freezing, and an `adb bugreport` while
+  frozen) pointed at a specific line of code — this is a real, reproducible bug, but remote
+  debugging against someone's daily-driver TV via `adb`/`logcat`/`bugreport` archaeology wasn't
+  enough to root-cause it, and repeated reproduction meant repeated frozen-device recovery
+  (force-stop, sometimes a full power cycle) for no forward progress. Reverted `PopScope` back to
+  `WillPopScope` in both files (and reverted the manifest flag alongside it) rather than keep
+  spending the user's hardware time on speculative fixes.
+
+  **Before attempting this migration again**: do it with `flutter run` and a live attached debug
+  console/DevTools (an emulator would do, if this reproduces there too — untested) so an actual
+  Dart stack trace or engine-level log is available at the moment of the freeze, instead of
+  reconstructing it after the fact from `adb bugreport`. Suspect areas worth checking first:
+  whether `PopScope`'s `onPopInvoked` interacts badly with a dialog route pushed via
+  `showDialog()`'s default `useRootNavigator: true` (a *different* root-navigator gotcha than the
+  one already documented in `DRIFT.md` for `ButtonMappingPanelPage`, but the same family of bug);
+  and whether `SystemNavigator.pop()` or `Navigator.of(context).maybePop()` called from inside an
+  async `onPopInvoked` can race with the window manager's own BLAST sync barrier during the
+  Activity's back-transition animation.
+- **`drift_dev` 2.5.2 (unrelated to the Flutter SDK bump itself) stopped working with the
+  `analyzer` package version that `build_runner`/`watcher` pulled in once *those* were bumped to
+  fix their own incompatibility with newer Dart** (`watcher` 1.0.2 extended a `dart:io` class that
+  became `sealed`; bumping `watcher`/`build_runner` transitively pulled `analyzer` 5.13.0, and
+  `drift_dev` 2.5.2's generated-code visitor didn't implement a method that version of `analyzer`
+  added). This is exactly the "drift + drift_dev + sqlite3_flutter_libs move together" dependency
+  group the plan flagged for Phase 3 — but it became a hard blocker for Phase 2's codegen, not
+  something that could wait. Bumped `drift` and `drift_dev` `^2.5.x` → `^2.10.0`, the highest pair
+  still within this stop's Dart 3.2.x ceiling (2.16.0+ needs Dart 3.3). Pulled `sqlite3` 1.9.1 →
+  2.4.0 (a major version bump) transitively — no compile errors surfaced from it, `NativeDatabase`
+  usage in `lib/database.dart` is apparently unaffected, but worth keeping in mind as something
+  Phase 3's planned `sqlite3` 3.x check should re-verify more thoroughly (schema/migration tests
+  passed here, but this wasn't a deliberate, deep review of that bump).
 
 ## Phase 3 — Dependencies
 

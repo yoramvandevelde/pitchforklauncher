@@ -35,36 +35,31 @@ class $AppsTable extends Apps with TableInfo<$AppsTable, App> {
       type: DriftSqlType.blob, requiredDuringInsert: false);
   static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
   @override
-  late final GeneratedColumn<bool> hidden =
-      GeneratedColumn<bool>('hidden', aliasedName, false,
-          type: DriftSqlType.bool,
-          requiredDuringInsert: false,
-          defaultConstraints: GeneratedColumn.constraintsDependsOnDialect({
-            SqlDialect.sqlite: 'CHECK ("hidden" IN (0, 1))',
-            SqlDialect.mysql: '',
-            SqlDialect.postgres: '',
-          }),
-          defaultValue: Constant(false));
+  late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
+      'hidden', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("hidden" IN (0, 1))'),
+      defaultValue: Constant(false));
   static const VerificationMeta _sideloadedMeta =
       const VerificationMeta('sideloaded');
   @override
-  late final GeneratedColumn<bool> sideloaded =
-      GeneratedColumn<bool>('sideloaded', aliasedName, false,
-          type: DriftSqlType.bool,
-          requiredDuringInsert: false,
-          defaultConstraints: GeneratedColumn.constraintsDependsOnDialect({
-            SqlDialect.sqlite: 'CHECK ("sideloaded" IN (0, 1))',
-            SqlDialect.mysql: '',
-            SqlDialect.postgres: '',
-          }),
-          defaultValue: Constant(false));
+  late final GeneratedColumn<bool> sideloaded = GeneratedColumn<bool>(
+      'sideloaded', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("sideloaded" IN (0, 1))'),
+      defaultValue: Constant(false));
   @override
   List<GeneratedColumn> get $columns =>
       [packageName, name, version, banner, icon, hidden, sideloaded];
   @override
-  String get aliasedName => _alias ?? 'apps';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'apps';
+  String get actualTableName => $name;
+  static const String $name = 'apps';
   @override
   VerificationContext validateIntegrity(Insertable<App> instance,
       {bool isInserting = false}) {
@@ -274,6 +269,7 @@ class AppsCompanion extends UpdateCompanion<App> {
   final Value<Uint8List?> icon;
   final Value<bool> hidden;
   final Value<bool> sideloaded;
+  final Value<int> rowid;
   const AppsCompanion({
     this.packageName = const Value.absent(),
     this.name = const Value.absent(),
@@ -282,6 +278,7 @@ class AppsCompanion extends UpdateCompanion<App> {
     this.icon = const Value.absent(),
     this.hidden = const Value.absent(),
     this.sideloaded = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   AppsCompanion.insert({
     required String packageName,
@@ -291,6 +288,7 @@ class AppsCompanion extends UpdateCompanion<App> {
     this.icon = const Value.absent(),
     this.hidden = const Value.absent(),
     this.sideloaded = const Value.absent(),
+    this.rowid = const Value.absent(),
   })  : packageName = Value(packageName),
         name = Value(name),
         version = Value(version);
@@ -302,6 +300,7 @@ class AppsCompanion extends UpdateCompanion<App> {
     Expression<Uint8List>? icon,
     Expression<bool>? hidden,
     Expression<bool>? sideloaded,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (packageName != null) 'package_name': packageName,
@@ -311,6 +310,7 @@ class AppsCompanion extends UpdateCompanion<App> {
       if (icon != null) 'icon': icon,
       if (hidden != null) 'hidden': hidden,
       if (sideloaded != null) 'sideloaded': sideloaded,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
@@ -321,7 +321,8 @@ class AppsCompanion extends UpdateCompanion<App> {
       Value<Uint8List?>? banner,
       Value<Uint8List?>? icon,
       Value<bool>? hidden,
-      Value<bool>? sideloaded}) {
+      Value<bool>? sideloaded,
+      Value<int>? rowid}) {
     return AppsCompanion(
       packageName: packageName ?? this.packageName,
       name: name ?? this.name,
@@ -330,6 +331,7 @@ class AppsCompanion extends UpdateCompanion<App> {
       icon: icon ?? this.icon,
       hidden: hidden ?? this.hidden,
       sideloaded: sideloaded ?? this.sideloaded,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -357,6 +359,9 @@ class AppsCompanion extends UpdateCompanion<App> {
     if (sideloaded.present) {
       map['sideloaded'] = Variable<bool>(sideloaded.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -369,7 +374,8 @@ class AppsCompanion extends UpdateCompanion<App> {
           ..write('banner: $banner, ')
           ..write('icon: $icon, ')
           ..write('hidden: $hidden, ')
-          ..write('sideloaded: $sideloaded')
+          ..write('sideloaded: $sideloaded, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -436,9 +442,10 @@ class $CategoriesTable extends Categories
   List<GeneratedColumn> get $columns =>
       [id, name, sort, type, rowHeight, columnsCount, order];
   @override
-  String get aliasedName => _alias ?? 'categories';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'categories';
+  String get actualTableName => $name;
+  static const String $name = 'categories';
   @override
   VerificationContext validateIntegrity(Insertable<Category> instance,
       {bool isInserting = false}) {
@@ -773,9 +780,10 @@ class $AppsCategoriesTable extends AppsCategories
   @override
   List<GeneratedColumn> get $columns => [categoryId, appPackageName, order];
   @override
-  String get aliasedName => _alias ?? 'apps_categories';
+  String get aliasedName => _alias ?? actualTableName;
   @override
-  String get actualTableName => 'apps_categories';
+  String get actualTableName => $name;
+  static const String $name = 'apps_categories';
   @override
   VerificationContext validateIntegrity(Insertable<AppCategory> instance,
       {bool isInserting = false}) {
@@ -902,15 +910,18 @@ class AppsCategoriesCompanion extends UpdateCompanion<AppCategory> {
   final Value<int> categoryId;
   final Value<String> appPackageName;
   final Value<int> order;
+  final Value<int> rowid;
   const AppsCategoriesCompanion({
     this.categoryId = const Value.absent(),
     this.appPackageName = const Value.absent(),
     this.order = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   AppsCategoriesCompanion.insert({
     required int categoryId,
     required String appPackageName,
     required int order,
+    this.rowid = const Value.absent(),
   })  : categoryId = Value(categoryId),
         appPackageName = Value(appPackageName),
         order = Value(order);
@@ -918,22 +929,26 @@ class AppsCategoriesCompanion extends UpdateCompanion<AppCategory> {
     Expression<int>? categoryId,
     Expression<String>? appPackageName,
     Expression<int>? order,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (categoryId != null) 'category_id': categoryId,
       if (appPackageName != null) 'app_package_name': appPackageName,
       if (order != null) 'order': order,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   AppsCategoriesCompanion copyWith(
       {Value<int>? categoryId,
       Value<String>? appPackageName,
-      Value<int>? order}) {
+      Value<int>? order,
+      Value<int>? rowid}) {
     return AppsCategoriesCompanion(
       categoryId: categoryId ?? this.categoryId,
       appPackageName: appPackageName ?? this.appPackageName,
       order: order ?? this.order,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -949,6 +964,9 @@ class AppsCategoriesCompanion extends UpdateCompanion<AppCategory> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -957,7 +975,8 @@ class AppsCategoriesCompanion extends UpdateCompanion<AppCategory> {
     return (StringBuffer('AppsCategoriesCompanion(')
           ..write('categoryId: $categoryId, ')
           ..write('appPackageName: $appPackageName, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -974,4 +993,23 @@ abstract class _$FLauncherDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
       [apps, categories, appsCategories];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('categories',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('apps_categories', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('apps',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('apps_categories', kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }
