@@ -27,7 +27,6 @@ Not fixed for now — acceptable as-is.
 
 ## Other open items
 
-- Upgrade Flutter from 3.7.5 (current pinned version, see `.fvmrc`) to the latest stable release.
 - The YouTube-button keycode in `HomeButtonAccessibilityService.kt` (190 / `KEYCODE_BUTTON_3`) was
   identified empirically on one specific Google TV Streamer 4K remote. Other Google TV
   devices/remotes may send a different code for that button, in which case it won't do anything
