@@ -73,8 +73,16 @@ class NodeSearcher {
   /// for a node that is both above `from` and still to the right of it, e.g. the header's
   /// settings icon reachable from the end of the topmost app row.
   List<CandidateNode> findCandidatesAboveOnSameSide(List<FocusNode> nodes, FocusNode from) {
-    List<FocusNode> copy = List.from(nodes, growable: true);
+    final copy = List<FocusNode>.from(nodes, growable: true);
     copy.removeWhere((element) => element.isBelowOrEquals(from) || element.isLeftToOrEquals(from));
+    // With 3+ rows, "above and to the right" can also match app cards in a row that's merely
+    // closer above (not just the header) -- keep only the top-most matches so the header wins
+    // over any such row, matching the "topmost row only" intent instead of picking whichever
+    // candidate happens to have the smallest x.
+    if (copy.isNotEmpty) {
+      final minDy = copy.map((node) => node.rect.center.dy.round()).reduce(min);
+      copy.removeWhere((node) => node.rect.center.dy.round() != minDy);
+    }
     return toCandidateNodes(copy);
   }
 
