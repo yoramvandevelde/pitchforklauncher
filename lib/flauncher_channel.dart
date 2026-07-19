@@ -24,6 +24,7 @@ import 'package:flutter/services.dart';
 class FLauncherChannel {
   static const _methodChannel = MethodChannel('me.efesser.flauncher/method');
   static const _eventChannel = EventChannel('me.efesser.flauncher/event');
+  static const _buttonCaptureEventChannel = EventChannel('me.efesser.flauncher/buttonCapture');
 
   Future<List<dynamic>> getApplications() async => (await _methodChannel.invokeListMethod('getApplications'))!;
 
@@ -50,4 +51,17 @@ class FLauncherChannel {
 
   void addAppsChangedListener(void Function(Map<dynamic, dynamic>) listener) =>
       _eventChannel.receiveBroadcastStream().listen((event) => listener(event));
+
+  Future<List<dynamic>> getButtonMappings() async => (await _methodChannel.invokeListMethod('getButtonMappings'))!;
+
+  Future<void> setButtonMapping(int keyCode, String packageName) async => await _methodChannel
+      .invokeMethod('setButtonMapping', {"keyCode": keyCode, "packageName": packageName});
+
+  Future<void> removeButtonMapping(int keyCode) async =>
+      await _methodChannel.invokeMethod('removeButtonMapping', keyCode);
+
+  /// Listens for a single remote button press and returns its keycode/label, for the
+  /// "press a button to map it" capture flow in the Settings panel.
+  Stream<Map<dynamic, dynamic>> captureNextButton() =>
+      _buttonCaptureEventChannel.receiveBroadcastStream().map((event) => event as Map<dynamic, dynamic>).take(1);
 }

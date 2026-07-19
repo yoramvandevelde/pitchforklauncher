@@ -14,6 +14,7 @@ import 'package:flauncher/flauncher_channel.dart' as _i7;
 import 'package:flauncher/gradients.dart' as _i2;
 import 'package:flauncher/picsum_service.dart' as _i14;
 import 'package:flauncher/providers/apps_service.dart' as _i12;
+import 'package:flauncher/providers/button_mapping_service.dart' as _i15;
 import 'package:flauncher/providers/settings_service.dart' as _i10;
 import 'package:flauncher/providers/wallpaper_service.dart' as _i9;
 import 'package:flauncher/unsplash_service.dart' as _i3;
@@ -370,6 +371,47 @@ class MockFLauncherChannel extends _i1.Mock implements _i7.FLauncherChannel {
         ),
         returnValueForMissingStub: null,
       );
+  @override
+  _i8.Future<List<dynamic>> getButtonMappings() => (super.noSuchMethod(
+        Invocation.method(
+          #getButtonMappings,
+          [],
+        ),
+        returnValue: _i8.Future<List<dynamic>>.value(<dynamic>[]),
+      ) as _i8.Future<List<dynamic>>);
+  @override
+  _i8.Future<void> setButtonMapping(
+    int? keyCode,
+    String? packageName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setButtonMapping,
+          [
+            keyCode,
+            packageName,
+          ],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
+  _i8.Future<void> removeButtonMapping(int? keyCode) => (super.noSuchMethod(
+        Invocation.method(
+          #removeButtonMapping,
+          [keyCode],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
+  _i8.Stream<Map<dynamic, dynamic>> captureNextButton() => (super.noSuchMethod(
+        Invocation.method(
+          #captureNextButton,
+          [],
+        ),
+        returnValue: _i8.Stream<Map<dynamic, dynamic>>.empty(),
+      ) as _i8.Stream<Map<dynamic, dynamic>>);
 }
 
 /// A class which mocks [WallpaperService].
@@ -976,6 +1018,92 @@ class MockPicsumService extends _i1.Mock implements _i14.PicsumService {
         ),
         returnValue: _i8.Future<_i13.Uint8List>.value(_i13.Uint8List(0)),
       ) as _i8.Future<_i13.Uint8List>);
+}
+
+/// A class which mocks [ButtonMappingService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockButtonMappingService extends _i1.Mock
+    implements _i15.ButtonMappingService {
+  MockButtonMappingService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  List<_i15.ButtonMapping> get mappings => (super.noSuchMethod(
+        Invocation.getter(#mappings),
+        returnValue: <_i15.ButtonMapping>[],
+      ) as List<_i15.ButtonMapping>);
+  @override
+  bool get hasListeners => (super.noSuchMethod(
+        Invocation.getter(#hasListeners),
+        returnValue: false,
+      ) as bool);
+  @override
+  _i8.Stream<Map<dynamic, dynamic>> captureNextButton() => (super.noSuchMethod(
+        Invocation.method(
+          #captureNextButton,
+          [],
+        ),
+        returnValue: _i8.Stream<Map<dynamic, dynamic>>.empty(),
+      ) as _i8.Stream<Map<dynamic, dynamic>>);
+  @override
+  _i8.Future<void> setMapping(
+    int? keyCode,
+    String? packageName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setMapping,
+          [
+            keyCode,
+            packageName,
+          ],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
+  _i8.Future<void> removeMapping(int? keyCode) => (super.noSuchMethod(
+        Invocation.method(
+          #removeMapping,
+          [keyCode],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+  @override
+  void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #addListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  void removeListener(_i11.VoidCallback? listener) => super.noSuchMethod(
+        Invocation.method(
+          #removeListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  void notifyListeners() => super.noSuchMethod(
+        Invocation.method(
+          #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }
 
 /// A class which mocks [FLauncherDatabase].

@@ -24,6 +24,7 @@ import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/unsplash_service.dart';
@@ -36,6 +37,7 @@ import 'package:mockito/annotations.dart';
   SettingsService,
   UnsplashService,
   PicsumService,
+  ButtonMappingService,
 ], customMocks: [
   MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
 ])

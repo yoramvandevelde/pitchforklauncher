@@ -30,16 +30,37 @@ import android.view.accessibility.AccessibilityEvent
  * FLauncher act as the effective home screen without being registered as the default launcher
  * (and without disabling the stock one, which breaks the remote's YouTube button on Google TV).
  *
- * The remote's dedicated YouTube button doesn't send a standard keycode — on this Google TV
- * Streamer remote it's KEYCODE_BUTTON_3 (190). Handling it here too means the button keeps
- * working even if the stock launcher gets disabled (README "Method 2"), since that's normally
- * what's responsible for reacting to it.
+ * Other remote buttons (e.g. the dedicated YouTube button, which doesn't send a standard
+ * Android keycode) can be freely remapped to launch any app — see `ButtonMappings` and the
+ * "Remote buttons" settings panel. Handling them here, rather than relying on whatever normally
+ * reacts to them, means they keep working even if the stock launcher gets disabled (README
+ * "Method 2").
  */
 class HomeButtonAccessibilityService : AccessibilityService() {
 
     companion object {
-        private const val KEYCODE_YOUTUBE_BUTTON = 190 // KeyEvent.KEYCODE_BUTTON_3
-        private const val YOUTUBE_PACKAGE = "com.google.android.youtube.tv"
+        // Keys that are never remappable: Home is FLauncher's own core feature, navigation keys
+        // are needed to operate FLauncher's own UI (including the "press a button" capture
+        // dialog itself — without this exclusion, the D-pad/select presses used to reach its
+        // Cancel button get captured as the mapping target instead of reaching the UI), and the
+        // rest are risky to hijack (could leave the device impossible to control, or in the case
+        // of the assistant key, fights with Android's own Assistant overlay).
+        private val RESERVED_KEYCODES = setOf(
+            KeyEvent.KEYCODE_HOME,
+            KeyEvent.KEYCODE_BACK,
+            KeyEvent.KEYCODE_DPAD_UP,
+            KeyEvent.KEYCODE_DPAD_DOWN,
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_DPAD_CENTER,
+            KeyEvent.KEYCODE_ENTER,
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE,
+            KeyEvent.KEYCODE_ASSIST,
+            KeyEvent.KEYCODE_VOICE_ASSIST,
+        )
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
@@ -50,19 +71,26 @@ class HomeButtonAccessibilityService : AccessibilityService() {
         if (event.action != KeyEvent.ACTION_UP) {
             return super.onKeyEvent(event)
         }
-        when (event.keyCode) {
-            KeyEvent.KEYCODE_HOME -> {
-                startActivity(Intent(this, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                })
-                return true
-            }
-            KEYCODE_YOUTUBE_BUTTON -> {
-                val launchIntent = packageManager.getLaunchIntentForPackage(YOUTUBE_PACKAGE) ?: return super.onKeyEvent(event)
-                startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-                return true
-            }
+
+        if (ButtonCapture.active && event.keyCode !in RESERVED_KEYCODES) {
+            ButtonCapture.onCaptured?.invoke(event.keyCode)
+            ButtonCapture.onCaptured = null
+            return true
         }
+
+        if (event.keyCode == KeyEvent.KEYCODE_HOME) {
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            })
+            return true
+        }
+
+        ButtonMappings.get(this, event.keyCode)?.let { packageName ->
+            val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return super.onKeyEvent(event)
+            startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+            return true
+        }
+
         return super.onKeyEvent(event)
     }
 }

@@ -9,9 +9,12 @@ issues:
 - Flutter pinned via FVM (`.fvmrc`) instead of relying on a global install.
 - Firebase (Analytics/Crashlytics/Remote Config) removed — it required credentials that aren't in
   this repo.
-- A built-in `HomeButtonAccessibilityService` intercepts the remote's Home button (and YouTube
-  button) so FLauncher can act as the home screen without disabling the stock launcher — an
-  alternative to the two methods described below in "Set FLauncher as default launcher".
+- A built-in `HomeButtonAccessibilityService` intercepts the remote's Home button so FLauncher can
+  act as the home screen without disabling the stock launcher — an alternative to the two methods
+  described below in "Set FLauncher as default launcher".
+- Any other remote button (e.g. a dedicated YouTube/Netflix quick-access button) can be mapped to
+  launch an app of your choice from Settings → "Remote buttons", so it keeps working the same way
+  even if you do disable the stock launcher.
 - A key-less "Random photo" wallpaper source backed by [picsum.photos](https://picsum.photos),
   since Unsplash needs a developer API key this fork doesn't have.
 

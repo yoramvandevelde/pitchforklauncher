@@ -21,6 +21,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
+import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/flauncher_about_dialog.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
@@ -91,6 +92,16 @@ class SettingsPanelPage extends StatelessWidget {
                   ],
                 ),
                 onPressed: () => context.read<AppsService>().openAccessibilitySettings(),
+              ),
+              TextButton(
+                child: Row(
+                  children: [
+                    Icon(Icons.gamepad_outlined),
+                    Container(width: 8),
+                    Text("Remote buttons", style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+                onPressed: () => Navigator.of(context).pushNamed(ButtonMappingPanelPage.routeName),
               ),
               Divider(),
               SwitchListTile(

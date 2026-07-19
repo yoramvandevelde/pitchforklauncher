@@ -29,6 +29,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.UserHandle
 import android.provider.Settings
+import android.view.KeyEvent
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -41,12 +42,15 @@ import java.io.Serializable
 
 private const val METHOD_CHANNEL = "me.efesser.flauncher/method"
 private const val EVENT_CHANNEL = "me.efesser.flauncher/event"
+private const val BUTTON_CAPTURE_EVENT_CHANNEL = "me.efesser.flauncher/buttonCapture"
 
 class MainActivity : FlutterActivity() {
     val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        ButtonMappings.seedDefaultsIfEmpty(this)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getApplications" -> result.success(getApplications())
@@ -59,9 +63,29 @@ class MainActivity : FlutterActivity() {
                 "isDefaultLauncher" -> result.success(isDefaultLauncher())
                 "checkForGetContentAvailability" -> result.success(checkForGetContentAvailability())
                 "startAmbientMode" -> result.success(startAmbientMode())
+                "getButtonMappings" -> result.success(getButtonMappings())
+                "setButtonMapping" -> {
+                    @Suppress("UNCHECKED_CAST") val args = call.arguments as Map<String, Any>
+                    ButtonMappings.set(this, args["keyCode"] as Int, args["packageName"] as String)
+                    result.success(null)
+                }
+                "removeButtonMapping" -> {
+                    ButtonMappings.remove(this, call.arguments as Int)
+                    result.success(null)
+                }
                 else -> throw IllegalArgumentException()
             }
         }
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, BUTTON_CAPTURE_EVENT_CHANNEL).setStreamHandler(object : StreamHandler {
+            override fun onListen(arguments: Any?, events: EventSink) {
+                ButtonCapture.onCaptured = { keyCode -> events.success(buildKeyCodeMap(keyCode)) }
+            }
+
+            override fun onCancel(arguments: Any?) {
+                ButtonCapture.onCaptured = null
+            }
+        })
 
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL).setStreamHandler(object : StreamHandler {
             lateinit var launcherAppsCallback: LauncherApps.Callback
@@ -206,6 +230,14 @@ class MainActivity : FlutterActivity() {
     } catch (e: Exception) {
         false
     }
+
+    private fun getButtonMappings(): List<Map<String, Any>> =
+        ButtonMappings.all(this).map { (keyCode, packageName) ->
+            buildKeyCodeMap(keyCode) + ("packageName" to packageName)
+        }
+
+    private fun buildKeyCodeMap(keyCode: Int): Map<String, Any> =
+        mapOf("keyCode" to keyCode, "label" to (KeyEvent.keyCodeToString(keyCode) ?: "KEYCODE_$keyCode"))
 
     private fun startAmbientMode() = try {
         Intent(ACTION_MAIN)

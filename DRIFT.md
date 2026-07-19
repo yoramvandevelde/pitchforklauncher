@@ -36,12 +36,42 @@ front, the same technique other third-party TV launchers (e.g. Projectivy Launch
 keeps the stock launcher intact. A "Set as Home button target" button in Settings opens Android's
 Accessibility settings so the user can enable it.
 
-The same service also intercepts the remote's dedicated YouTube button and launches
-`com.google.android.youtube.tv` directly, so the button keeps working even if you do disable the
-stock launcher (README "Method 2") — normally that's what breaks it. The button doesn't send a
-standard Android keycode; on this Google TV Streamer remote it's `KEYCODE_BUTTON_3` (190),
-identified by temporarily logging every key event the service saw. Other remotes/devices may use
-a different code — check `HomeButtonAccessibilityService.kt` if the button doesn't do anything.
+## Configurable remote button mappings
+
+Beyond Home, any other remote button can be mapped to launch an app — Settings → "Remote
+buttons". This replaces what was originally a single hardcoded case for the remote's dedicated
+YouTube button (which doesn't send a standard Android keycode; on this Google TV Streamer remote
+it's `KEYCODE_BUTTON_3`/190, identified by temporarily logging every key event the service saw).
+That mapping is now just a pre-seeded, editable/removable entry in the same generic system rather
+than a special case.
+
+- `ButtonMappings.kt` persists `keyCode -> package name` in a dedicated SharedPreferences file,
+  readable directly by `HomeButtonAccessibilityService` (which doesn't have a Flutter engine
+  attached) as well as via the platform channel from Dart.
+- "Add mapping" puts the service into a one-shot capture mode (`ButtonCapture.kt`, an in-process
+  singleton — the service and `MainActivity` share a process) that reports the next key event's
+  code back to Flutter instead of acting on it, so the UI can show "press a button", then let the
+  user pick which app it should launch from the existing app list.
+- Home, Back, D-pad/select navigation, Power, volume, and the assistant key are excluded from
+  capture/mapping. Home is FLauncher's own core feature; the navigation keys turned out to be
+  necessary too — capture mode originally swallowed *any* non-reserved key, including the D-pad
+  presses needed to reach the "press a button" dialog's own Cancel button, making it impossible
+  to back out of; the assistant key fought with Android's own Assistant overlay when mapped. In
+  practice this leaves dedicated quick-launch buttons (YouTube, Netflix, etc.) as the only
+  practical thing left to map — which was the actual goal anyway.
+- The mapped button keeps working even if you disable the stock launcher (README "Method 2"),
+  since the service handles it directly rather than relying on whatever normally reacts to it.
+
+`showDialog()` targets the root `Navigator` by default, which isn't the same one
+`Navigator.of(context)` resolves to from inside `ButtonMappingPanelPage` (it lives inside
+`SettingsPanel`'s own nested `Navigator`) — worth remembering if a future dialog added there
+seems to silently do nothing when dismissed, since `.pop()` would target the wrong navigator.
+
+Tested and working on real Google TV Streamer 4K hardware. `adb shell input keyevent` and `adb
+emu event send` (console/HID-level injection) don't reliably reach the accessibility service's
+key filter in emulator testing — not just for custom-mapped buttons, even the already-working
+Home override didn't respond to either, on both Android 11 and 14 emulators. Use a real remote
+(or an actual keyboard attached to the emulator) if testing this on an emulator.
 
 Known trade-off: because FLauncher isn't the *actual* resolved default launcher in this setup,
 pressing Back while at FLauncher's home screen pops through to the stock launcher instead of
