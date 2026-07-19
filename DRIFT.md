@@ -7,7 +7,14 @@ few deliberate ways, listed here so it's clear what changed and why.
 
 - **Flutter pinned via FVM** (`.fvmrc`, `.fvm/`). The project didn't have a reproducible SDK
   version pinned to the working tree; FVM avoids depending on whatever Flutter happens to be
-  globally installed, without touching any global/system Flutter install.
+  globally installed, without touching any global/system Flutter install. Currently pinned to
+  3.7.12 (bumped from the initial fork point, 3.7.5 — see `UPGRADE_PLAN.md`; 3.7.12 is a
+  same-branch hotfix release, not a feature upgrade, needed for Gradle 8 compatibility).
+- **Android toolchain being modernized incrementally** — see `UPGRADE_PLAN.md` for the phased
+  plan (AGP/Gradle/Kotlin, then Flutter SDK, then dependencies) and the real landmines hit along
+  the way (an old Flutter patch's Gradle script hard-incompatible with Gradle 8, AGP 8's
+  `namespace` requirement breaking several plugins' old Android implementations, `compileSdk`
+  forced to 35 by `sqlite3_flutter_libs`).
 
 ## Removed Firebase
 
