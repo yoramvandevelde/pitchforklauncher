@@ -182,8 +182,9 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       menu-by-menu pass this time, but nothing looked wrong).
 
 At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` → fix what's flagged →
-`fvm flutter pub run build_runner build --delete-conflicting-outputs` (drift/mockito codegen) →
-`fvm flutter test` → build + install + smoke test → commit → next stop.
+`fvm flutter pub run build_runner build` (drift/mockito codegen; `--delete-conflicting-outputs` is
+now a no-op on `build_runner` 2.15+, see the 3.44.6 stop's landmines) → `fvm flutter test` →
+build + install + smoke test → commit → next stop.
 
 ### Landmines actually hit at the 3.10.7 stop (not anticipated above)
 
