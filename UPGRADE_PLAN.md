@@ -169,8 +169,17 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       categories created/renamed/moved/deleted, wallpaper changed, button remapping redone,
       Android settings navigated to and back, Accessibility service toggled off/on), no
       regressions found.
-- [ ] Land on the actual latest stable (check what that is *at the time*, not what's written here
-      today — this plan will already be stale by the time Phase 2 starts).
+- [x] Land on the actual latest stable — latest stable at the time this stop was picked was 3.44.6
+      (Dart 3.12.2, released 2026-07-09). `sdk: ">=3.12.0 <3.13.0"` / `flutter: ">=3.44.6 <3.45.0"`.
+      Phase 2 is now complete. Needed a forced `drift`/`drift_dev` major bump (`^2.10.0` →
+      `^2.34.0`, alongside `build_runner` and `mockito` bumps) to get codegen working again, and
+      one real UI fix (a `ColoredBox`-over-`Material` ink-visibility issue in
+      `right_panel_dialog.dart`) — see landmines below. `fvm flutter analyze` clean (same 66
+      pre-existing deprecation infos as before, no new ones, no errors), all 129 tests passing,
+      build succeeds (with soft "will soon be dropped" warnings for Gradle/AGP/Kotlin — see
+      landmines), confirmed on real Google TV Streamer 4K hardware (switches — 24-hour time
+      format, app-highlight-animation — button remapping, general navigation; not an exhaustive
+      menu-by-menu pass this time, but nothing looked wrong).
 
 At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` → fix what's flagged →
 `fvm flutter pub run build_runner build --delete-conflicting-outputs` (drift/mockito codegen) →
@@ -424,19 +433,87 @@ categories created/renamed/moved/deleted, wallpaper changed, button remapping re
 settings navigated to and back (the historically freeze-prone path), Accessibility service
 toggled off and on. All clean, no regressions found. 3.35.7 is fully hardware-confirmed.
 
+### Landmines actually hit at the 3.44.6 stop (not anticipated above)
+
+The final Phase 2 stop. Smaller than 3.35.7, but with one genuine (if narrow) UI bug and one
+confusing dev-tooling dead end.
+
+1. **`analyzer` 5.13.0 (pulled in by the still-old `build_runner`/`drift_dev`/`mockito` pins)
+   couldn't parse Flutter's own framework source under the new Dart 3.12 language version** —
+   `build_runner build` failed with `drift_dev:not_shared` errors like `Could not resolve Dart
+   library package:flutter/src/foundation/diagnostics.dart` / `Expected an identifier` while
+   analyzing `lib/database.dart`. Root cause: the pinned `build_runner: ^2.3.3` / `drift_dev:
+   ^2.10.0` / `mockito: ^5.4.1` versions all cap `analyzer` well below what's needed to parse
+   syntax used inside the Flutter SDK itself at this version. Fixed by bumping the whole codegen
+   toolchain together: `drift` `^2.10.0` → `^2.34.0` (must move in lockstep with `drift_dev`, per
+   the Phase 3 note above — this ended up forced here rather than waiting), `drift_dev` `^2.10.0`
+   → `^2.34.0`, `build_runner` `^2.3.3` → `^2.4.9`, `mockito` `^5.4.1` → `^5.4.4` (actual resolved:
+   `build_runner` 2.15.1, `mockito` 5.7.0, `analyzer` 13.0.0). Regenerated `lib/database.drift.dart`
+   (drift's generated-file naming, not `.g.dart` — large diff, but mechanical/generated) and
+   `test/mocks.mocks.dart`. `sqlite3` moved 2.4.0 → 3.5.0 transitively via the `drift` bump — this
+   is the exact "drift + drift_dev + sqlite3 move together, watch the 3.x bump" note Phase 3
+   already flagged, just forced early. All 129 tests still passed after the regen, so nothing
+   structural in the schema/migrations broke.
+2. **Red herring while debugging #1**: after bumping `build_runner` to 2.15.1, `build_runner
+   build` failed differently — `Couldn't resolve the package 'build_runner_core'` while
+   precompiling the generated `.dart_tool/build/entrypoint/build.dart`, even though
+   `build_runner_core` was correctly no longer a dependency at all (it was merged into
+   `build_runner` itself as of a recent version; `pub upgrade`'s own output even listed it under
+   "no longer being depended on"). This was purely a **stale `.dart_tool/build/` cache** left over
+   from the old `build_runner` version's last run — `rm -rf .dart_tool/build` wasn't enough (still
+   failed the same way), but `rm -rf .dart_tool` entirely (forcing a full `flutter pub get` +
+   fresh build-script generation) fixed it immediately. Worth trying first, before assuming a real
+   dependency problem, if `build_runner_core`-flavored errors show up again after a `build_runner`
+   bump. Also noted in passing: `--delete-conflicting-outputs` is now a no-op ("These options have
+   been removed and were ignored") — newer `build_runner` deletes conflicting outputs by default,
+   the flag is harmless to keep passing but does nothing.
+3. **A genuine new Flutter framework assertion, not a compile issue**: `flauncher_test.dart`'s
+   "Pressing select on settings icon opens SettingsPanel" test started failing with `ListTile
+   background color or ink splashes may be invisible` — a new debug-mode Material assertion that
+   fires when a `ListTile` (here, the ones `SwitchListTile` builds internally for the two switches
+   in `SettingsPanelPage` — "Use 24-hour time format", "App card highlight animation") is
+   separated from its nearest `Material` ancestor by an intervening opaque `ColoredBox`, since
+   `ListTile` paints its ink effects on that `Material`'s render layer, which then ends up
+   *underneath* the `ColoredBox` in paint order (the ancestor lookup for *which* `Material` to use
+   still succeeds via `InheritedWidget`, it's specifically the paint-order layering that breaks).
+   The culprit: `lib/widgets/right_panel_dialog.dart`'s `Container(padding: ..., color:
+   Theme.of(context).colorScheme.surface, width: ..., child: ...)` — a `Container` with only
+   `color`+`padding`+`width` set, which Flutter collapses into exactly this kind of `ColoredBox`,
+   sitting between `Dialog`'s own `Material` and everything `RightPanelDialog` wraps (not just
+   `SettingsPanelPage` — every panel routed through it shares this). Fixed by making the panel
+   surface itself a `Material` instead of a colored `Container`: wrapped the inner `Container` (now
+   just `padding`+`width`, no `color`) in `Material(color: Theme.of(context).colorScheme.surface,
+   child: ...)`. All 129 tests pass with this in place.
+4. **Not a landmine, just noting it happened automatically**: `flutter build apk` silently added
+   `android.builtInKotlin=false` and `android.newDsl=false` to `android/gradle.properties` itself
+   (commented as "added automatically by Flutter migrator") — opting out of newer AGP
+   Kotlin-DSL/build-config behavior this Flutter version now defaults toward. Left as-is since the
+   build succeeds either way and this is Flutter's own documented migration mechanism, not a
+   manual workaround.
+5. **Not a landmine yet, just a warning worth tracking**: `flutter build apk` now prints
+   "will soon be dropped" support warnings for the current Gradle (8.11.1, wants ≥8.14.0), AGP
+   (8.10.0, wants ≥8.11.1) and Kotlin (2.1.0, wants ≥2.2.20) versions — all soft warnings, the
+   build still succeeds, left alone for this stop since none of them are hard errors yet. Likely
+   the next thing to hit as a hard requirement if this project's Flutter version is bumped again
+   past 3.44.x, or possibly worth doing proactively early in Phase 3/4 instead of waiting for a
+   forced break.
+
+Phase 2 is now complete — Flutter 3.7.5 → 3.44.6, latest stable, all four stepping stones landed
+and hardware-confirmed.
+
 ## Phase 3 — Dependencies
 
 Do this *after* the Flutter SDK is current — most packages gate their max supported version on
 the Flutter/Dart SDK, so bumping dependencies first would just get capped by the old SDK anyway.
 
 - [ ] Run `fvm flutter pub outdated` for the full picture before touching anything.
-- [ ] `drift` + `drift_dev` + `sqlite3_flutter_libs` as one group (they need to move together).
-      Current pin (2.5.0) already includes drift's big 2.0 breaking changes (nullability of
-      `Expression`/`QueryRow.read`, `toSql`/`fromSql` renames) — those are done. What's ahead:
-      drift 2.32 bumped its underlying `sqlite3` package to a 3.x major version, worth checking
-      what that touches here (`NativeDatabase` construction in `lib/database.dart`, see
-      `sqlite3_flutter_libs` usage). Regenerate codegen after bumping, diff the generated
-      `database.drift.dart`/`mocks.mocks.dart` output to sanity-check nothing structural moved.
+- [x] `drift` + `drift_dev` as one group — done, forced early by the 3.44.6 Phase 2 stop's codegen
+      breakage (see that stop's landmine #1): `drift`/`drift_dev` `^2.10.0` → `^2.34.0`, pulling
+      `sqlite3` 2.4.0 → 3.5.0 transitively. All 129 tests passed after the regen; no deliberate
+      deep review of the `sqlite3` 3.x bump's `NativeDatabase` implications happened, though —
+      still worth a closer look here if anything database-related looks off later.
+      `sqlite3_flutter_libs` itself is still on its original pin (`^0.5.13`, resolves 0.5.42) and
+      hasn't been touched.
 - [ ] `provider`, `path_provider`, `shared_preferences`, `package_info_plus`, `image_picker` — bump
       one at a time or in a batch if changelogs look clean; these have historically been lower-risk
       than drift or webview_flutter.

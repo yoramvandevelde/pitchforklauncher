@@ -34,11 +34,13 @@ class RightPanelDialog extends StatelessWidget {
         insetPadding: EdgeInsets.zero,
         child: Align(
           alignment: Alignment.centerRight,
-          child: Container(
-            padding: EdgeInsets.all(16),
+          child: Material(
             color: Theme.of(context).colorScheme.surface,
-            width: width,
-            child: Actions(actions: {BackIntent: BackAction(context)}, child: child),
+            child: Container(
+              padding: EdgeInsets.all(16),
+              width: width,
+              child: Actions(actions: {BackIntent: BackAction(context)}, child: child),
+            ),
           ),
         ),
       );
