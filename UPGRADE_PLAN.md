@@ -146,11 +146,28 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       `fvm flutter analyze` clean, all 129 tests passing, build succeeds, smoke-tested on the
       `GoogleTV_API34` emulator (app grid renders, wallpaper loads, Settings panel opens with
       correct theming, Back from Settings top level to home works without freezing — the real
-      Google TV Streamer 4K hardware was in active use during this stop, so hardware confirmation
-      is still pending before merge).
-- [ ] One or two more stops of your choosing spaced through the remaining gap (check
-      `docs.flutter.dev/release/release-notes` for what each covers) — the point isn't to hit every
-      single version, just to avoid one undifferentiated leap.
+      Google TV Streamer 4K hardware was in active use at the time. Real-hardware confirmation
+      landed together with the 3.35.7 stop below (same install, cumulative).
+- [x] One more stop, roughly the midpoint of the remaining 3.27.4→3.44.6 gap — landed on 3.35.7
+      (latest patch in that branch, Dart 3.9.2). `sdk: ">=3.9.0 <3.10.0"` /
+      `flutter: ">=3.35.7 <3.36.0"`. By far the biggest stop yet — see landmines below. In short:
+      Flutter's Gradle plugin loader dropped the old imperative `apply from`/`apply plugin` style
+      entirely (hard error, not just deprecated), forcing a migration of all three
+      `android/*.gradle` files to the declarative `plugins {}` block; Flutter's v1 Android
+      embedding was fully removed, breaking several plugins' Android implementations that still
+      referenced it, requiring version bumps for `image_picker`, `path_provider`,
+      `package_info_plus`, `shared_preferences`, `webview_flutter`, plus a
+      `dependency_overrides` for the transitive `flutter_plugin_android_lifecycle`; one of those
+      bumps (newer AndroidX Core) forced AGP 8.3.0 → 8.10.0, which forced Gradle 8.4 → 8.11.1 and
+      compileSdk 35 → 36, which forced Kotlin 1.9.22 → 2.1.0 (metadata-version mismatch
+      otherwise). The `dependency_overrides` added at the 3.27.4 stop
+      (`frontend_server_client`, `win32`) turned out to be unnecessary here — the newer
+      `build_daemon`/plugin versions this stop naturally resolves to already pull in
+      versions that don't hit those bugs, so both were removed rather than carried forward
+      unused. `fvm flutter analyze` clean, all 129 tests passing, build succeeds, confirmed on
+      real Google TV Streamer 4K hardware (installed, force-stopped and relaunched, no crash, no
+      visible regressions — not yet a full menu-by-menu pass, see landmines for what's still
+      worth doing before the next stop).
 - [ ] Land on the actual latest stable (check what that is *at the time*, not what's written here
       today — this plan will already be stale by the time Phase 2 starts).
 
@@ -329,6 +346,83 @@ At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` 
      line above) and fails to even parse otherwise ("The specified language version is too high").
   Net result: two narrow, commented `dependency_overrides` entries for dev/build-only transitive
   packages, no changes to any package actually shipped in the APK.
+
+### Landmines actually hit at the 3.35.7 stop (not anticipated above)
+
+By far the biggest stop so far — a chain of five forced changes, each one triggered by the fix
+for the previous one. Worth reading in order if hitting something similar at a later stop.
+
+1. **Flutter's Gradle plugin loader stopped supporting the old imperative `apply from`/
+   `apply plugin` style entirely** (a hard `FAILURE: Build failed` at Gradle configuration time,
+   not a deprecation warning — the 3.27.4 stop's build already printed a warning about this, but
+   it kept working until now). Migrated all three `android/*.gradle` files to Flutter's
+   documented declarative-`plugins{}` style
+   (`docs.flutter.dev/release/breaking-changes/flutter-gradle-plugin-apply`):
+   `android/settings.gradle` gained a `pluginManagement {}` block that resolves
+   `flutter.sdk` from `local.properties` and declares AGP/Kotlin versions via
+   `id "com.android.application" version "..." apply false` /
+   `id "org.jetbrains.kotlin.android" version "..." apply false`, plus
+   `id "dev.flutter.flutter-plugin-loader" version "1.0.0"`; `android/build.gradle` lost its
+   entire `buildscript {}` block (AGP/Kotlin versions now live in `settings.gradle` instead);
+   `android/app/build.gradle` replaced `apply plugin: '...'` / `apply from: '.../flutter.gradle'`
+   with a `plugins {}` block at the very top of the file (Gradle requires it to be the first
+   statement — the original imperative code did its `local.properties`/signing-config setup
+   *before* the plugin application, which had to move after the `plugins {}` block instead), and
+   dropped the `implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"` line
+   (the `kotlin_version` variable no longer exists once `ext.kotlin_version` is gone from
+   `build.gradle`, and the Kotlin Gradle plugin brings the stdlib in on its own now anyway).
+2. **Flutter's v1 Android embedding was fully removed**, not just deprecated — broke the Java/
+   Kotlin source of several plugins' Android implementations that still had a
+   `registerWith(PluginRegistry.Registrar)` fallback method left over from years-old v1/v2
+   dual-support code (`error: cannot find symbol ... class Registrar`). Hit this one plugin at a
+   time, as each successive build reached the next broken one: `flutter_plugin_android_lifecycle`
+   (transitive, fixed via `dependency_overrides: ^2.0.28`), then `image_picker_android` (fixed by
+   bumping the direct `image_picker` dependency to `^1.2.0`), then `path_provider_android`,
+   `shared_preferences_android` and `webview_flutter_android` (fixed by bumping `path_provider`,
+   `shared_preferences`, `webview_flutter` directly). `package_info_plus` was bumped alongside
+   the others pre-emptively (`^4.0.0` → `^8.0.0`) rather than waiting for its own build failure,
+   since it's the same plugin generation and was already flagged as likely next.
+3. **`package_info_plus` 8.0.0's `PackageInfoPlatform.getAll` gained a new optional `baseUrl`
+   parameter**, breaking `_MockPackageInfoPlatform`'s override in
+   `test/widgets/settings/settings_panel_page_test.dart` (`invalid_override` — a real
+   `flutter analyze` error, not just a test failure). Fixed by adding the same optional parameter
+   to the mock's override signature.
+4. **One of the plugin bumps above (image_picker's newer `image_picker_android`, pulling a newer
+   AndroidX Core transitively) forced a cascade of Android toolchain bumps that had nothing to do
+   with plugins directly**: `androidx.core:core:1.18.0` requires AGP ≥ 8.9.1 and `compileSdk` ≥
+   36 — bumped AGP 8.3.0 → 8.10.0 (the lowest AGP version whose documented max supported API
+   level is actually 36; 8.9.x tops out at 35 despite satisfying the ≥8.9.1 requirement on paper)
+   and `compileSdkVersion` 35 → 36 in `android/app/build.gradle`. AGP 8.10.0 in turn requires
+   Gradle ≥ 8.11.1 — bumped `android/gradle/wrapper/gradle-wrapper.properties` 8.4 → 8.11.1. That
+   newer AGP/Gradle pair then failed Kotlin compilation of `image_picker_android`'s own Kotlin
+   sources with `Class 'kotlin.Unit' was compiled with an incompatible version of Kotlin` (its
+   prebuilt `.jar` was compiled with Kotlin 2.1.20's metadata, unreadable by our Kotlin
+   1.9.22 compiler) — bumped Kotlin 1.9.22 → 2.1.0 in `android/settings.gradle`'s `plugins {}`
+   block (the version Flutter's own build output had already been warning was needed).
+5. **Two more landmines, unrelated to any of the above, just to get a clean build on this dev
+   machine specifically**: two separate NDK versions (25.1.8937393, then 27.0.12077973 once AGP
+   8.10.0 requested the newer default) had corrupted local installs — only an empty `.installer`
+   directory, no actual NDK content, causing `[CXX1101] NDK ... did not have a source.properties
+   file`. Both were fixed the way Flutter's own error message suggests: delete the local copy
+   under `$ANDROID_HOME/ndk/<version>` and let Gradle re-download it cleanly. Separately, the
+   Jetifier transform step ran out of heap (`Java heap space` while transforming
+   `armeabi_v7a_debug...jar`) under the project's existing `org.gradle.jvmargs=-Xmx1536M` — bumped
+   to `-Xmx4G` in `android/gradle.properties`. Neither of these is a code landmine future stops
+   need to worry about, but worth knowing about if `[CXX1101]` or `Java heap space` show up again
+   on a fresh machine.
+6. **Bonus cleanup, not a landmine**: the two `dependency_overrides` added at the 3.27.4 stop
+   (`frontend_server_client`, `win32`) turned out to be unneeded at this stop — the newer
+   `build_daemon`/plugin versions this stop's dependency resolution naturally settles on already
+   pull in versions past the point those bugs were fixed, without forcing anything. Removed both
+   rather than carrying forward `dependency_overrides` nothing actually depends on anymore. Worth
+   re-checking at *every* stop whether previously-added overrides are still load-bearing, since
+   they're easy to forget about once they stop being necessary.
+
+**Still worth doing before the next stop, not done yet**: this stop's real-hardware check was
+install + relaunch + "nothing looks wrong", not the thorough menu-by-menu pass done at earlier
+stops (button-mapping, wallpaper change, every settings sub-page, Back-navigation). Given how much
+of this stop's actual work was Android build toolchain (AGP/Gradle/Kotlin/NDK) rather than Dart/
+Flutter framework code, a fuller pass is worth doing once there's a good stretch of hardware time.
 
 ## Phase 3 — Dependencies
 

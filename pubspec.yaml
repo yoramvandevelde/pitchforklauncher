@@ -4,23 +4,23 @@ description: Flutter-based Android TV launcher.
 version: 0.0.1
 
 environment:
-  sdk: ">=3.6.0 <3.7.0"
-  flutter: ">=3.27.4 <3.28.0"
+  sdk: ">=3.9.0 <3.10.0"
+  flutter: ">=3.35.7 <3.36.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  image_picker: ^1.0.4
+  image_picker: ^1.2.0
   intl: ^0.18.0
   drift: ^2.10.0
-  path_provider: ^2.1.1
-  package_info_plus: ^4.0.0
+  path_provider: ^2.1.5
+  package_info_plus: ^8.0.0
   provider: ^6.0.5
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.3.3
   sqlite3_flutter_libs: ^0.5.13
   unsplash_client: ^2.1.0+3
-  webview_flutter: ^4.4.2
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -39,15 +39,8 @@ flutter:
     - assets/
 
 dependency_overrides:
-  # build_runner 2.4.9's frontend_server_client (3.2.0) only knows how to start the
-  # frontend server from its JIT snapshot, which the Flutter-bundled Dart SDK no longer
-  # ships from this stop onward -- `pub run build_runner` fails outright without this.
-  # frontend_server_client 4.0.0 prefers the AOT snapshot, which is present.
-  frontend_server_client: ^4.0.0
-  # Transitively pulled in by path_provider_windows/shared_preferences_windows (desktop
-  # federated implementations we don't use on Android, but still compiled for `flutter test`
-  # on this macOS dev host). win32 4.1.4's Guid class references
-  # dart:typed_data's UnmodifiableUint8ListView, removed from the SDK at this Dart version.
-  # 5.5.1 is the first version that migrated away from it; pinned below 5.11.0 since that's
-  # where win32 starts requiring a newer Dart SDK than this Flutter stop bundles.
-  win32: ">=5.5.1 <5.11.0"
+  # Transitively pulled in by path_provider_android/shared_preferences_android/etc. 2.0.17's
+  # Java code still references io.flutter.plugin.common.PluginRegistry.Registrar, part of the
+  # v1 Android embedding that Flutter removed entirely at this stop -- hard compile error
+  # ("cannot find symbol") otherwise.
+  flutter_plugin_android_lifecycle: ^2.0.28
