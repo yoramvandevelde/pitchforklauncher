@@ -20,6 +20,20 @@ class RowByRowTraversalPolicy extends FocusTraversalPolicy with DirectionalFocus
 
     NodeSearcher searcher = NodeSearcher(direction);
     List<CandidateNode> candidates = searcher.findCandidates(nodes, currentNode);
+    if (candidates.isEmpty && direction == TraversalDirection.right) {
+      // Reached the end of the row. This usually means "stay put" (e.g. the last item of a
+      // long row that already reaches the edge of the screen has nothing further right at all)
+      // -- except the header's settings icon, which sits above-and-to-the-right of the
+      // *topmost* app row specifically (there's no equivalent shortcut on the left, so this
+      // only applies to "right"), and should stay reachable from there. Look for something
+      // that is both above AND still to the right, rather than either falling through to
+      // Flutter's own built-in directional search (whose "nearest in that general direction"
+      // heuristics changed between Flutter versions, and silently started jumping down a row
+      // instead of up to the header) or a plain "nearest above" search (which would incorrectly
+      // jump to the row above for every other row too, not just the topmost one, since that's
+      // what "stays on the same row" tests for explicitly).
+      candidates = searcher.findCandidatesAboveOnSameSide(nodes, currentNode);
+    }
     if (candidates.isEmpty) {
       return super.inDirection(currentNode, direction);
     }
@@ -51,6 +65,23 @@ class NodeSearcher {
       case TraversalDirection.left:
         copy.removeWhere((element) => element.isRightToOrEquals(from) || !element.isOnTheSameRow(from));
         break;
+    }
+    return toCandidateNodes(copy);
+  }
+
+  /// Used as a fallback when [findCandidates] finds nothing further right along the row: looks
+  /// for a node that is both above `from` and still to the right of it, e.g. the header's
+  /// settings icon reachable from the end of the topmost app row.
+  List<CandidateNode> findCandidatesAboveOnSameSide(List<FocusNode> nodes, FocusNode from) {
+    final copy = List<FocusNode>.from(nodes, growable: true);
+    copy.removeWhere((element) => element.isBelowOrEquals(from) || element.isLeftToOrEquals(from));
+    // With 3+ rows, "above and to the right" can also match app cards in a row that's merely
+    // closer above (not just the header) -- keep only the top-most matches so the header wins
+    // over any such row, matching the "topmost row only" intent instead of picking whichever
+    // candidate happens to have the smallest x.
+    if (copy.isNotEmpty) {
+      final minDy = copy.map((node) => node.rect.center.dy.round()).reduce(min);
+      copy.removeWhere((node) => node.rect.center.dy.round() != minDy);
     }
     return toCandidateNodes(copy);
   }

@@ -91,15 +91,17 @@ class FLauncherApp extends StatelessWidget {
           },
           title: 'FLauncher',
           theme: ThemeData(
+            // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
+            // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a
+            // deliberate design decision to make separately, not a side effect of this bump.
+            useMaterial3: false,
             brightness: Brightness.dark,
             primarySwatch: _swatch,
-            // ignore: deprecated_member_use
-            accentColor: _swatch[200],
+            colorScheme: ColorScheme.fromSwatch(primarySwatch: _swatch, brightness: Brightness.dark)
+                .copyWith(secondary: _swatch[200], surface: _swatch[400]),
             cardColor: _swatch[300],
             canvasColor: _swatch[300],
             dialogBackgroundColor: _swatch[400],
-            // ignore: deprecated_member_use
-            backgroundColor: _swatch[400],
             scaffoldBackgroundColor: _swatch[400],
             textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
             appBarTheme: AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),

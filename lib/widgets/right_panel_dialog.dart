@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,12 +35,13 @@ class RightPanelDialog extends StatelessWidget {
         insetPadding: EdgeInsets.zero,
         child: Align(
           alignment: Alignment.centerRight,
-          child: Container(
-            padding: EdgeInsets.all(16),
-            // ignore: deprecated_member_use
-            color: Theme.of(context).backgroundColor,
-            width: width,
-            child: Actions(actions: {BackIntent: BackAction(context)}, child: child),
+          child: Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              width: width,
+              child: Actions(actions: {BackIntent: BackAction(context)}, child: child),
+            ),
           ),
         ),
       );
