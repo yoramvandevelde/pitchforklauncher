@@ -6,11 +6,13 @@ That's now three-ish years behind. This is a plan to close that gap safely, in r
 rather than one big jump that makes it impossible to tell which change broke what.
 
 **Ground rules for every phase below:**
-- One phase at a time, on a dedicated branch (e.g. `upgrade/stack`), not directly on `master`.
+- One phase at a time, on its own branch off `master` (e.g. `upgrade/phase1-android-toolchain`,
+  `upgrade/phase2-flutter-sdk`, ...), not directly on `master`.
 - After each phase: `fvm flutter analyze` clean, full test suite green (currently 129 tests),
   then an actual smoke test on real hardware before moving on.
-- Commit after each phase, not after the whole thing — so a bad step can be reverted without
-  losing the good ones before it.
+- Commit within the phase branch as needed, merge into `master` once the phase is confirmed
+  working, then branch the next phase off the updated `master` — so a bad phase can be reverted
+  independently without losing the good ones before it.
 
 ## Known landmines (found while scoping this, not yet hit)
 
@@ -31,10 +33,11 @@ starting, rather than being a surprise mid-upgrade:
 
 ## Phase 0 — Safety net
 
-- [ ] Commit and push everything currently pending (the button-remapping feature, docs).
-- [ ] Create an `upgrade/stack` branch off `master`. Do the rest of this plan there.
-- [ ] Confirm `fvm flutter test` is green and `fvm flutter analyze` is clean on `master` first —
+- [x] Commit and push everything currently pending (the button-remapping feature, docs).
+- [x] Confirm `fvm flutter test` is green and `fvm flutter analyze` is clean on `master` first —
       this is the baseline every later phase gets compared against.
+- [x] Branch per phase off `master` (see ground rules above), merging back before starting the
+      next one — not one long-lived `upgrade/stack` branch for everything.
 
 ## Phase 1 — Android toolchain (Gradle / AGP / Kotlin), Flutter version untouched
 
