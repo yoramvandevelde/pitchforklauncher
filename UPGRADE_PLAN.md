@@ -165,9 +165,10 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
       `build_daemon`/plugin versions this stop naturally resolves to already pull in
       versions that don't hit those bugs, so both were removed rather than carried forward
       unused. `fvm flutter analyze` clean, all 129 tests passing, build succeeds, confirmed on
-      real Google TV Streamer 4K hardware (installed, force-stopped and relaunched, no crash, no
-      visible regressions — not yet a full menu-by-menu pass, see landmines for what's still
-      worth doing before the next stop).
+      real Google TV Streamer 4K hardware — full manual pass (every menu, apps added/removed,
+      categories created/renamed/moved/deleted, wallpaper changed, button remapping redone,
+      Android settings navigated to and back, Accessibility service toggled off/on), no
+      regressions found.
 - [ ] Land on the actual latest stable (check what that is *at the time*, not what's written here
       today — this plan will already be stale by the time Phase 2 starts).
 
@@ -418,11 +419,10 @@ for the previous one. Worth reading in order if hitting something similar at a l
    re-checking at *every* stop whether previously-added overrides are still load-bearing, since
    they're easy to forget about once they stop being necessary.
 
-**Still worth doing before the next stop, not done yet**: this stop's real-hardware check was
-install + relaunch + "nothing looks wrong", not the thorough menu-by-menu pass done at earlier
-stops (button-mapping, wallpaper change, every settings sub-page, Back-navigation). Given how much
-of this stop's actual work was Android build toolchain (AGP/Gradle/Kotlin/NDK) rather than Dart/
-Flutter framework code, a fuller pass is worth doing once there's a good stretch of hardware time.
+**Update**: the fuller manual pass landed after all — every menu opened, apps added/removed,
+categories created/renamed/moved/deleted, wallpaper changed, button remapping redone, Android
+settings navigated to and back (the historically freeze-prone path), Accessibility service
+toggled off and on. All clean, no regressions found. 3.35.7 is fully hardware-confirmed.
 
 ## Phase 3 — Dependencies
 
