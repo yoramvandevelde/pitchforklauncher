@@ -20,6 +20,7 @@ import 'dart:async';
 
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
+import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +47,7 @@ Future<void> main() async {
         ),
       ),
     );
+    final picsumService = PicsumService();
     runApp(
       FLauncherApp(
         sharedPreferences,
@@ -53,6 +55,7 @@ Future<void> main() async {
         fLauncherChannel,
         fLauncherDatabase,
         unsplashService,
+        picsumService,
       ),
     );
   }, (error, stackTrace) => debugPrint("$error\n$stackTrace"));

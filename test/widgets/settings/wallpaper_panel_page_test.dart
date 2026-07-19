@@ -52,6 +52,35 @@ void main() {
     expect(find.byKey(Key("UnsplashPanelPage")), findsOneWidget);
   });
 
+  testWidgets("'Random photo' calls WallpaperService", (tester) async {
+    final settingsService = MockSettingsService();
+    final wallpaperService = MockWallpaperService();
+    when(settingsService.unsplashEnabled).thenReturn(true);
+    when(settingsService.unsplashAuthor).thenReturn(null);
+
+    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    verify(wallpaperService.randomFromPicsum());
+  });
+
+  testWidgets("'Random photo (blurred)' calls WallpaperService", (tester) async {
+    final settingsService = MockSettingsService();
+    final wallpaperService = MockWallpaperService();
+    when(settingsService.unsplashEnabled).thenReturn(true);
+    when(settingsService.unsplashAuthor).thenReturn(null);
+
+    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    verify(wallpaperService.randomFromPicsum(blur: 4));
+  });
+
   testWidgets("'Gradient' navigates to GradientPanelPage", (tester) async {
     final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
@@ -60,6 +89,8 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
@@ -77,6 +108,8 @@ void main() {
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       verify(wallpaperService.pickWallpaper());
@@ -91,6 +124,8 @@ void main() {
 
       await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);

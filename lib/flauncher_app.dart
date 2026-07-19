@@ -17,6 +17,7 @@
  */
 
 import 'package:flauncher/actions.dart';
+import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
@@ -38,6 +39,7 @@ class FLauncherApp extends StatelessWidget {
   final FLauncherChannel _fLauncherChannel;
   final FLauncherDatabase _fLauncherDatabase;
   final UnsplashService _unsplashService;
+  final PicsumService _picsumService;
 
   static const MaterialColor _swatch = MaterialColor(0xFF011526, <int, Color>{
     50: Color(0xFF36A0FA),
@@ -58,6 +60,7 @@ class FLauncherApp extends StatelessWidget {
     this._fLauncherChannel,
     this._fLauncherDatabase,
     this._unsplashService,
+    this._picsumService,
   );
 
   @override
@@ -66,7 +69,7 @@ class FLauncherApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => SettingsService(_sharedPreferences), lazy: false),
           ChangeNotifierProvider(create: (_) => AppsService(_fLauncherChannel, _fLauncherDatabase)),
           ChangeNotifierProxyProvider<SettingsService, WallpaperService>(
-              create: (_) => WallpaperService(_imagePicker, _fLauncherChannel, _unsplashService),
+              create: (_) => WallpaperService(_imagePicker, _fLauncherChannel, _unsplashService, _picsumService),
               update: (_, settingsService, wallpaperService) => wallpaperService!..settingsService = settingsService),
           Provider<TickerModel>(create: (context) => TickerModel(null))
         ],

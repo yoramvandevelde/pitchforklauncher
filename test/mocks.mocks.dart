@@ -12,6 +12,7 @@ import 'package:drift/src/runtime/executor/stream_queries.dart' as _i6;
 import 'package:flauncher/database.dart' as _i5;
 import 'package:flauncher/flauncher_channel.dart' as _i7;
 import 'package:flauncher/gradients.dart' as _i2;
+import 'package:flauncher/picsum_service.dart' as _i14;
 import 'package:flauncher/providers/apps_service.dart' as _i12;
 import 'package:flauncher/providers/settings_service.dart' as _i10;
 import 'package:flauncher/providers/wallpaper_service.dart' as _i9;
@@ -428,6 +429,16 @@ class MockWallpaperService extends _i1.Mock implements _i9.WallpaperService {
         ),
         returnValue: _i8.Future<List<_i3.Photo>>.value(<_i3.Photo>[]),
       ) as _i8.Future<List<_i3.Photo>>);
+  @override
+  _i8.Future<void> randomFromPicsum({int? blur}) => (super.noSuchMethod(
+        Invocation.method(
+          #randomFromPicsum,
+          [],
+          {#blur: blur},
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
   @override
   _i8.Future<void> setFromUnsplash(_i3.Photo? photo) => (super.noSuchMethod(
         Invocation.method(
@@ -943,6 +954,25 @@ class MockUnsplashService extends _i1.Mock implements _i3.UnsplashService {
         Invocation.method(
           #downloadPhoto,
           [photo],
+        ),
+        returnValue: _i8.Future<_i13.Uint8List>.value(_i13.Uint8List(0)),
+      ) as _i8.Future<_i13.Uint8List>);
+}
+
+/// A class which mocks [PicsumService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockPicsumService extends _i1.Mock implements _i14.PicsumService {
+  MockPicsumService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i8.Future<_i13.Uint8List> randomPhoto({int? blur}) => (super.noSuchMethod(
+        Invocation.method(
+          #randomPhoto,
+          [],
+          {#blur: blur},
         ),
         returnValue: _i8.Future<_i13.Uint8List>.value(_i13.Uint8List(0)),
       ) as _i8.Future<_i13.Uint8List>);

@@ -21,6 +21,7 @@ import 'dart:io';
 
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/gradients.dart';
+import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
@@ -31,6 +32,7 @@ class WallpaperService extends ChangeNotifier {
   final ImagePicker _imagePicker;
   final FLauncherChannel _fLauncherChannel;
   final UnsplashService _unsplashService;
+  final PicsumService _picsumService;
   late SettingsService _settingsService;
 
   late final File _wallpaperFile;
@@ -45,7 +47,7 @@ class WallpaperService extends ChangeNotifier {
 
   set settingsService(SettingsService settingsService) => _settingsService = settingsService;
 
-  WallpaperService(this._imagePicker, this._fLauncherChannel, this._unsplashService) {
+  WallpaperService(this._imagePicker, this._fLauncherChannel, this._unsplashService, this._picsumService) {
     _init();
   }
 
@@ -83,6 +85,14 @@ class WallpaperService extends ChangeNotifier {
   }
 
   Future<List<Photo>> searchFromUnsplash(String query) => _unsplashService.searchPhotos(query);
+
+  Future<void> randomFromPicsum({int? blur}) async {
+    final bytes = await _picsumService.randomPhoto(blur: blur);
+    await _wallpaperFile.writeAsBytes(bytes);
+    _wallpaper = bytes;
+    await _settingsService.setUnsplashAuthor(null);
+    notifyListeners();
+  }
 
   Future<void> setFromUnsplash(Photo photo) async {
     final bytes = await _unsplashService.downloadPhoto(photo);

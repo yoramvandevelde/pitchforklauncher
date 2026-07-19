@@ -21,6 +21,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
+import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
@@ -33,6 +34,7 @@ import 'package:mockito/annotations.dart';
   AppsService,
   SettingsService,
   UnsplashService,
+  PicsumService,
 ], customMocks: [
   MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
 ])

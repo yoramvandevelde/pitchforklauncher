@@ -50,6 +50,26 @@ class WallpaperPanelPage extends StatelessWidget {
             autofocus: !context.read<SettingsService>().unsplashEnabled,
             child: Row(
               children: [
+                Icon(Icons.shuffle),
+                Container(width: 8),
+                Text("Random photo", style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            onPressed: () => context.read<WallpaperService>().randomFromPicsum(),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.blur_on),
+                Container(width: 8),
+                Text("Random photo (blurred)", style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            onPressed: () => context.read<WallpaperService>().randomFromPicsum(blur: 4),
+          ),
+          TextButton(
+            child: Row(
+              children: [
                 Icon(Icons.gradient),
                 Container(width: 8),
                 Text("Gradient", style: Theme.of(context).textTheme.bodyMedium),
