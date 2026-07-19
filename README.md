@@ -1,11 +1,28 @@
+# FLauncher (personal fork)
+
+This is a personal clone of [FLauncher](https://gitlab.com/flauncher/flauncher), with a handful of
+changes relevant to my own setup (a Google TV Streamer 4K). Not affiliated with the original
+project or its Play Store listing.
+
+**What's changed, in short** — see `DRIFT.md` for the full rationale and `TODO.md` for known
+issues:
+- Flutter pinned via FVM (`.fvmrc`) instead of relying on a global install.
+- Firebase (Analytics/Crashlytics/Remote Config) removed — it required credentials that aren't in
+  this repo.
+- A built-in `HomeButtonAccessibilityService` intercepts the remote's Home button (and YouTube
+  button) so FLauncher can act as the home screen without disabling the stock launcher — an
+  alternative to the two methods described below in "Set FLauncher as default launcher".
+- A key-less "Random photo" wallpaper source backed by [picsum.photos](https://picsum.photos),
+  since Unsplash needs a developer API key this fork doesn't have.
+
+Everything below this point is the original upstream README.
+
+---
+
 # FLauncher
 FLauncher is an open-source alternative launcher for Android TV, built with [Flutter](https://flutter.dev).
 
 The project is still at an early development stage and may be unstable. It currently lacks testing on real devices and has only been tested on Chromecast with Google TV.
-
-<a href="https://play.google.com/store/apps/details?id=me.efesser.flauncher">
- <img alt="Get it on Google Play" width="200" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"/>
-</a>
 
 ## Features
 - [x] No ads
@@ -21,16 +38,7 @@ The project is still at an early development stage and may be unstable. It curre
 - [x] Navigation sound feedback
 - [ ] Force stop app
 
-## Screenshots
-|  |  |  |
-|--|--|--|
-| ![](screenshots/Screenshot_1624378896.png) | ![](screenshots/Screenshot_1624378921.png) | ![](screenshots/Screenshot_1624378938.png) |
-
 ## Set FLauncher as default launcher
-
-This fork also ships a third option not listed below: a built-in `HomeButtonAccessibilityService`
-that intercepts the Home button (and the remote's YouTube button) without needing Button Mapper
-or disabling the stock launcher. See `DRIFT.md` for how it works.
 
 ### Method 1: remap the Home button
 This is the "safer" and easiest way. Use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap the Home button of the remote to launch FLauncher.
@@ -60,11 +68,9 @@ $ adb shell pm enable com.google.android.tungsten.setupwraith
 ```
 
 #### Known issues
-On Chromecast with Google TV (maybe others), the "YouTube" remote button will stop working if the default launcher is disabled. As a workaround, you can use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap it correctly. (This fork's built-in Home-button override handles the YouTube button itself — see `DRIFT.md` — so Button Mapper isn't needed if that's enabled.)
+On Chromecast with Google TV (maybe others), the "YouTube" remote button will stop working if the default launcher is disabled. As a workaround, you can use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap it correctly.
 
 ## Wallpaper
 Because Android's `WallpaperManager` is not available on some Android TV devices, FLauncher implements its own wallpaper management method.
 
 Please note that changing wallpaper requires a file explorer to be installed on the device in order to pick a file.
-
-<a href="https://www.buymeacoffee.com/etienn01" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="200"></a>
