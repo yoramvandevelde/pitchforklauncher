@@ -111,8 +111,15 @@ Jumping straight from 3.7.5 to latest skips ~35+ minor releases of deprecations 
 once, which makes failures hard to attribute. Step through a handful of intermediate stable
 versions instead — a reasonable set of stops to research and pin `.fvmrc` to, testing at each one:
 
-- [ ] A version just past the Dart 3 language release (roughly Flutter 3.10) — mostly additive
-      (patterns, class modifiers, required named-param defaults), low risk, good first checkpoint.
+- [x] A version just past the Dart 3 language release (roughly Flutter 3.10) — landed on 3.10.7
+      (latest patch in that branch). Tightened `pubspec.yaml`'s `environment` to
+      `sdk: ">=3.0.0 <3.1.0"` / `flutter: ">=3.10.7 <3.11.0"` (widened again at the next stop).
+      Turned out not to be as low-risk as expected — see landmine below, a real Flutter focus-
+      traversal behavior change, not just a compile fix. `fvm flutter analyze` clean (only the
+      pre-existing deprecation infos, no errors), all 129 tests passing, confirmed on real
+      Google TV Streamer 4K hardware (thorough manual navigation pass through every menu,
+      including a freshly-created app grid, plus the button-remapping and wallpaper-change
+      regression checks from the previous phase).
 - [ ] A version at/after Material 3 became the default (roughly Flutter 3.16) — this is where the
       "known landmines" above (`WillPopScope`, deprecated `ThemeData` fields) will actually surface
       as build failures. Fix `PopScope` migration and the theme here, deliberately, with the app
@@ -127,6 +134,29 @@ versions instead — a reasonable set of stops to research and pin `.fvmrc` to, 
 At each stop: `.fvmrc` bump → `fvm flutter pub get` → `fvm flutter analyze` → fix what's flagged →
 `fvm flutter pub run build_runner build --delete-conflicting-outputs` (drift/mockito codegen) →
 `fvm flutter test` → build + install + smoke test → commit → next stop.
+
+### Landmines actually hit at the 3.10.7 stop (not anticipated above)
+
+- **`ThemeData.accentColor` was already removed (not just deprecated) at this version** — the
+  plan expected this at the ~3.16 Material 3 checkpoint, but it's a hard compile error here
+  already. Fixed by replacing it with `colorScheme: ColorScheme.fromSwatch(...).copyWith(secondary:
+  ...)` in `lib/flauncher_app.dart`, which is what `accentColor` actually got folded into.
+  `backgroundColor` (the other flagged field) is still only deprecated, not removed, at this
+  version — left alone for the 3.16 stop as originally planned.
+- **A genuine Flutter framework behavior change, not a compile issue**: `flauncher_test.dart`'s
+  focus-traversal tests started failing. `RowByRowTraversalPolicy` (`lib/custom_traversal_policy.dart`)
+  handles up/down and same-row left/right navigation itself, by design, specifically to avoid
+  depending on Flutter's own "smart" directional focus search (see the class's own doc comment).
+  But it silently *did* still fall through to that built-in search (`super.inDirection`) for one
+  case: moving right past the last app in the topmost row, to reach the header's settings icon.
+  Flutter's built-in heuristics for "nearest focusable node in that general direction" changed
+  between 3.7 and 3.10, and this fell through to a different, wrong node (the row below) instead.
+  Fixed by making that case explicit and version-independent: added
+  `NodeSearcher.findCandidatesAboveOnSameSide`, which only looks for something both above *and*
+  still to the right of the current node — reachable only from the actual topmost row (where
+  nothing else is above), not from every other row (which correctly keeps "stays on the same
+  row" behavior, verified by another existing test). Deliberately right-only, no symmetric
+  left-side shortcut exists (nothing sits at the top-left).
 
 ## Phase 3 — Dependencies
 

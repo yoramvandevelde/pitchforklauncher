@@ -93,8 +93,8 @@ class FLauncherApp extends StatelessWidget {
           theme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: _swatch,
-            // ignore: deprecated_member_use
-            accentColor: _swatch[200],
+            colorScheme: ColorScheme.fromSwatch(primarySwatch: _swatch, brightness: Brightness.dark)
+                .copyWith(secondary: _swatch[200]),
             cardColor: _swatch[300],
             canvasColor: _swatch[300],
             dialogBackgroundColor: _swatch[400],
