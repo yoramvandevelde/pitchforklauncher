@@ -15,11 +15,11 @@ build-install device:
     fvm flutter build apk --debug --dart-define=GIT_BRANCH="$git_branch" --dart-define=GIT_COMMIT="$git_commit"
     adb -s {{device}} install -r build/app/outputs/flutter-apk/app-debug.apk
 
-# README "Method 2: disable the default launcher" — disables the stock Google TV
+# README "Option A: make it the real default launcher" - disables the stock Google TV
 # launcher (and the setup wizard, which would otherwise become the new fallback)
-# so pressing Home prompts you to pick FLauncher instead.
+# so pressing Home prompts you to pick PitchforkLauncher instead.
 
-# Disable the stock launcher so FLauncher can be set as Home.
+# Disable the stock launcher so PitchforkLauncher can be set as Home.
 disable-default-launcher device:
     adb -s {{device}} shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
     adb -s {{device}} shell pm disable-user --user 0 com.google.android.tungsten.setupwraith

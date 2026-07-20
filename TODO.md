@@ -18,7 +18,7 @@ this setup, so `shouldPopScope()` in `flauncher_app.dart` always allows the pop.
 
 **Decided (2026-07-20): not fixing this in-app.** The advised path for anyone who cares about
 correct Back-button behavior is to actually set FLauncher as the real default launcher (`adb shell
-cmd package set-home-activity`, or README's "Method 2: disable the default launcher") rather than
+cmd package set-home-activity`, or README's "Option A: make it the real default launcher") rather than
 relying on the Home-button-override for that specific case — `isDefaultLauncher()` then genuinely
 returns `true` and `shouldPopScope()` behaves correctly with no code changes needed. This project
 isn't published on the Play Store; anyone sideloading it who hits this and doesn't set themselves
@@ -70,3 +70,10 @@ button override.
   `REQUEST_DELETE_PACKAGES`, and "Hide" is low-stakes/reversible — category deletion is the one
   genuinely unguarded destructive action. Add a confirmation dialog before calling
   `deleteCategory`. Found 2026-07-20, not yet fixed.
+
+- **Add a grayscale option for the Picsum wallpaper source** (`lib/picsum_service.dart`,
+  `lib/providers/wallpaper_service.dart`, `lib/widgets/settings/wallpaper_panel_page.dart`).
+  Blur is already implemented (`randomPhoto({int? blur})`, exposed as the "Random photo (blurred)"
+  button), and picsum.photos supports a `?grayscale` query parameter the same way it supports
+  `?blur=`, so this would be a small, near free addition following the exact same pattern. Not
+  urgent, just a nice easy win if picked up. Suggested 2026-07-20.
