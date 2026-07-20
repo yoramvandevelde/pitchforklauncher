@@ -2,13 +2,17 @@
 # See AGENTS.md. Adjust if your JDK 17 lives elsewhere.
 java_home := "~/.local/share/mise/installs/java/temurin-17.0.19+10"
 
-# Build a debug APK and install it on a device/emulator.
+# Build a debug APK and install it on a device/emulator. Bakes the current git branch and
+# short commit hash into the build (shown in Settings -> About FLauncher) via --dart-define,
+# so it's easy to tell which build is actually running on a device during testing.
 build-install device:
     #!/usr/bin/env bash
     set -euo pipefail
     export JAVA_HOME={{java_home}}
     export PATH="$JAVA_HOME/bin:$PATH"
-    fvm flutter build apk --debug
+    git_branch=$(git rev-parse --abbrev-ref HEAD)
+    git_commit=$(git rev-parse --short HEAD)
+    fvm flutter build apk --debug --dart-define=GIT_BRANCH="$git_branch" --dart-define=GIT_COMMIT="$git_commit"
     adb -s {{device}} install -r build/app/outputs/flutter-apk/app-debug.apk
 
 # README "Method 2: disable the default launcher" — disables the stock Google TV

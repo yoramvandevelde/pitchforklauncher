@@ -40,9 +40,35 @@ class SettingsPanel extends StatefulWidget {
 class _SettingsPanelState extends State<SettingsPanel> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
+  // Guards against overlapping pop attempts. Also note: this handler calls Navigator.pop(), not
+  // Navigator.maybePop() -- maybePop() re-checks pop eligibility, which re-enters this same
+  // PopScope (canPop: false) and silently no-ops. That combination (maybePop() re-entering PopScope,
+  // compounded by rapid repeated Back presses with no guard) reproduced a real "Input dispatching
+  // timed out" ANR (bisected on 2026-07-20, see UPGRADE_PLAN.md's Phase 4 landmines for the full
+  // writeup). Both fixes -- pop() instead of maybePop(), and this guard -- are needed together.
+  bool _handlingPop = false;
+
   @override
-  Widget build(BuildContext context) => WillPopScope(
-        onWillPop: () async => !await _navigatorKey.currentState!.maybePop(),
+  Widget build(BuildContext context) => PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          if (didPop || _handlingPop) {
+            return;
+          }
+          _handlingPop = true;
+          try {
+            final navigator = _navigatorKey.currentState;
+            if (navigator == null) {
+              return;
+            }
+            final poppedInternally = await navigator.maybePop();
+            if (!poppedInternally && context.mounted) {
+              Navigator.of(context).pop();
+            }
+          } finally {
+            _handlingPop = false;
+          }
+        },
         child: Scaffold(
           backgroundColor: Colors.transparent,
           body: RightPanelDialog(

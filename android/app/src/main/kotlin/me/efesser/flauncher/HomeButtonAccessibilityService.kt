@@ -86,7 +86,12 @@ class HomeButtonAccessibilityService : AccessibilityService() {
         }
 
         ButtonMappings.get(this, event.keyCode)?.let { packageName ->
-            val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return super.onKeyEvent(event)
+            // Android TV apps commonly only declare LEANBACK_LAUNCHER, not the regular LAUNCHER
+            // category; getLaunchIntentForPackage() alone looks for LAUNCHER -- matches
+            // MainActivity's own launchApp(), which needs the same fallback for the same reason.
+            val launchIntent = packageManager.getLeanbackLaunchIntentForPackage(packageName)
+                ?: packageManager.getLaunchIntentForPackage(packageName)
+                ?: return super.onKeyEvent(event)
             startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
             return true
         }

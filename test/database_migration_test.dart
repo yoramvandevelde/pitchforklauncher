@@ -17,7 +17,7 @@
  */
 
 import 'package:drift/drift.dart';
-import 'package:drift_dev/api/migrations.dart';
+import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flauncher/database.dart';
 import 'package:flutter_test/flutter_test.dart';
 

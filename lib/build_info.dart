@@ -16,17 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:typed_data';
-import 'dart:ui';
-
-import 'package:http/http.dart';
-
-class PicsumService {
-  Future<Uint8List> randomPhoto({int? blur}) async {
-    final size = PlatformDispatcher.instance.implicitView!.physicalSize;
-    final uri = Uri.parse("https://picsum.photos/${size.width.toInt()}/${size.height.toInt()}")
-        .replace(queryParameters: blur != null ? {"blur": "$blur"} : null);
-    final response = await get(uri);
-    return response.bodyBytes;
-  }
+/// Git branch/commit baked in at build time via --dart-define (see justfile's
+/// build-install recipe). Falls back to "unknown" for builds that don't pass it
+/// (e.g. a raw `flutter run` outside that recipe).
+class BuildInfo {
+  static const gitBranch = String.fromEnvironment('GIT_BRANCH', defaultValue: 'unknown');
+  static const gitCommit = String.fromEnvironment('GIT_COMMIT', defaultValue: 'unknown');
 }

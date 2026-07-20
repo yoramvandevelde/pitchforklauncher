@@ -35,6 +35,14 @@ import 'database.dart';
 import 'flauncher.dart';
 import 'flauncher_channel.dart';
 
+// Defensive guard against overlapping pop attempts, matching the guard in settings_panel.dart --
+// the same class of bug (PopScope's onPopInvokedWithResult re-entering on rapid repeated Back
+// presses) was confirmed there via a real ANR (see UPGRADE_PLAN.md's Phase 4 landmines). This
+// root-level scope wasn't confirmed to hit it directly, but the risk shape is identical: without
+// this, a second Back press could re-run shouldPopScope()/startAmbientMode() before the first
+// async round trip finishes.
+bool _handlingPop = false;
+
 class FLauncherApp extends StatelessWidget {
   final SharedPreferences _sharedPreferences;
   final ImagePicker _imagePicker;
@@ -101,7 +109,7 @@ class FLauncherApp extends StatelessWidget {
                 .copyWith(secondary: _swatch[200], surface: _swatch[400]),
             cardColor: _swatch[300],
             canvasColor: _swatch[300],
-            dialogBackgroundColor: _swatch[400],
+            dialogTheme: DialogThemeData(backgroundColor: _swatch[400]),
             scaffoldBackgroundColor: _swatch[400],
             textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
             appBarTheme: AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),
@@ -117,13 +125,26 @@ class FLauncherApp extends StatelessWidget {
             ),
           ),
           home: Builder(
-            builder: (context) => WillPopScope(
-              onWillPop: () async {
-                final shouldPop = await shouldPopScope(context);
-                if (!shouldPop) {
-                  context.read<AppsService>().startAmbientMode();
+            builder: (context) => PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, result) async {
+                if (didPop || _handlingPop) {
+                  return;
                 }
-                return shouldPop;
+                _handlingPop = true;
+                try {
+                  final shouldPop = await shouldPopScope(context);
+                  if (!context.mounted) {
+                    return;
+                  }
+                  if (shouldPop) {
+                    SystemNavigator.pop();
+                  } else {
+                    context.read<AppsService>().startAmbientMode();
+                  }
+                } finally {
+                  _handlingPop = false;
+                }
               },
               child: Actions(actions: {BackIntent: BackAction(context, systemNavigator: true)}, child: FLauncher()),
             ),

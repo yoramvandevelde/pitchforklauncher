@@ -18,19 +18,24 @@ rather than one big jump that makes it impossible to tell which change broke wha
 ## Known landmines (found while scoping this, not yet hit)
 
 Two things in the current codebase are near-certain to break and are worth knowing about before
-starting, rather than being a surprise mid-upgrade:
+starting, rather than being a surprise mid-upgrade. **Both are now resolved** — left here as the
+original pre-upgrade scoping note; see the linked stops for how each actually played out.
 
 - **`WillPopScope`** is used in `lib/flauncher_app.dart` and `lib/widgets/settings/settings_panel.dart`
   for the Back-button interception logic — this is load-bearing (it's how `isDefaultLauncher()` /
   `shouldPopScope()` decides whether Back exits FLauncher), not decorative. It's deprecated in
   favor of `PopScope`, which has different callback semantics (`onPopInvoked`/`canPop` instead of
-  an awaitable `onWillPop`). Needs a deliberate rewrite, not a find-and-replace.
+  an awaitable `onWillPop`). Needs a deliberate rewrite, not a find-and-replace. **Resolved in
+  Phase 4** — took two attempts across two phases (reverted after a real freeze at the 3.16.9 stop,
+  landed successfully in Phase 4 after bisecting the actual bug — see Phase 4's landmines).
 - **Deprecated `ThemeData` fields** (`accentColor`, `backgroundColor`) are used in
   `lib/flauncher_app.dart`, already marked `// ignore: deprecated_member_use`. Newer Flutter
   versions default to Material 3 (`useMaterial3: true` became the default around Flutter 3.16) and
   may have fully *removed*, not just deprecated, some of these fields by the version we land on —
   that's a compile error, not a lint warning, and the app's whole color scheme needs re-checking
-  against Material 3 either way.
+  against Material 3 either way. **Resolved incrementally across Phase 2** — `accentColor` at the
+  3.10.7 stop, `backgroundColor` at the 3.27.4 stop, `useMaterial3` pinned to `false` explicitly at
+  the 3.16.9 stop (see each stop's landmines).
 
 ## Phase 0 — Safety net
 
@@ -587,20 +592,149 @@ and PR review before it's actually merged.
 
 ## Phase 4 — Full regression pass
 
-- [ ] `fvm flutter analyze` — zero issues, not just "no errors" (clear out warnings introduced
-      along the way rather than letting them accumulate).
-- [ ] Full test suite green.
-- [ ] Manual smoke test on real hardware *and* both emulators (`GoogleTV_API31`, `GoogleTV_API34`):
+- [x] `fvm flutter analyze` — zero issues. Went from 66 → 0: fixed 64 straightforward deprecation/
+      lint issues (see landmines below), migrated `RawKeyEvent` → `KeyEvent`, and finally migrated
+      `WillPopScope` → `PopScope` — the one deferred since the 3.16.9 stop, see landmines below for
+      what that actually took this time.
+- [x] Full test suite green (129 tests, unchanged).
+- [x] Manual smoke test on real hardware *and* both emulators (`GoogleTV_API31`, `GoogleTV_API34`):
       home grid navigation, categories, all four wallpaper sources (Gradient, Custom, Picsum
       plain/blurred, Unsplash if re-enabled), every Settings panel, the Home-button override, and
       the remote-button remapping feature built this session (including the Back-button-inside-a-
       dialog case that was buggy before — that's exactly the kind of thing a Flutter upgrade could
-      silently re-break).
+      silently re-break). The specific scenarios that previously froze (Settings top-level Back,
+      rapid repeated Back presses, YouTube→Home→Back) were confirmed fixed via 40+ automated
+      stress-test cycles on `GoogleTV_API34`; the full exhaustive menu-by-menu pass was then done
+      by hand on the real Google TV Streamer 4K (2026-07-20) — everything works as expected, no
+      regressions traced back to this phase's changes. Two things found along the way, both
+      pre-existing and unrelated to this phase (documented in `TODO.md` rather than fixed here):
+      a focus-jump bug when reordering exactly 2 categories, and remote-button remapping silently
+      failing to launch TV-only (`LEANBACK_LAUNCHER`-only) apps like NOS — the latter *was* fixed
+      immediately since it was a one-line native-side omission, see landmines below.
 - [x] Update `TODO.md` (remove the "upgrade Flutter" item) — done alongside the 3.44.6 Phase 2
       stop's Codex review fixes. `AGENTS.md`'s toolchain section turned out not to need any
       version-specific updates (it's written generically, no hardcoded Flutter/AGP/Gradle/Kotlin
       version numbers) — it did have one stale `build_runner --delete-conflicting-outputs`
       reference, fixed while doing this end-of-Phase-2 docs pass.
+
+### Landmines hit during Phase 4
+
+- **64 of the 66 pre-existing `flutter analyze` issues were mechanical fixes**, one category at a
+  time: `window` → `View.of(context)` (in a widget) or `PlatformDispatcher.instance.implicitView!`
+  (in a plain service class with no `BuildContext`); `dialogBackgroundColor` →
+  `DialogThemeData(backgroundColor: ...)`; `withOpacity` → `withValues(alpha: ...)`; a genuine
+  `unnecessary_set_literal` bug (`setState(() => {x = y})` was accidentally building a one-element
+  `Set` instead of just assigning — harmless since `setState`'s callback return value is ignored,
+  but not what was intended); `TestWidgetsFlutterBinding.window.*TestValue` →
+  `binding.platformDispatcher.implicitView!.*` (note: **not** `binding.view` — that getter only
+  exists on `WidgetTester`, not the raw binding, so it's unusable in `setUpAll` before any tester
+  exists); `channel.setMockMethodCallHandler(...)` →
+  `TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+  ...)`; and a `drift_dev/api/migrations.dart` → `migrations_native.dart` import swap. One
+  Copilot-review-caught bug during this pass, worth calling out: the `window` → `View.of(context)`
+  swap in `lib/flauncher.dart` preserved a pre-existing physical-vs-logical-pixel mismatch
+  (`physicalSize` used directly as `Image` height/width, which expects logical pixels) — fixed by
+  dividing by `devicePixelRatio`.
+- **`RawKeyEvent` → `KeyEvent` (`lib/widgets/focus_keyboard_listener.dart`) was a clean, low-risk
+  migration** despite handling every single key press in the app (D-pad, select, long-press
+  detection for context menus). The old code branched on `RawKeyEventDataAndroid.repeatCount == 0`
+  to distinguish "first press" from "held/repeating"; the new API instead gives distinct event
+  types (`KeyDownEvent` for the first press, `KeyRepeatEvent` for each repeat while held,
+  `KeyUpEvent` for release) — a 1:1 structural translation via an `isRepeat` flag, not a behavior
+  change. Important detail preserved: non-long-pressable keys (arrows) fire `onPressed` on *every*
+  down event including repeats (that's what gives D-pad auto-repeat navigation when held) — long-
+  pressable keys (select/enter/gameButtonA) only fire on the up-event or the long-press threshold.
+  Stress-tested clean (40+ cycles of rapid navigation + long-press + repeated Back) with zero
+  issues, confirmed via bisection (see below) to be uninvolved in the ANR.
+- **`WillPopScope` → `PopScope` (`lib/flauncher_app.dart`, `lib/widgets/settings/settings_panel.dart`)
+  — attempted for the second time, this time landed successfully, but only after reproducing the
+  exact same class of freeze the 3.16.9 stop hit, this time with vastly better diagnostics.** Worth
+  reading in full if this area breaks again.
+
+  **The bug, and how it was found:** with both `PopScope` migrations applied, real hardware and the
+  `GoogleTV_API34` emulator both reliably hit a genuine Android ANR — `Input dispatching timed out
+  ... Waited 5000ms for KeyEvent` — under a specific repro: open FLauncher's own Settings panel,
+  then press Back a few times in quick succession while already at the panel's top level (no
+  sub-page navigated into). The app doesn't just freeze silently; Android kills the process after
+  5s, logs a tombstone, and the launcher cold-restarts (that cold restart, not a genuine "freeze,"
+  is what the "6 second Loading... screen" symptom during YouTube→Home→Back testing actually was).
+
+  Unlike the 3.16.9-stop attempt, this time `adb bugreport` on the *emulator* (unlike the real
+  device, `adb shell` on the emulator can't read `/data/anr/*` directly either — "Permission
+  denied" — but `adb bugreport` runs with enough privilege to copy those trace files into the
+  archive anyway, under `FS/data/anr/anr_<timestamp>` inside the extracted zip) yielded a full
+  per-thread Java stack trace. It wasn't immediately conclusive on its own (the main thread was
+  idle in `MessageQueue.next()`, with an unsymbolicated native frame into Dart-compiled code — not
+  a smoking gun by itself), but it confirmed the ANR was real and reproducible, which made the next
+  step possible: **bisecting which of the two migrations caused it**, by testing `PopScope` alone
+  (old `RawKeyEvent` code) and `RawKeyEvent` alone (old `WillPopScope` code) separately against the
+  same automated stress test (`adb shell input keyevent` cycles of app-switch → Home → D-pad nav →
+  rapid repeated Back). `RawKeyEvent` alone survived 40 cycles clean. `PopScope` alone crashed
+  within 2. That pinned it to `PopScope` specifically.
+
+  From there, temporary `Log.d` calls added to `MainActivity.kt`'s `isDefaultLauncher()` and
+  `startAmbientMode()` (the two things `flauncher_app.dart`'s root `PopScope` handler calls) showed
+  **zero invocations during the entire crash sequence** — meaning the root-level `PopScope` wasn't
+  even involved. The actual crash site was `settings_panel.dart`'s nested-Navigator `PopScope`,
+  reached by opening FLauncher's own Settings panel (not, as first assumed, by switching to another
+  app and using the Home-button override — an automated `adb`-driven stress test doesn't perfectly
+  mirror real usage, and chasing the wrong reproduction path cost real time here).
+
+  **The actual root cause**: `settings_panel.dart`'s pop handler called
+  `Navigator.of(context).maybePop()` as its fallback (when the panel's own internal Navigator had
+  nothing left to pop). `maybePop()` *re-checks pop eligibility* before popping — which means it
+  re-enters the very `PopScope(canPop: false)` it's called from. That doesn't throw or hang by
+  itself; it just silently no-ops (confirmed by testing: with a re-entrancy guard in place but
+  still calling `maybePop()`, Back stopped closing the panel at all — one Back press did nothing,
+  a second one just shifted D-pad focus, no error). The ANR itself needed one more ingredient:
+  rapid repeated Back presses, each independently invoking the async handler with no guard against
+  overlapping calls, piling up.
+
+  **The fix, two parts, both needed together**: (1) call `Navigator.of(context).pop()` — the
+  unconditional form, which does not re-check eligibility and so doesn't re-enter the same
+  `PopScope` — instead of `.maybePop()`; (2) add a `bool _handlingPop` re-entrancy guard around both
+  `PopScope.onPopInvokedWithResult` handlers (`flauncher_app.dart`'s root one too, defensively,
+  though it wasn't confirmed to hit this specific bug) so a second Back press arriving while the
+  first is still being processed is dropped rather than starting a second overlapping async chain.
+  Confirmed fixed with 40+ stress-test cycles on `GoogleTV_API34` (zero ANRs, panel closes on the
+  first Back press every time) and manually re-verified on the real Google TV Streamer 4K,
+  including the exact YouTube→Home→Back and Settings-panel-rapid-Back scenarios that failed before.
+
+  **Ruled out along the way, for whoever debugs this class of bug next**: not
+  `android:enableOnBackInvokedCallback` (tested explicitly with the flag absent — see the manifest,
+  it's still not set — the ANR reproduced with or without it); not Back-press *speed* (a real,
+  unhurried human pressing Back reproduced it just as reliably as an `adb`-scripted rapid-fire
+  loop — the second/third Back press just needs to land while the first is still being handled);
+  not `RawKeyEvent`/`focus_keyboard_listener.dart` (bisected out); not the root-level `PopScope` in
+  `flauncher_app.dart` (zero calls into its handler during the crash, confirmed via logging).
+
+- **Two Copilot review findings on the `PopScope` fix, both real, both fixed**: `context.read
+  <AppsService>()` was used in `flauncher_app.dart` after an `await` with no `context.mounted`
+  check (could throw or hit a disposed provider if the widget tree is torn down mid-flight);
+  `_navigatorKey.currentState!` was force-unwrapped in `settings_panel.dart`'s async pop handler,
+  which can transiently be `null` during teardown or before the nested `Navigator` mounts. Neither
+  was hit during this session's testing, but both are real crash risks under the right timing.
+
+- **Button remapping silently failed to launch TV-only apps** (`HomeButtonAccessibilityService.kt`)
+  — found during the manual hardware pass, not a regression from this phase's changes (the feature
+  itself is from the previous session, see `TODO.md`). `packageManager.getLaunchIntentForPackage()`
+  only resolves the regular `LAUNCHER` category; Android TV apps commonly only declare
+  `LEANBACK_LAUNCHER` instead (NOS being the concrete repro — Gallery, which happens to declare
+  both, worked fine and briefly masked this). `MainActivity.launchApp()` (the home-grid launch
+  path) already tried `getLeanbackLaunchIntentForPackage()` first with a fallback; the button-
+  remapping path just never got the same fallback. One-line fix, applied immediately.
+
+- **Boy-scout QoL addition, unrelated to any bug**: Settings → About FLauncher now shows the git
+  branch and short commit hash the running build was compiled from, baked in at build time via
+  `--dart-define` (see `justfile`'s `build-install` recipe). Purely to make it easier to tell which
+  build is actually installed on a device during a session with this many rebuilds — defaults to
+  "unknown" for any build that doesn't go through that recipe.
+
+Phase 4 is now complete — `flutter analyze` clean (66 → 0), full test suite green, and the full
+manual regression pass done on real hardware with no regressions traced back to this upgrade
+project. That closes out the four-phase modernization: Flutter 3.7.5 → 3.44.6, the Android
+toolchain fully current, dependencies refreshed, and the codebase itself free of every deprecation
+warning it had accumulated since 2021.
 
 ## Phase 5 — optional / later
 

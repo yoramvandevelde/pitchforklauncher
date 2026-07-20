@@ -16,21 +16,22 @@ This happens because `AppsService.isDefaultLauncher()` (via `MainActivity.isDefa
 checks the system's actual resolved default HOME activity, which is genuinely not FLauncher in
 this setup, so `shouldPopScope()` in `flauncher_app.dart` always allows the pop.
 
-Possible fixes to explore, if this turns out to matter in daily use:
-- Intercept Back the same way Home is intercepted, in `HomeButtonAccessibilityService`, and just
-  no-op it while FLauncher is in the foreground.
-- Or: give `flauncher_app.dart` a way to know "I was opened via the Home-button override" (e.g. a
-  platform channel flag from the accessibility service) and treat that the same as
-  `isDefaultLauncher() == true` for purposes of `shouldPopScope()`.
-
-Not fixed for now — acceptable as-is.
+**Decided (2026-07-20): not fixing this in-app.** The advised path for anyone who cares about
+correct Back-button behavior is to actually set FLauncher as the real default launcher (`adb shell
+cmd package set-home-activity`, or README's "Method 2: disable the default launcher") rather than
+relying on the Home-button-override for that specific case — `isDefaultLauncher()` then genuinely
+returns `true` and `shouldPopScope()` behaves correctly with no code changes needed. This project
+isn't published on the Play Store; anyone sideloading it who hits this and doesn't set themselves
+up as real default launcher is an accepted edge case, not worth building around.
 
 ## Other open items
 
-- The YouTube-button keycode in `HomeButtonAccessibilityService.kt` (190 / `KEYCODE_BUTTON_3`) was
+~~The YouTube-button keycode in `HomeButtonAccessibilityService.kt` (190 / `KEYCODE_BUTTON_3`) was
   identified empirically on one specific Google TV Streamer 4K remote. Other Google TV
   devices/remotes may send a different code for that button, in which case it won't do anything
-  until re-identified (temporarily log all key events in `onKeyEvent` and press the button again).
+  until re-identified.~~ — non-issue: it's just the default/example mapping, seeded once; any user
+  can remap it themselves in Settings → Remote buttons regardless of what code their own remote's
+  button actually sends.
 
 ~~Test the Home-button-override approach on the real Google TV Streamer 4K, not just the
 `GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube
@@ -39,6 +40,23 @@ button override.
 - **Revisit the dormant Unsplash wallpaper source** (`unsplashEnabled` hardcoded `false` in
   `lib/providers/settings_service.dart`, see `DRIFT.md`). Decided during `UPGRADE_PLAN.md`'s
   Phase 3 (2026-07-20) to leave `unsplash_client` on its current `^2.1.0+3` pin rather than bump
-  to the breaking 3.0.0 release, since the code path doesn't run — but flagged for an actual
-  decision later: get a real Unsplash API key and re-enable it, or remove the dependency and UI
-  entirely if it's not worth reviving.
+  to the breaking 3.0.0 release, since the code path doesn't run. **Decided (2026-07-20): yes,
+  re-enable it, but user-supplied key only** — bump `unsplash_client` to 3.0.0 and add a settings
+  UI where the user pastes in their own Unsplash API key, stored locally; no key ever gets bundled
+  in or shipped with the app itself, full stop, regardless of build/distribution channel. Also
+  still need a test plan before starting: this is the one wallpaper source that can't be exercised
+  without live API credentials, and now specifically needs testing the "no key entered yet" /
+  "invalid key" states too, not just the happy path with a working key.
+
+- **Focus jumps to "Add Category" after reordering with exactly 2 categories**
+  (`lib/widgets/settings/categories_panel_page.dart`). Each row's up/down arrow `IconButton` is
+  disabled (`onPressed: null`) once the row is first/last. With exactly 2 categories, moving either
+  one always lands it at the opposite extreme in a single step, so the arrow button the user just
+  pressed becomes disabled immediately after the move — Flutter then hands focus to the next
+  focusable widget in traversal order, which happens to be the "Add Category" button below the
+  list, instead of somewhere less jarring (e.g. the row's other, still-enabled arrow, or the row
+  itself). With 3+ categories a single-step move usually doesn't land on an extreme, so the pressed
+  button stays enabled and focus doesn't jump — which is why this only reproduces at exactly 2.
+  Found during Phase 4 manual testing (2026-07-20), pre-existing behavior unrelated to the upgrade.
+  Possible fix: after `_move()`, explicitly request focus on the moved row's remaining enabled
+  arrow (or the row itself) instead of leaving it to Flutter's default disabled-widget fallback.
