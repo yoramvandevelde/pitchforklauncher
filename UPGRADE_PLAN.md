@@ -597,15 +597,20 @@ and PR review before it's actually merged.
       `WillPopScope` → `PopScope` — the one deferred since the 3.16.9 stop, see landmines below for
       what that actually took this time.
 - [x] Full test suite green (129 tests, unchanged).
-- [ ] Manual smoke test on real hardware *and* both emulators (`GoogleTV_API31`, `GoogleTV_API34`):
+- [x] Manual smoke test on real hardware *and* both emulators (`GoogleTV_API31`, `GoogleTV_API34`):
       home grid navigation, categories, all four wallpaper sources (Gradient, Custom, Picsum
       plain/blurred, Unsplash if re-enabled), every Settings panel, the Home-button override, and
       the remote-button remapping feature built this session (including the Back-button-inside-a-
       dialog case that was buggy before — that's exactly the kind of thing a Flutter upgrade could
-      silently re-break). Partially done: the specific scenarios that previously froze (Settings
-      top-level Back, rapid repeated Back presses, YouTube→Home→Back) are confirmed fixed on both
-      `GoogleTV_API34` (40+ stress-test cycles) and the real Google TV Streamer 4K — the full
-      exhaustive menu-by-menu pass is still outstanding.
+      silently re-break). The specific scenarios that previously froze (Settings top-level Back,
+      rapid repeated Back presses, YouTube→Home→Back) were confirmed fixed via 40+ automated
+      stress-test cycles on `GoogleTV_API34`; the full exhaustive menu-by-menu pass was then done
+      by hand on the real Google TV Streamer 4K (2026-07-20) — everything works as expected, no
+      regressions traced back to this phase's changes. Two things found along the way, both
+      pre-existing and unrelated to this phase (documented in `TODO.md` rather than fixed here):
+      a focus-jump bug when reordering exactly 2 categories, and remote-button remapping silently
+      failing to launch TV-only (`LEANBACK_LAUNCHER`-only) apps like NOS — the latter *was* fixed
+      immediately since it was a one-line native-side omission, see landmines below.
 - [x] Update `TODO.md` (remove the "upgrade Flutter" item) — done alongside the 3.44.6 Phase 2
       stop's Codex review fixes. `AGENTS.md`'s toolchain section turned out not to need any
       version-specific updates (it's written generically, no hardcoded Flutter/AGP/Gradle/Kotlin
@@ -702,6 +707,34 @@ and PR review before it's actually merged.
   loop — the second/third Back press just needs to land while the first is still being handled);
   not `RawKeyEvent`/`focus_keyboard_listener.dart` (bisected out); not the root-level `PopScope` in
   `flauncher_app.dart` (zero calls into its handler during the crash, confirmed via logging).
+
+- **Two Copilot review findings on the `PopScope` fix, both real, both fixed**: `context.read
+  <AppsService>()` was used in `flauncher_app.dart` after an `await` with no `context.mounted`
+  check (could throw or hit a disposed provider if the widget tree is torn down mid-flight);
+  `_navigatorKey.currentState!` was force-unwrapped in `settings_panel.dart`'s async pop handler,
+  which can transiently be `null` during teardown or before the nested `Navigator` mounts. Neither
+  was hit during this session's testing, but both are real crash risks under the right timing.
+
+- **Button remapping silently failed to launch TV-only apps** (`HomeButtonAccessibilityService.kt`)
+  — found during the manual hardware pass, not a regression from this phase's changes (the feature
+  itself is from the previous session, see `TODO.md`). `packageManager.getLaunchIntentForPackage()`
+  only resolves the regular `LAUNCHER` category; Android TV apps commonly only declare
+  `LEANBACK_LAUNCHER` instead (NOS being the concrete repro — Gallery, which happens to declare
+  both, worked fine and briefly masked this). `MainActivity.launchApp()` (the home-grid launch
+  path) already tried `getLeanbackLaunchIntentForPackage()` first with a fallback; the button-
+  remapping path just never got the same fallback. One-line fix, applied immediately.
+
+- **Boy-scout QoL addition, unrelated to any bug**: Settings → About FLauncher now shows the git
+  branch and short commit hash the running build was compiled from, baked in at build time via
+  `--dart-define` (see `justfile`'s `build-install` recipe). Purely to make it easier to tell which
+  build is actually installed on a device during a session with this many rebuilds — defaults to
+  "unknown" for any build that doesn't go through that recipe.
+
+Phase 4 is now complete — `flutter analyze` clean (66 → 0), full test suite green, and the full
+manual regression pass done on real hardware with no regressions traced back to this upgrade
+project. That closes out the four-phase modernization: Flutter 3.7.5 → 3.44.6, the Android
+toolchain fully current, dependencies refreshed, and the codebase itself free of every deprecation
+warning it had accumulated since 2021.
 
 ## Phase 5 — optional / later
 
