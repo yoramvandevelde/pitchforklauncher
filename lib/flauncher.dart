@@ -110,15 +110,20 @@ class FLauncher extends StatelessWidget {
         ],
       );
 
-  Widget _wallpaper(BuildContext context, Uint8List? wallpaperImage, Gradient gradient) => wallpaperImage != null
-      ? Image.memory(
-          wallpaperImage,
-          key: Key("background"),
-          fit: BoxFit.cover,
-          height: View.of(context).physicalSize.height,
-          width: View.of(context).physicalSize.width,
-        )
-      : Container(key: Key("background"), decoration: BoxDecoration(gradient: gradient));
+  Widget _wallpaper(BuildContext context, Uint8List? wallpaperImage, Gradient gradient) {
+    if (wallpaperImage == null) {
+      return Container(key: Key("background"), decoration: BoxDecoration(gradient: gradient));
+    }
+    final view = View.of(context);
+    final logicalSize = view.physicalSize / view.devicePixelRatio;
+    return Image.memory(
+      wallpaperImage,
+      key: Key("background"),
+      fit: BoxFit.cover,
+      height: logicalSize.height,
+      width: logicalSize.width,
+    );
+  }
 
   Widget _emptyState(BuildContext context) => Center(
         child: Column(
