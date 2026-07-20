@@ -19,6 +19,11 @@ This file is about *working on the code* — toolchain, commands, conventions.
   export PATH="$JAVA_HOME/bin:$PATH"
   fvm flutter build apk --debug
   ```
+  If `/usr/libexec/java_home -V` doesn't list a JDK 17 (only shows 11 and/or 21), check whether one
+  is managed by `mise` before installing a new one via Homebrew — `mise` installs land under
+  `~/.local/share/mise/installs/java/...`, a path `java_home` doesn't scan, so a `mise`-managed
+  JDK 17 can look "missing" when it's actually already there. `mise list java` shows what's
+  installed; `mise where java@temurin-17` (or similar) prints the exact path to use as `JAVA_HOME`.
 - **Regenerate mocks after touching `test/mocks.dart`** (the `@GenerateMocks([...])` list) or any
   class it mocks:
   ```shell
