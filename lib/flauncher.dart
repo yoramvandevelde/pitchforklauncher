@@ -115,8 +115,8 @@ class FLauncher extends StatelessWidget {
           wallpaperImage,
           key: Key("background"),
           fit: BoxFit.cover,
-          height: window.physicalSize.height,
-          width: window.physicalSize.width,
+          height: View.of(context).physicalSize.height,
+          width: View.of(context).physicalSize.width,
         )
       : Container(key: Key("background"), decoration: BoxDecoration(gradient: gradient));
 

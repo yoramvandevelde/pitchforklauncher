@@ -215,7 +215,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context).primaryColor.withOpacity(0.8),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
             ),
             child: Icon(
               icon,

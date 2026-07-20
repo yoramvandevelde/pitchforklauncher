@@ -23,7 +23,7 @@ import 'package:http/http.dart';
 
 class PicsumService {
   Future<Uint8List> randomPhoto({int? blur}) async {
-    final size = window.physicalSize;
+    final size = PlatformDispatcher.instance.implicitView!.physicalSize;
     final uri = Uri.parse("https://picsum.photos/${size.width.toInt()}/${size.height.toInt()}")
         .replace(queryParameters: blur != null ? {"blur": "$blur"} : null);
     final response = await get(uri);

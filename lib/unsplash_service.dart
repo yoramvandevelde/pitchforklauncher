@@ -41,7 +41,7 @@ class UnsplashService {
   Future<Uint8List> downloadPhoto(Photo photo) => _downloadResized(photo);
 
   Future<Uint8List> _downloadResized(Photo photo) async {
-    final size = window.physicalSize;
+    final size = PlatformDispatcher.instance.implicitView!.physicalSize;
     await _unsplashClient.photos.download(photo.id).goAndGet();
     final uri = photo.raw.resizePhoto(
       width: size.width.toInt(),
