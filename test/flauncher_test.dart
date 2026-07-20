@@ -60,7 +60,7 @@ void main() {
     when(appsService.categoriesWithApps).thenReturn([
       CategoryWithApps(favoritesCategory, [
         fakeApp(
-          packageName: "me.efesser.flauncher.1",
+          packageName: "io.sifft.pitchforklauncher.1",
           name: "FLauncher 1",
           version: "1.0.0",
           banner: kTransparentImage,
@@ -69,7 +69,7 @@ void main() {
       ]),
       CategoryWithApps(applicationsCategory, [
         fakeApp(
-          packageName: "me.efesser.flauncher.2",
+          packageName: "io.sifft.pitchforklauncher.2",
           name: "FLauncher 2",
           version: "2.0.0",
           banner: kTransparentImage,
@@ -85,9 +85,9 @@ void main() {
     expect(find.text("Applications"), findsOneWidget);
     expect(find.text("Favorites"), findsOneWidget);
     expect(find.byType(AppsGrid), findsOneWidget);
-    expect(find.byKey(Key("${applicationsCategory.id}-me.efesser.flauncher.2")), findsOneWidget);
+    expect(find.byKey(Key("${applicationsCategory.id}-io.sifft.pitchforklauncher.2")), findsOneWidget);
     expect(find.byType(CategoryRow), findsOneWidget);
-    expect(find.byKey(Key("${favoritesCategory.id}-me.efesser.flauncher.1")), findsOneWidget);
+    expect(find.byKey(Key("${favoritesCategory.id}-io.sifft.pitchforklauncher.1")), findsOneWidget);
     expect(tester.widget(find.byKey(Key("background"))), isA<Container>());
   });
 
@@ -179,7 +179,7 @@ void main() {
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
     final app = fakeApp(
-      packageName: "me.efesser.flauncher",
+      packageName: "io.sifft.pitchforklauncher",
       name: "FLauncher",
       version: "1.0.0",
       banner: kTransparentImage,
@@ -211,7 +211,7 @@ void main() {
       CategoryWithApps(fakeCategory(name: "Favorites", order: 0), []),
       CategoryWithApps(applicationsCategory, [
         fakeApp(
-          packageName: "me.efesser.flauncher",
+          packageName: "io.sifft.pitchforklauncher",
           name: "FLauncher",
           version: "1.0.0",
           banner: kTransparentImage,
@@ -221,7 +221,7 @@ void main() {
     ]);
     await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);
 
-    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-me.efesser.flauncher")));
+    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-io.sifft.pitchforklauncher")));
     await tester.pump();
 
     expect(find.byType(ApplicationInfoPanel), findsOneWidget);
@@ -241,14 +241,14 @@ void main() {
       CategoryWithApps(fakeCategory(name: "Favorites", order: 0), []),
       CategoryWithApps(applicationsCategory, [
         fakeApp(
-          packageName: "me.efesser.flauncher",
+          packageName: "io.sifft.pitchforklauncher",
           name: "FLauncher",
           version: "1.0.0",
           banner: kTransparentImage,
           icon: kTransparentImage,
         ),
         fakeApp(
-          packageName: "me.efesser.flauncher.2",
+          packageName: "io.sifft.pitchforklauncher.2",
           name: "FLauncher 2",
           version: "1.0.0",
           banner: kTransparentImage,
@@ -258,7 +258,7 @@ void main() {
     ]);
     await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);
 
-    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-me.efesser.flauncher")));
+    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-io.sifft.pitchforklauncher")));
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -286,14 +286,14 @@ void main() {
       CategoryWithApps(fakeCategory(name: "Favorites", order: 0), []),
       CategoryWithApps(applicationsCategory, [
         fakeApp(
-          packageName: "me.efesser.flauncher",
+          packageName: "io.sifft.pitchforklauncher",
           name: "FLauncher",
           version: "1.0.0",
           banner: kTransparentImage,
           icon: kTransparentImage,
         ),
         fakeApp(
-          packageName: "me.efesser.flauncher.2",
+          packageName: "io.sifft.pitchforklauncher.2",
           name: "FLauncher 2",
           version: "1.0.0",
           banner: kTransparentImage,
@@ -303,7 +303,7 @@ void main() {
     ]);
     await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);
 
-    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-me.efesser.flauncher")));
+    await tester.longPress(find.byKey(Key("${applicationsCategory.id}-io.sifft.pitchforklauncher")));
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);

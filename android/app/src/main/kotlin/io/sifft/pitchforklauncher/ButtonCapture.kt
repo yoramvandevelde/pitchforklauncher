@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.efesser.flauncher
+package io.sifft.pitchforklauncher
 
 /**
  * In-process handoff between MainActivity's capture EventChannel and

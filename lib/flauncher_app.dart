@@ -97,7 +97,7 @@ class FLauncherApp extends StatelessWidget {
             ...WidgetsApp.defaultActions,
             DirectionalFocusIntent: SoundFeedbackDirectionalFocusAction(context),
           },
-          title: 'FLauncher',
+          title: 'PitchforkLauncher',
           theme: ThemeData(
             // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
             // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a

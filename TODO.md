@@ -60,3 +60,13 @@ button override.
   Found during Phase 4 manual testing (2026-07-20), pre-existing behavior unrelated to the upgrade.
   Possible fix: after `_move()`, explicitly request focus on the moved row's remaining enabled
   arrow (or the row itself) instead of leaving it to Flutter's default disabled-widget fallback.
+
+- **No confirmation dialog before deleting a category** (`lib/widgets/settings/category_panel_page.dart`,
+  the "Delete" `ElevatedButton`'s `onPressed`) — calls `AppsService.deleteCategory(category)`
+  immediately, no "are you sure?" step. On a D-pad remote this is one accidental press away from
+  irreversible data loss (the category and its app assignments are gone, not just hidden). Checked
+  the other destructive actions for comparison: "Uninstall" (`application_info_panel.dart`) is
+  guarded by Android's own system confirmation dialog since it goes through
+  `REQUEST_DELETE_PACKAGES`, and "Hide" is low-stakes/reversible — category deletion is the one
+  genuinely unguarded destructive action. Add a confirmation dialog before calling
+  `deleteCategory`. Found 2026-07-20, not yet fixed.

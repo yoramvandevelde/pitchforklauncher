@@ -33,7 +33,7 @@ class ButtonMappingPanelPage extends StatelessWidget {
           Text("Remote buttons", style: Theme.of(context).textTheme.titleLarge),
           Divider(),
           Text(
-            "Home is always FLauncher's own button. Map any other remote button to launch an app.",
+            "Home is always PitchforkLauncher's own button. Map any other remote button to launch an app.",
             style: Theme.of(context).textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),

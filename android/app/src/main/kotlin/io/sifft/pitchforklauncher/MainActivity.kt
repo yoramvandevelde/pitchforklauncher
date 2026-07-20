@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package me.efesser.flauncher
+package io.sifft.pitchforklauncher
 
 import android.content.Intent
 import android.content.Intent.*
@@ -40,9 +40,9 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.Serializable
 
-private const val METHOD_CHANNEL = "me.efesser.flauncher/method"
-private const val EVENT_CHANNEL = "me.efesser.flauncher/event"
-private const val BUTTON_CAPTURE_EVENT_CHANNEL = "me.efesser.flauncher/buttonCapture"
+private const val METHOD_CHANNEL = "io.sifft.pitchforklauncher/method"
+private const val EVENT_CHANNEL = "io.sifft.pitchforklauncher/event"
+private const val BUTTON_CAPTURE_EVENT_CHANNEL = "io.sifft.pitchforklauncher/buttonCapture"
 
 class MainActivity : FlutterActivity() {
     val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()

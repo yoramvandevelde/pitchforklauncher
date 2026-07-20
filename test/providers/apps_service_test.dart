@@ -32,7 +32,7 @@ void main() {
       final database = MockFLauncherDatabase();
       when(channel.getApplications()).thenAnswer((_) => Future.value([
             {
-              'packageName': 'me.efesser.flauncher',
+              'packageName': 'io.sifft.pitchforklauncher',
               'name': 'FLauncher',
               'version': null,
               'banner': null,
@@ -40,7 +40,7 @@ void main() {
               'sideloaded': false
             },
             {
-              'packageName': 'me.efesser.flauncher.2',
+              'packageName': 'io.sifft.pitchforklauncher.2',
               'name': 'FLauncher 2',
               'version': '2.0.0',
               'banner': null,
@@ -50,7 +50,7 @@ void main() {
           ]));
       when(database.listApplications()).thenAnswer((_) => Future.value([
             fakeApp(
-              packageName: "me.efesser.flauncher",
+              packageName: "io.sifft.pitchforklauncher",
               name: "FLauncher",
               version: "1.0.0",
               banner: null,
@@ -58,7 +58,7 @@ void main() {
               sideloaded: false,
             ),
             fakeApp(
-              packageName: "me.efesser.flauncher.2",
+              packageName: "io.sifft.pitchforklauncher.2",
               name: "FLauncher 2",
               version: "2.0.0",
               banner: null,
@@ -82,7 +82,7 @@ void main() {
         database.listApplications(),
         database.persistApps([
           AppsCompanion.insert(
-            packageName: "me.efesser.flauncher",
+            packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
             version: "(unknown)",
             banner: Value(null),
@@ -90,7 +90,7 @@ void main() {
             sideloaded: Value(false),
           ),
           AppsCompanion.insert(
-            packageName: "me.efesser.flauncher.2",
+            packageName: "io.sifft.pitchforklauncher.2",
             name: "FLauncher 2",
             version: "2.0.0",
             banner: Value(null),
@@ -111,7 +111,7 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: tvApplicationsCategory.id,
-            appPackageName: "me.efesser.flauncher",
+            appPackageName: "io.sifft.pitchforklauncher",
             order: 0,
           )
         ]),
@@ -121,7 +121,7 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: nonTvApplicationsCategory.id,
-            appPackageName: "me.efesser.flauncher.2",
+            appPackageName: "io.sifft.pitchforklauncher.2",
             order: 0,
           )
         ]),
@@ -134,7 +134,7 @@ void main() {
       final database = MockFLauncherDatabase();
       when(channel.getApplications()).thenAnswer((_) => Future.value([
             {
-              'packageName': 'me.efesser.flauncher',
+              'packageName': 'io.sifft.pitchforklauncher',
               'name': 'FLauncher',
               'version': '2.0.0',
               'banner': null,
@@ -142,7 +142,7 @@ void main() {
               'sideloaded': false,
             },
             {
-              'packageName': 'me.efesser.flauncher.2',
+              'packageName': 'io.sifft.pitchforklauncher.2',
               'name': 'FLauncher 2',
               'version': '1.0.0',
               'banner': null,
@@ -153,7 +153,7 @@ void main() {
       when(channel.applicationExists("uninstalled.app")).thenAnswer((_) => Future.value(false));
       when(channel.applicationExists("not.uninstalled.app")).thenAnswer((_) => Future.value(true));
       when(database.listApplications()).thenAnswer((_) => Future.value([
-            fakeApp(packageName: "me.efesser.flauncher", name: "FLauncher", version: "1.0.0"),
+            fakeApp(packageName: "io.sifft.pitchforklauncher", name: "FLauncher", version: "1.0.0"),
             fakeApp(packageName: "uninstalled.app", name: "Uninstalled Application", version: "1.0.0"),
             fakeApp(packageName: "not.uninstalled.app", name: "Not Uninstalled Application", version: "1.0.0")
           ]));
@@ -167,7 +167,7 @@ void main() {
         database.listApplications(),
         database.persistApps([
           AppsCompanion.insert(
-            packageName: "me.efesser.flauncher",
+            packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
             version: "2.0.0",
             banner: Value(null),
@@ -175,7 +175,7 @@ void main() {
             sideloaded: Value(false),
           ),
           AppsCompanion.insert(
-            packageName: "me.efesser.flauncher.2",
+            packageName: "io.sifft.pitchforklauncher.2",
             name: "FLauncher 2",
             version: "1.0.0",
             banner: Value(null),

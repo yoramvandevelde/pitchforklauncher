@@ -178,7 +178,7 @@ void main() {
     verify(settingsService.setUse24HourTimeFormat(true));
   });
 
-  testWidgets("'About FLauncher' opens about dialog", (tester) async {
+  testWidgets("'About PitchforkLauncher' opens about dialog", (tester) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
@@ -233,7 +233,7 @@ class _MockPackageInfoPlatform with MockPlatformInterfaceMixin implements Packag
   @override
   Future<PackageInfoData> getAll({String? baseUrl}) async => PackageInfoData(
         appName: "FLauncher",
-        packageName: "me.efesser.flauncher",
+        packageName: "io.sifft.pitchforklauncher",
         version: "1.0.0",
         buildNumber: "1",
         buildSignature: "",
