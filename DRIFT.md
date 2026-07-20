@@ -103,19 +103,32 @@ Remote Config to turn it on) — not something worth setting up for personal use
 credentials, no rate-limit management. The Unsplash code path is untouched and still there,
 dormant, in case a real Unsplash key gets added back later.
 
-## Unsplash re-enablement (in progress, see TODO.md)
+## Unsplash re-enablement (see TODO.md)
 
 Decided (2026-07-20): re-enable Unsplash, but user-supplied key only — no key ever bundled or
-shipped with the app. Phased approach:
+shipped with the app, and no shared/backend-proxy key either (ruled out explicitly — this fork
+runs no backend of any kind). Phased approach:
 
 - **Phase 1 (done):** bumped `unsplash_client` from `^2.1.0+3` to `^3.0.0`. Only documented breaking
   change (nullability of `UserLinks.{likes,followers,following}`/`PhotoStatistics.likes`) didn't
   touch any call site this app uses.
-- **Phase 2 (in progress, stopgap):** `SettingsService.unsplashEnabled` hardcoded `true` and
-  `main.dart` reads `UNSPLASH_ACCESS_KEY`/`UNSPLASH_SECRET_KEY` via `--dart-define` for manual
-  testing with a real personal key, ahead of Phase 3's real settings UI.
-- **Phase 3 (not started):** settings UI to enter/store a key persistently (`SharedPreferences`),
-  replacing the `--dart-define` stopgap.
+- **Phase 2 (done, superseded):** `SettingsService.unsplashEnabled` hardcoded `true` and
+  `main.dart` read an access key via `--dart-define` for manual testing with a real personal key,
+  ahead of Phase 3's real settings UI.
+- **Phase 3 (done):** `SettingsService.unsplashEnabled` now reflects whether an access key is
+  actually saved, and `unsplash_panel_page.dart` shows a key-entry form when none is set yet
+  (`WallpaperService.setUnsplashAccessKey` persists it and hot-swaps `UnsplashService`'s client so
+  it takes effect without a restart), falling back to the existing Random/Search tabs once a key
+  exists. `main.dart` still reads the `--dart-define` as a fallback default when no key is saved
+  yet, so Phase 2-style testing still works.
+  - Access key input on Android TV: an early version tried moving focus from the text field to a
+    separate "Save" button with D-pad-down, which didn't work — the on-screen keyboard intercepts
+    D-pad-down itself (to reopen/refocus the keyboard) before the event reaches Flutter's focus
+    system. Fixed by dropping the separate button and saving via the keyboard's own Done action
+    (`TextField.onSubmitted`), the same pattern the existing Unsplash search box already used.
+  - Only the access key is needed, not a secret key — confirmed by reading `client.dart`:
+    `AppCredentials.secretKey` is never read anywhere in the request path (only relevant for OAuth
+    user-login flows this app doesn't do), and it's already declared optional in the package itself.
 
 **Vendored + patched `unsplash_client`** (`vendor/unsplash_client/`, wired via a `path`
 `dependency_overrides` entry in `pubspec.yaml`): manual testing against the real Unsplash API hit

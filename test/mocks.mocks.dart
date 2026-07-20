@@ -353,6 +353,15 @@ class MockWallpaperService extends _i1.Mock implements _i9.WallpaperService {
           as _i7.Future<void>);
 
   @override
+  _i7.Future<void> setUnsplashAccessKey(String? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#setUnsplashAccessKey, [value]),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
   _i7.Future<void> randomFromUnsplash(String? query) =>
       (super.noSuchMethod(
             Invocation.method(#randomFromUnsplash, [query]),
@@ -781,6 +790,15 @@ class MockSettingsService extends _i1.Mock implements _i10.SettingsService {
           as _i7.Future<void>);
 
   @override
+  _i7.Future<void> setUnsplashAccessKey(String? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#setUnsplashAccessKey, [value]),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
   void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
@@ -812,6 +830,12 @@ class MockUnsplashService extends _i1.Mock implements _i3.UnsplashService {
   MockUnsplashService() {
     _i1.throwOnMissingStub(this);
   }
+
+  @override
+  void updateAccessKey(String? accessKey) => super.noSuchMethod(
+    Invocation.method(#updateAccessKey, [accessKey]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i7.Future<_i3.Photo> randomPhoto(String? query) =>

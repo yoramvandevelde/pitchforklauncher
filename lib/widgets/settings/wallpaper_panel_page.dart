@@ -35,20 +35,8 @@ class WallpaperPanelPage extends StatelessWidget {
         children: [
           Text("Wallpaper", style: Theme.of(context).textTheme.titleLarge),
           Divider(),
-          if (context.read<SettingsService>().unsplashEnabled)
-            TextButton(
-              autofocus: true,
-              child: Row(
-                children: [
-                  ImageIcon(AssetImage("assets/unsplash.png")),
-                  Container(width: 8),
-                  Text("Unsplash", style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-              onPressed: () => Navigator.of(context).pushNamed(UnsplashPanelPage.routeName),
-            ),
           TextButton(
-            autofocus: !context.read<SettingsService>().unsplashEnabled,
+            autofocus: true,
             child: Row(
               children: [
                 Icon(Icons.shuffle),
@@ -67,6 +55,16 @@ class WallpaperPanelPage extends StatelessWidget {
               ],
             ),
             onPressed: () => context.read<WallpaperService>().randomFromPicsum(blur: 4),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                ImageIcon(AssetImage("assets/unsplash.png")),
+                Container(width: 8),
+                Text("Unsplash", style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            onPressed: () => Navigator.of(context).pushNamed(UnsplashPanelPage.routeName),
           ),
           TextButton(
             child: Row(

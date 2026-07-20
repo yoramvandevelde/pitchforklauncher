@@ -48,6 +48,8 @@ void main() {
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
     expect(find.text("Photo by John Doe on Unsplash"), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.byKey(Key("UnsplashPanelPage")), findsOneWidget);
@@ -61,7 +63,6 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     verify(wallpaperService.randomFromPicsum());
@@ -75,7 +76,6 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();

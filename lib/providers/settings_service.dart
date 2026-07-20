@@ -24,6 +24,7 @@ const _use24HourTimeFormatKey = "use_24_hour_time_format";
 const _appHighlightAnimationEnabledKey = "app_highlight_animation_enabled";
 const _gradientUuidKey = "gradient_uuid";
 const _unsplashAuthorKey = "unsplash_author";
+const _unsplashAccessKeyKey = "unsplash_access_key";
 
 class SettingsService extends ChangeNotifier {
   final SharedPreferences _sharedPreferences;
@@ -34,11 +35,11 @@ class SettingsService extends ChangeNotifier {
 
   String? get gradientUuid => _sharedPreferences.getString(_gradientUuidKey);
 
-  // Phase 2 stopgap: hardcoded true to manually test with a --dart-define key (see main.dart)
-  // before the settings UI to store a user-supplied key exists (TODO.md).
-  bool get unsplashEnabled => true;
+  bool get unsplashEnabled => unsplashAccessKey != null && unsplashAccessKey!.isNotEmpty;
 
   String? get unsplashAuthor => _sharedPreferences.getString(_unsplashAuthorKey);
+
+  String? get unsplashAccessKey => _sharedPreferences.getString(_unsplashAccessKeyKey);
 
   SettingsService(this._sharedPreferences);
 
@@ -62,6 +63,15 @@ class SettingsService extends ChangeNotifier {
       await _sharedPreferences.remove(_unsplashAuthorKey);
     } else {
       await _sharedPreferences.setString(_unsplashAuthorKey, value);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setUnsplashAccessKey(String? value) async {
+    if (value == null || value.isEmpty) {
+      await _sharedPreferences.remove(_unsplashAccessKeyKey);
+    } else {
+      await _sharedPreferences.setString(_unsplashAccessKeyKey, value);
     }
     notifyListeners();
   }

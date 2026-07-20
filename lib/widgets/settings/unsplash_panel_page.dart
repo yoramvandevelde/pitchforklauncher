@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
@@ -28,12 +30,24 @@ class UnsplashPanelPage extends StatelessWidget {
   static const String routeName = "unsplash_panel";
 
   @override
+  Widget build(BuildContext context) {
+    final hasAccessKey = context.watch<SettingsService>().unsplashEnabled;
+    return Column(
+      children: [
+        Text("Unsplash", style: Theme.of(context).textTheme.titleLarge),
+        Divider(),
+        Expanded(child: hasAccessKey ? _UnsplashTabs() : _AccessKeyForm()),
+      ],
+    );
+  }
+}
+
+class _UnsplashTabs extends StatelessWidget {
+  @override
   Widget build(BuildContext context) => DefaultTabController(
         length: 2,
         child: Column(
           children: [
-            Text("Unsplash", style: Theme.of(context).textTheme.titleLarge),
-            Divider(),
             Material(
               type: MaterialType.transparency,
               child: TabBar(
@@ -45,6 +59,43 @@ class UnsplashPanelPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Expanded(child: TabBarView(children: [_RandomTab(), _SearchTab()])),
+          ],
+        ),
+      );
+}
+
+class _AccessKeyForm extends StatefulWidget {
+  @override
+  State<_AccessKeyForm> createState() => _AccessKeyFormState();
+}
+
+class _AccessKeyFormState extends State<_AccessKeyForm> {
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Paste your own Unsplash API access key to enable this, then press Done on the "
+              "keyboard to save. Create a free app at unsplash.com/developers to get one — never "
+              "shared, stored only on this device.",
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            SizedBox(height: 16),
+            TextField(
+              autofocus: true,
+              enabled: !_saving,
+              decoration: InputDecoration(labelText: "Access key", isDense: true),
+              onSubmitted: (value) async {
+                setState(() => _saving = true);
+                await context.read<WallpaperService>().setUnsplashAccessKey(value.trim());
+                if (mounted) setState(() => _saving = false);
+              },
+            ),
           ],
         ),
       );

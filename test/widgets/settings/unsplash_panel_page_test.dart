@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flauncher/widgets/settings/unsplash_panel_page.dart';
@@ -37,10 +38,26 @@ void main() {
     binding.platformDispatcher.textScaleFactorTestValue = 0.8;
   });
 
-  testWidgets("Selecting an Unsplash category calls WallpaperService", (tester) async {
+  testWidgets("Without an access key, shows the access key form and saves on submit", (tester) async {
+    final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
+    when(settingsService.unsplashEnabled).thenReturn(false);
 
-    await _pumpWidgetWithProviders(tester, wallpaperService);
+    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+
+    expect(find.text("Landscape"), findsNothing);
+    await tester.enterText(find.byType(TextField), "some-access-key");
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    verify(wallpaperService.setUnsplashAccessKey("some-access-key"));
+  });
+
+  testWidgets("Selecting an Unsplash category calls WallpaperService", (tester) async {
+    final settingsService = MockSettingsService();
+    final wallpaperService = MockWallpaperService();
+    when(settingsService.unsplashEnabled).thenReturn(true);
+
+    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
     expect(find.text("Landscape"), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -49,7 +66,9 @@ void main() {
 
   testWidgets("Searching on Unsplash shows results and calls WallpaperService on selection", (tester) async {
     mockNetworkImagesFor(() async {
+      final settingsService = MockSettingsService();
       final wallpaperService = MockWallpaperService();
+      when(settingsService.unsplashEnabled).thenReturn(true);
       final photo = Photo(
         "e07ebff3-0b4d-4e0a-ae94-97ef32bd59e6",
         "Username",
@@ -59,7 +78,7 @@ void main() {
       );
       when(wallpaperService.searchFromUnsplash("cat")).thenAnswer((_) => Future.value([photo]));
 
-      await _pumpWidgetWithProviders(tester, wallpaperService);
+      await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
@@ -78,10 +97,15 @@ void main() {
   });
 }
 
-Future<void> _pumpWidgetWithProviders(WidgetTester tester, WallpaperService wallpaperService) async {
+Future<void> _pumpWidgetWithProviders(
+  WidgetTester tester,
+  SettingsService settingsService,
+  WallpaperService wallpaperService,
+) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<WallpaperService>.value(value: wallpaperService),
       ],
       builder: (_, __) => MaterialApp(home: Material(child: UnsplashPanelPage())),

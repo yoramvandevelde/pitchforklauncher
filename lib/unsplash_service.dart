@@ -16,16 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:typed_data';
-import 'dart:ui';
-
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 import 'package:unsplash_client/unsplash_client.dart' as unsplash;
 
 class UnsplashService {
-  final unsplash.UnsplashClient _unsplashClient;
+  unsplash.UnsplashClient _unsplashClient;
 
   UnsplashService(this._unsplashClient);
+
+  void updateAccessKey(String accessKey) {
+    _unsplashClient = unsplash.UnsplashClient(
+      settings: unsplash.ClientSettings(
+        debug: kDebugMode,
+        credentials: unsplash.AppCredentials(accessKey: accessKey),
+      ),
+    );
+  }
 
   Future<Photo> randomPhoto(String query) async =>
       (await _unsplashClient.photos.random(query: query, orientation: unsplash.PhotoOrientation.landscape).goAndGet())

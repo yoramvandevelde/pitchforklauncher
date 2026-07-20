@@ -66,11 +66,43 @@ void main() {
     });
   });
 
-  test("unsplashEnabled is always true (Phase 2 stopgap, see TODO.md)", () async {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    final settingsService = SettingsService(sharedPreferences);
+  group("unsplashEnabled", () {
+    test("is false without an access key", () async {
+      final sharedPreferences = await SharedPreferences.getInstance();
+      await sharedPreferences.clear();
+      final settingsService = SettingsService(sharedPreferences);
 
-    expect(settingsService.unsplashEnabled, isTrue);
+      expect(settingsService.unsplashEnabled, isFalse);
+    });
+
+    test("is true with an access key", () async {
+      final sharedPreferences = await SharedPreferences.getInstance();
+      await sharedPreferences.setString("unsplash_access_key", "some-access-key");
+      final settingsService = SettingsService(sharedPreferences);
+
+      expect(settingsService.unsplashEnabled, isTrue);
+    });
+  });
+
+  group("setUnsplashAccessKey", () {
+    test("with value saves the access key", () async {
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+
+      await settingsService.setUnsplashAccessKey("some-access-key");
+
+      expect(sharedPreferences.getString("unsplash_access_key"), "some-access-key");
+    });
+
+    test("without value erases the access key", () async {
+      final sharedPreferences = await SharedPreferences.getInstance();
+      await sharedPreferences.setString("unsplash_access_key", "some-access-key");
+      final settingsService = SettingsService(sharedPreferences);
+
+      await settingsService.setUnsplashAccessKey(null);
+
+      expect(sharedPreferences.getString("unsplash_access_key"), isNull);
+    });
   });
 
   test("unsplashAuthor", () async {

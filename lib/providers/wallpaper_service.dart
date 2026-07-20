@@ -75,6 +75,14 @@ class WallpaperService extends ChangeNotifier {
     }
   }
 
+  Future<void> setUnsplashAccessKey(String? value) async {
+    await _settingsService.setUnsplashAccessKey(value);
+    if (value != null && value.isNotEmpty) {
+      _unsplashService.updateAccessKey(value);
+    }
+    notifyListeners();
+  }
+
   Future<void> randomFromUnsplash(String query) async {
     final photo = await _unsplashService.randomPhoto(query);
     final bytes = await _unsplashService.downloadPhoto(photo);

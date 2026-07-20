@@ -44,14 +44,21 @@ button override.
   in their own Unsplash API key, stored locally; no key ever gets bundled in or shipped with the
   app itself, full stop, regardless of build/distribution channel.
   - Phase 1 (bump `unsplash_client` to 3.0.0): done, 2026-07-20.
-  - Phase 2 (`unsplashEnabled` hardcoded `true`, key via `--dart-define` for manual testing): in
-    progress, 2026-07-20. Manual testing against the real API surfaced and fixed an upstream
-    `unsplash_client` bug (`portfolio` null crash, see `DRIFT.md`, now vendored + patched in
-    `vendor/unsplash_client/`).
-  - Phase 3 (real settings UI to enter/store the key, replacing the `--dart-define` stopgap): not
-    started. Still need a test plan before starting: this is the one wallpaper source that can't
-    be exercised without live API credentials, and needs testing the "no key entered yet" /
-    "invalid key" states too, not just the happy path with a working key.
+  - Phase 2 (`unsplashEnabled` hardcoded `true`, key via `--dart-define` for manual testing): done,
+    2026-07-20 (superseded by Phase 3). Manual testing against the real API surfaced and fixed an
+    upstream `unsplash_client` bug (`portfolio` null crash, see `DRIFT.md`, now vendored + patched
+    in `vendor/unsplash_client/`).
+  - Phase 3 (real settings UI to enter/store the key): done, 2026-07-20.
+    `unsplashEnabled` now reflects whether a key is actually saved (`SettingsService`); the
+    Unsplash panel (`unsplash_panel_page.dart`) shows a key-entry form when none is set yet, and
+    the Random/Search tabs otherwise. Confirmed working end-to-end on the `GoogleTV_API34`
+    emulator with a real personal key -- entering the key via D-pad-down (to reach a "Save"
+    button below the field) didn't work, because the on-screen keyboard intercepts D-pad-down
+    itself (reopens/refocuses the keyboard) before it reaches Flutter's focus system; fixed by
+    dropping the separate Save button and submitting via the keyboard's own Done action
+    (`TextField.onSubmitted`), the same pattern the existing Unsplash search box already used.
+    Still open: testing the "invalid key" state (a key that's saved but rejected by the API) --
+    only "no key" and "valid key" have been exercised so far.
 
 - **Focus jumps to "Add Category" after reordering with exactly 2 categories**
   (`lib/widgets/settings/categories_panel_page.dart`). Each row's up/down arrow `IconButton` is

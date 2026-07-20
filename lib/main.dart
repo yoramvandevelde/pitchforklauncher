@@ -22,6 +22,7 @@ import 'dart:async';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/picsum_service.dart';
+import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -31,12 +32,12 @@ import 'package:unsplash_client/unsplash_client.dart';
 
 import 'flauncher_app.dart';
 
-// Phase 2 stopgap for manually testing the Unsplash integration before the settings UI (TODO.md)
-// exists to store a user-supplied key: pass real values via --dart-define at build time, never
-// commit them. Empty defaults keep the feature inert (SettingsService.unsplashEnabled is also
-// still hardcoded false) when nothing is passed.
-const _unsplashAccessKey = String.fromEnvironment("UNSPLASH_ACCESS_KEY");
-const _unsplashSecretKey = String.fromEnvironment("UNSPLASH_SECRET_KEY");
+// Phase 2 stopgap for manually testing the Unsplash integration ahead of settings UI support
+// (TODO.md): pass a real value via --dart-define at build time, never commit it. Used as a
+// fallback default only when the user hasn't saved a key via the settings UI yet. Only the access
+// key is needed -- AppCredentials.secretKey is never read anywhere in the request path (only used
+// for OAuth user-login flows this app doesn't do), so it's omitted.
+const _unsplashAccessKeyFallback = String.fromEnvironment("UNSPLASH_ACCESS_KEY");
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,11 +47,16 @@ Future<void> main() async {
     final imagePicker = ImagePicker();
     final fLauncherChannel = FLauncherChannel();
     final fLauncherDatabase = FLauncherDatabase(connect());
+    final storedUnsplashAccessKey = SettingsService(sharedPreferences).unsplashAccessKey;
     final unsplashService = UnsplashService(
       UnsplashClient(
         settings: ClientSettings(
           debug: kDebugMode,
-          credentials: AppCredentials(accessKey: _unsplashAccessKey, secretKey: _unsplashSecretKey),
+          credentials: AppCredentials(
+            accessKey: (storedUnsplashAccessKey?.isNotEmpty ?? false)
+                ? storedUnsplashAccessKey!
+                : _unsplashAccessKeyFallback,
+          ),
         ),
       ),
     );
