@@ -35,3 +35,10 @@ Not fixed for now — acceptable as-is.
 ~~Test the Home-button-override approach on the real Google TV Streamer 4K, not just the
 `GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube
 button override.
+
+- **Revisit the dormant Unsplash wallpaper source** (`unsplashEnabled` hardcoded `false` in
+  `lib/providers/settings_service.dart`, see `DRIFT.md`). Decided during `UPGRADE_PLAN.md`'s
+  Phase 3 (2026-07-20) to leave `unsplash_client` on its current `^2.1.0+3` pin rather than bump
+  to the breaking 3.0.0 release, since the code path doesn't run — but flagged for an actual
+  decision later: get a real Unsplash API key and re-enable it, or remove the dependency and UI
+  entirely if it's not worth reviving.
