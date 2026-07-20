@@ -507,7 +507,8 @@ and hardware-confirmed.
 Do this *after* the Flutter SDK is current — most packages gate their max supported version on
 the Flutter/Dart SDK, so bumping dependencies first would just get capped by the old SDK anyway.
 
-- [ ] Run `fvm flutter pub outdated` for the full picture before touching anything.
+- [x] Run `fvm flutter pub outdated` for the full picture before touching anything — done
+      2026-07-20, informed the ordering below.
 - [x] `drift` + `drift_dev` as one group — done, forced early by the 3.44.6 Phase 2 stop's codegen
       breakage (see that stop's landmine #1): `drift`/`drift_dev` `^2.10.0` → `^2.34.0`, pulling
       `sqlite3` 2.4.0 → 3.5.0 transitively. All 129 tests passed after the regen; no deliberate
@@ -515,19 +516,66 @@ the Flutter/Dart SDK, so bumping dependencies first would just get capped by the
       still worth a closer look here if anything database-related looks off later.
       `sqlite3_flutter_libs` itself is still on its original pin (`^0.5.13`, resolves 0.5.42) and
       hasn't been touched.
-- [ ] `provider`, `path_provider`, `shared_preferences`, `package_info_plus`, `image_picker` — bump
-      one at a time or in a batch if changelogs look clean; these have historically been lower-risk
-      than drift or webview_flutter.
-- [ ] `webview_flutter` — already noted above for its `minSdkVersion` 24 requirement; check its
-      changelog for the version gap specifically (it's used for a small in-app browser: Unsplash
-      photo attribution links, YouTube — actually no, just the "Photo by X on Unsplash" link in
-      `wallpaper_panel_page.dart`).
-- [ ] `unsplash_client` — the code path using it is currently dormant (`unsplashEnabled` hardcoded
-      `false`, see `DRIFT.md`). Lowest priority; decide separately whether to keep it dormant,
-      remove it, or actually wire up a real Unsplash key while touching this area — don't let it
-      block the rest of the upgrade.
-- [ ] `http` (used by `picsum_service.dart` and `unsplash_service.dart`) — check for breaking API
-      changes, low risk historically.
+- [x] `provider` `^6.0.5` → `^6.1.5+1`, `path_provider` `^2.1.5` → `^2.1.6`, `image_picker`
+      `^1.2.0` → `^1.2.3` — low-risk patch/minor bumps, no code changes needed, no new
+      `flutter analyze` issues, all 129 tests passing.
+- [x] `package_info_plus` `^8.0.0` → `^10.2.1` — no breaking changes for `PackageInfo.fromPlatform()`
+      or the test mock, but `9.0.0+` requires AGP ≥8.12.1 / Gradle ≥8.13 / Kotlin 2.2.0, forcing an
+      Android toolchain bump alongside it (see landmines below). `shared_preferences` needed no
+      change at all — already resolving to `2.5.5` (latest) under the existing `^2.3.3` constraint.
+- [x] `webview_flutter` `^4.10.0` → `^4.14.1` — no breaking changes, new SDK floor (Flutter ≥3.38,
+      Dart ≥3.10) already well below what this project is on. Pulled `webview_flutter_wkwebview`
+      3.25.0 → 3.26.0 transitively; `webview_flutter_android` untouched (still 4.12.0, already
+      satisfies the new constraint).
+- [x] `unsplash_client` — **decided to leave on `^2.1.0+3` (resolves 2.2.0), not bump to the
+      breaking 3.0.0.** The code path is still fully dormant (`unsplashEnabled` hardcoded `false`),
+      so a major-version bump there is pure risk for zero runtime benefit right now. Tracked as a
+      real open decision in `TODO.md` ("Revisit the dormant Unsplash wallpaper source") rather than
+      silently deferred.
+- [x] `http` — was never actually declared in `pubspec.yaml` despite being imported directly in
+      `lib/picsum_service.dart` and `lib/unsplash_service.dart` (relying entirely on transitive
+      resolution, currently via `package_info_plus`/`webview_flutter`). Added `http: ^1.6.0` as an
+      explicit direct dependency — same version that was already resolving, no behavior change,
+      just removes the fragility of depending on an undeclared transitive package.
+
+Phase 3 is now feature-complete (all six bullets above done); still needs the hardware smoke test
+and PR review before it's actually merged.
+
+### Landmines hit during Phase 3
+
+- **Picking the toolchain versions for the `package_info_plus` 9.0.0+ forced bump wasn't a single
+  lookup** — its own floor is AGP ≥8.12.1 / Gradle ≥8.13 / Kotlin 2.2.0, but Android's own
+  AGP↔Kotlin compatibility table (`developer.android.com/build/kotlin-support`) puts Kotlin 2.2.x's
+  *supported* AGP range at only up to 8.10 — AGP 8.13 actually wants Kotlin 2.4.x+. Landed on AGP
+  `8.13.0` (latest 8.x patch; deliberately *not* AGP 9.x, which is a bigger structural jump — see
+  below), Gradle `8.14.5` (latest 8.x patch, also clears Phase 2's 3.44.6-stop "will soon be
+  dropped" warning which wanted ≥8.14.0), Kotlin `2.4.10` (latest patch, satisfies both
+  `package_info_plus` and the AGP compatibility table). Worth remembering next time a similar
+  "package X wants AGP ≥Y" landmine shows up: check the *actual* AGP↔Kotlin pairing table too, not
+  just the one package's stated floor, or the build fails on a Kotlin metadata-version mismatch
+  again (same failure mode as the 3.35.7 stop's `image_picker_android` issue).
+- **AGP 9.x already exists (released Jan 2026) and was deliberately not taken here** — it comes
+  with its own DSL/API migration (see `developer.android.com/build/releases/gradle-plugin-roadmap`),
+  which is a structural change in the same spirit as the 3.35.7 stop's `apply plugin:` →
+  `plugins {}` migration, not something to fold silently into a dependency-driven bump. Staying on
+  the latest AGP *8.x* patch (`8.13.0`) satisfies every current requirement; the AGP 9 migration is
+  its own future piece of work if it ever becomes necessary.
+- **Stale Gradle build cache after the AGP/Gradle/Kotlin bump** produced a real-looking compile
+  error — `cannot find symbol ... class PackageInfoPlugin` in the auto-generated
+  `GeneratedPluginRegistrant.java`, even though that file correctly referenced the right class and
+  `.flutter-plugins-dependencies` correctly pointed at `package_info_plus-10.2.1`. Same family of
+  problem as the 3.44.6 stop's `build_runner_core` red herring: the actual dependency graph was
+  fine, a leftover cache from the pre-bump toolchain wasn't. Fixed by `./gradlew --stop` (kill the
+  Gradle daemon) followed by `fvm flutter clean` (wipes `build/`, `.dart_tool/`, and
+  `.flutter-plugins-dependencies` so they regenerate fresh) and a clean rebuild. Worth trying this
+  combination first, before assuming a real dependency/code problem, any time an Android toolchain
+  version bump (AGP/Gradle/Kotlin) is immediately followed by a "cannot find symbol" error for a
+  plugin class that clearly still exists in the resolved package.
+- **JDK 17 briefly looked like it had disappeared from the machine** — `/usr/libexec/java_home -V`
+  only listed JDK 11, and the JDK 17 used throughout Phase 1/2 wasn't there. It hadn't been
+  uninstalled: it's managed by `mise` (`~/.local/share/mise/installs/java/temurin-17.0.19+10`), a
+  location `java_home` doesn't scan. See `AGENTS.md`'s JDK 17 section for the fix (`mise list
+  java` before assuming a JDK needs reinstalling).
 
 ## Phase 4 — Full regression pass
 
