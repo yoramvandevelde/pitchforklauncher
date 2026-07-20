@@ -48,5 +48,10 @@ app.*.map.json
 android/app/google-services.json
 coverage/
 
+# Release signing (never commit these)
+android/app/*.jks
+android/app/*.keystore
+android/key.properties
+
 # FVM Version Cache
 .fvm/

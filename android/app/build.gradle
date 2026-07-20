@@ -47,7 +47,7 @@ secretProperties.setProperty("signing_key_password", "${System.getenv('SIGNING_K
 secretProperties.setProperty("signing_key_alias", "${System.getenv('SIGNING_KEY_ALIAS')}")
 
 android {
-    namespace "me.efesser.flauncher"
+    namespace "io.sifft.pitchforklauncher"
     compileSdkVersion 36
 
     sourceSets {
@@ -55,7 +55,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "me.efesser.flauncher"
+        applicationId "io.sifft.pitchforklauncher"
         minSdkVersion 24
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()

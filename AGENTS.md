@@ -1,9 +1,9 @@
 # Agent instructions
 
-This is a personal fork of [FLauncher](https://gitlab.com/flauncher/flauncher), an Android TV
-launcher built with Flutter. Read `README.md` first for what this fork changes and why, `DRIFT.md`
-for the detailed rationale behind each change, and `TODO.md` for known issues and open items.
-This file is about *working on the code* — toolchain, commands, conventions.
+PitchforkLauncher is a personal fork of [FLauncher](https://gitlab.com/flauncher/flauncher), an
+Android TV launcher built with Flutter. Read `README.md` first for what this fork changes and why,
+`DRIFT.md` for the detailed rationale behind each change, and `TODO.md` for known issues and open
+items. This file is about *working on the code* — toolchain, commands, conventions.
 
 ## Toolchain
 
@@ -29,7 +29,7 @@ This file is about *working on the code* — toolchain, commands, conventions.
   ```shell
   fvm flutter pub run build_runner build
   ```
-- **Run tests** with `fvm flutter test`. Widget tests that navigate FLauncher's Settings panels
+- **Run tests** with `fvm flutter test`. Widget tests that navigate the Settings panels
   drive focus with `tester.sendKeyEvent(LogicalKeyboardKey.arrowDown)` — inserting or reordering a
   button in one of those panels shifts the arrow-key counts in every test after it in the same
   file. Check `fvm flutter analyze` too; it's fast and catches import-order/lint issues the tests
@@ -55,10 +55,10 @@ This file is about *working on the code* — toolchain, commands, conventions.
   stricter package verifier blocking sideloaded/adb installs). Fix:
   `adb shell settings put global verifier_verify_adb_installs 0` and
   `adb shell settings put global package_verifier_enable 0`.
-- **Setting FLauncher as the Home app**: see the "Set FLauncher as default launcher" section in
-  `README.md` for the three options (Button Mapper, disabling the stock launcher, or this fork's
-  built-in `HomeButtonAccessibilityService`). `justfile` has `disable-default-launcher` /
-  `restore-default-launcher` recipes for the second option (`just <recipe> <adb-device-serial>`).
+- **Setting PitchforkLauncher as the Home app**: see the "Set as default launcher" section in
+  `README.md` for the three options (disabling the stock launcher, this fork's built-in
+  `HomeButtonAccessibilityService`, or Button Mapper). `justfile` has `disable-default-launcher` /
+  `restore-default-launcher` recipes for the first option (`just <recipe> <adb-device-serial>`).
 
 ## Git
 

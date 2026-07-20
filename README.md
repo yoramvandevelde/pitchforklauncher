@@ -1,79 +1,108 @@
-# FLauncher (personal fork)
+# PitchforkLauncher
 
-This is a personal clone of [FLauncher](https://gitlab.com/flauncher/flauncher), with a handful of
-changes relevant to my own setup (a Google TV Streamer 4K). Not affiliated with the original
-project or its Play Store listing.
+![PitchforkLauncher home screen](screenshot.png)
 
-**What's changed, in short** — see `DRIFT.md` for the full rationale and `TODO.md` for known
-issues:
-- Flutter pinned via FVM (`.fvmrc`) instead of relying on a global install.
-- Firebase (Analytics/Crashlytics/Remote Config) removed — it required credentials that aren't in
-  this repo.
-- A built-in `HomeButtonAccessibilityService` intercepts the remote's Home button so FLauncher can
-  act as the home screen without disabling the stock launcher — an alternative to the two methods
-  described below in "Set FLauncher as default launcher".
-- Any other remote button (e.g. a dedicated YouTube/Netflix quick-access button) can be mapped to
-  launch an app of your choice from Settings → "Remote buttons", so it keeps working the same way
-  even if you do disable the stock launcher.
-- A key-less "Random photo" wallpaper source backed by [picsum.photos](https://picsum.photos),
-  since Unsplash needs a developer API key this fork doesn't have.
+A personal fork of FLauncher, an open source Android TV launcher, with a modernized stack and a
+few new features. Built for and tested on a Google TV Streamer 4K (Android 14). Untested on other
+devices.
 
-Everything below this point is the original upstream README.
+This is a personal project. No feature requests, no ongoing support. Shared in case others find it
+useful.
+
+## Installation
+
+Grab the latest APK from [Releases](https://github.com/yoramvandevelde/pitchforklauncher/releases)
+and `adb install` it, or build it from source:
+
+```shell
+git clone https://github.com/yoramvandevelde/pitchforklauncher.git
+cd pitchforklauncher
+fvm install
+fvm flutter build apk --debug
+adb install build/app/outputs/flutter-apk/app-debug.apk
+```
+
+Builds `--debug` here on purpose: a `--release` build needs the private signing keystore, which
+isn't part of this repo. The Releases APK above is the signed release build.
+
+See `AGENTS.md` for the full toolchain setup (FVM, JDK 17, the `just` recipes used below). Once
+installed, see "Set as default launcher" below to make it your home screen.
+
+## Features
+
+**No external telemetry.** No Firebase, no analytics, no crash reporting, nothing phoning home.
+
+Other highlights:
+- **Home Button override** (Accessibility Service): become the home screen without disabling the
+  stock launcher, so things like the remote's dedicated YouTube button keep working. Comes with a
+  trade off, see "Set as default launcher" below.
+- **Remote button remapping**: map any other physical remote button to launch an app of your
+  choice (Settings > Remote buttons).
+- **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos). No API key
+  needed.
+- **Modern toolchain**, current as of July 2026 (Flutter, AGP, Kotlin, compileSdk).
+
+Plus the essentials the original FLauncher already got right:
+- No ads
+- Customizable categories, manually reorderable
+- Wallpaper support
+- Clock
+- Open Android Settings, app info, uninstall an app, directly from the launcher
+- Support for sideloaded (non-TV) apps
+
+## Set as default launcher
+
+There are three ways to make PitchforkLauncher your home screen, and they trade off differently.
+Pick based on what matters more to you.
+
+**Option A: make it the real default launcher.** This is what I run myself. It's the only way
+that gets correct Back button behavior (pressing Back at the home screen does nothing, like a real
+launcher). The cost: you disable the stock Google TV launcher, and its dedicated YouTube remote
+button stops working on its own. This fork's remote button remapping already has YouTube
+pre-mapped by default, so it keeps working with no extra setup, but if your remote sends a
+different code for that button and it doesn't come back automatically, remap it yourself in
+Settings > Remote buttons.
+
+```shell
+just disable-default-launcher <device-serial>
+```
+
+The next time you press Home, Android prompts you to choose PitchforkLauncher. To undo:
+
+```shell
+just restore-default-launcher <device-serial>
+```
+
+**Warning:** you are doing this at your own risk. Tested on a Google TV Streamer 4K only, may
+behave differently on other devices.
+
+**Option B: the built-in Home Button override.** Enable `HomeButtonAccessibilityService` in
+Android's Accessibility settings. PitchforkLauncher then takes over the Home button without
+touching the stock launcher at all, so the YouTube button and everything else the stock launcher
+normally handles keeps working untouched. The trade off: PitchforkLauncher is not the real system
+default this way, just a regular app brought to the front. See Known limitations below.
+
+**Option C: a third-party remap.** Use
+[Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap the Home
+button of the remote to launch PitchforkLauncher instead of enabling Option B's built-in
+accessibility service. Doesn't touch the stock launcher, but needs an extra app installed, and has
+the same Back button quirk as Option B. See Known limitations below.
+
+## Known limitations
+
+- **Back button exits the launcher** instead of doing nothing, when using Option B or C instead of
+  Option A. Not something this fork tries to fix, see `TODO.md` for why.
+- **Custom wallpaper images need a file explorer app** installed on the device to pick a file
+  from. The built-in random wallpaper source (see Features) doesn't need this.
+
+## About this fork
+
+Not an Android or Flutter developer. Used Claude (Anthropic's AI) for almost all of the coding,
+refactoring, and upgrade work, and made the design decisions and did the testing personally. See
+`DRIFT.md` and `UPGRADE_PLAN.md` for the detailed history of what changed and why.
 
 ---
 
-# FLauncher
-FLauncher is an open-source alternative launcher for Android TV, built with [Flutter](https://flutter.dev).
-
-The project is still at an early development stage and may be unstable. It currently lacks testing on real devices and has only been tested on Chromecast with Google TV.
-
-## Features
-- [x] No ads
-- [x] Customizable categories
-- [x] Manually reorder apps within categories
-- [x] Wallpaper support
-- [x] Open "Android Settings"
-- [x] Open "App info"
-- [x] Uninstall app
-- [x] Clock
-- [x] Switch between row and grid for categories
-- [x] Support for non-TV (sideloaded) apps
-- [x] Navigation sound feedback
-- [ ] Force stop app
-
-## Set FLauncher as default launcher
-
-### Method 1: remap the Home button
-This is the "safer" and easiest way. Use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap the Home button of the remote to launch FLauncher.
-
-### Method 2: disable the default launcher
-**:warning: Disclaimer :warning:**
-
-**You are doing this at your own risk, and you'll be responsible in any case of malfunction on your device.**
-
-The following commands have been tested on Chromecast with Google TV only. This may be different on other devices.
-
-Once the default launcher is disabled, press the Home button on the remote, and you'll be prompted by the system to choose which app to set as default.
-
-#### Disable default launcher
-```shell
-# Disable com.google.android.apps.tv.launcherx which is the default launcher on CCwGTV
-$ adb shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
-# com.google.android.tungsten.setupwraith will then be used as a 'fallback' and will automatically
-# re-enable the default launcher, so disable it as well
-$ adb shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
-```
-
-#### Re-enable default launcher
-```shell
-$ adb shell pm enable com.google.android.apps.tv.launcherx
-$ adb shell pm enable com.google.android.tungsten.setupwraith
-```
-
-#### Known issues
-On Chromecast with Google TV (maybe others), the "YouTube" remote button will stop working if the default launcher is disabled. As a workaround, you can use [Button Mapper](https://play.google.com/store/apps/details?id=flar2.homebutton) to remap it correctly.
-
-## Wallpaper
-Because Android's `WallpaperManager` is not available on some Android TV devices, FLauncher implements its own wallpaper management method.
-
-Please note that changing wallpaper requires a file explorer to be installed on the device in order to pick a file.
+A personal fork of [FLauncher](https://gitlab.com/flauncher/flauncher) by Étienne Fesser. Thanks
+for the solid foundation this is built on. Not affiliated with the original project or its Play
+Store listing. Licensed under GPL-3.0, see `LICENSE`.

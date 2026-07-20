@@ -55,8 +55,8 @@ class FLauncherApp extends StatelessWidget {
     50: Color(0xFF36A0FA),
     100: Color(0xFF067BDE),
     200: Color(0xFF045CA7),
-    300: Color(0xFF033662),
-    400: Color(0xFF022544),
+    300: Color(0xFF222222),
+    400: Color(0xFF333333),
     500: Color(0xFF011526),
     600: Color(0xFF000508),
     700: Color(0xFF000000),
@@ -97,7 +97,7 @@ class FLauncherApp extends StatelessWidget {
             ...WidgetsApp.defaultActions,
             DirectionalFocusIntent: SoundFeedbackDirectionalFocusAction(context),
           },
-          title: 'FLauncher',
+          title: 'PitchforkLauncher',
           theme: ThemeData(
             // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
             // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a

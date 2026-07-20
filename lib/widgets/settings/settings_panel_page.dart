@@ -124,7 +124,7 @@ class SettingsPanelPage extends StatelessWidget {
                   children: [
                     Icon(Icons.info_outline),
                     Container(width: 8),
-                    Text("About FLauncher", style: Theme.of(context).textTheme.bodyMedium),
+                    Text("About PitchforkLauncher", style: Theme.of(context).textTheme.bodyMedium),
                   ],
                 ),
                 onPressed: () => showDialog(

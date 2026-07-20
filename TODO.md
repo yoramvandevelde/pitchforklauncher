@@ -17,10 +17,11 @@ checks the system's actual resolved default HOME activity, which is genuinely no
 this setup, so `shouldPopScope()` in `flauncher_app.dart` always allows the pop.
 
 **Decided (2026-07-20): not fixing this in-app.** The advised path for anyone who cares about
-correct Back-button behavior is to actually set FLauncher as the real default launcher (`adb shell
-cmd package set-home-activity`, or README's "Method 2: disable the default launcher") rather than
-relying on the Home-button-override for that specific case — `isDefaultLauncher()` then genuinely
-returns `true` and `shouldPopScope()` behaves correctly with no code changes needed. This project
+correct Back-button behavior is to actually set PitchforkLauncher as the real default launcher
+(`adb shell cmd package set-home-activity`, or README's "Option A: make it the real default
+launcher") rather than relying on the Home-button-override for that specific case —
+`isDefaultLauncher()` then genuinely returns `true` and `shouldPopScope()` behaves correctly with
+no code changes needed. This project
 isn't published on the Play Store; anyone sideloading it who hits this and doesn't set themselves
 up as real default launcher is an accepted edge case, not worth building around.
 
@@ -60,3 +61,20 @@ button override.
   Found during Phase 4 manual testing (2026-07-20), pre-existing behavior unrelated to the upgrade.
   Possible fix: after `_move()`, explicitly request focus on the moved row's remaining enabled
   arrow (or the row itself) instead of leaving it to Flutter's default disabled-widget fallback.
+
+- **No confirmation dialog before deleting a category** (`lib/widgets/settings/category_panel_page.dart`,
+  the "Delete" `ElevatedButton`'s `onPressed`) — calls `AppsService.deleteCategory(category)`
+  immediately, no "are you sure?" step. On a D-pad remote this is one accidental press away from
+  irreversible data loss (the category and its app assignments are gone, not just hidden). Checked
+  the other destructive actions for comparison: "Uninstall" (`application_info_panel.dart`) is
+  guarded by Android's own system confirmation dialog since it goes through
+  `REQUEST_DELETE_PACKAGES`, and "Hide" is low-stakes/reversible — category deletion is the one
+  genuinely unguarded destructive action. Add a confirmation dialog before calling
+  `deleteCategory`. Found 2026-07-20, not yet fixed.
+
+- **Add a grayscale option for the Picsum wallpaper source** (`lib/picsum_service.dart`,
+  `lib/providers/wallpaper_service.dart`, `lib/widgets/settings/wallpaper_panel_page.dart`).
+  Blur is already implemented (`randomPhoto({int? blur})`, exposed as the "Random photo (blurred)"
+  button), and picsum.photos supports a `?grayscale` query parameter the same way it supports
+  `?blur=`, so this would be a small, near free addition following the exact same pattern. Not
+  urgent, just a nice easy win if picked up. Suggested 2026-07-20.

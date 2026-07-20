@@ -22,9 +22,9 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class FLauncherChannel {
-  static const _methodChannel = MethodChannel('me.efesser.flauncher/method');
-  static const _eventChannel = EventChannel('me.efesser.flauncher/event');
-  static const _buttonCaptureEventChannel = EventChannel('me.efesser.flauncher/buttonCapture');
+  static const _methodChannel = MethodChannel('io.sifft.pitchforklauncher/method');
+  static const _eventChannel = EventChannel('io.sifft.pitchforklauncher/event');
+  static const _buttonCaptureEventChannel = EventChannel('io.sifft.pitchforklauncher/buttonCapture');
 
   Future<List<dynamic>> getApplications() async => (await _methodChannel.invokeListMethod('getApplications'))!;
 

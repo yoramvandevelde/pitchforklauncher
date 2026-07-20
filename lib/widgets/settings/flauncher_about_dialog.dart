@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,26 +33,33 @@ class FLauncherAboutDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     final underlined = textStyle.copyWith(decoration: TextDecoration.underline);
+    final mutedStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+        );
     return AboutDialog(
       applicationName: packageInfo.appName,
-      applicationVersion: "${packageInfo.version} (${packageInfo.buildNumber})",
       applicationIcon: Image.asset("assets/logo.png", height: 72),
-      applicationLegalese: "© 2021 Étienne Fesser",
       children: [
-        Text(
-          "${BuildInfo.gitBranch} @ ${BuildInfo.gitCommit}",
-          style: textStyle.copyWith(color: textStyle.color?.withValues(alpha: 0.6)),
-        ),
+        Text("${packageInfo.version} (${packageInfo.buildNumber})", style: mutedStyle),
+        Text("${BuildInfo.gitBranch} @ ${BuildInfo.gitCommit}", style: mutedStyle),
+        SizedBox(height: 8),
+        Text("© 2021 Étienne Fesser\n© 2026 Yoram van de Velde", style: mutedStyle),
         SizedBox(height: 24),
         RichText(
           text: TextSpan(
             style: textStyle,
             children: [
               TextSpan(
-                text: "FLauncher is an open-source alternative launcher for Android TV.\n"
+                text: "PitchforkLauncher is an open-source alternative launcher for Android TV.\n"
                     "Source code available at ",
               ),
-              TextSpan(text: "https://gitlab.com/etiennf01/flauncher", style: underlined),
+              TextSpan(text: "https://github.com/yoramvandevelde/pitchforklauncher", style: underlined),
+              TextSpan(text: ".\n\n"),
+              TextSpan(
+                text: "A personal fork of FLauncher by Étienne Fesser — thanks for the solid\n"
+                    "foundation. Original project at ",
+              ),
+              TextSpan(text: "https://gitlab.com/flauncher/flauncher", style: underlined),
               TextSpan(text: ".\n\n"),
               TextSpan(text: "Logo by Katie "),
               TextSpan(text: "@fureturoe", style: underlined),
