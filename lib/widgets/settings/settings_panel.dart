@@ -57,7 +57,11 @@ class _SettingsPanelState extends State<SettingsPanel> {
           }
           _handlingPop = true;
           try {
-            final poppedInternally = await _navigatorKey.currentState!.maybePop();
+            final navigator = _navigatorKey.currentState;
+            if (navigator == null) {
+              return;
+            }
+            final poppedInternally = await navigator.maybePop();
             if (!poppedInternally && context.mounted) {
               Navigator.of(context).pop();
             }

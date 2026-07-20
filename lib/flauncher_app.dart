@@ -134,6 +134,9 @@ class FLauncherApp extends StatelessWidget {
                 _handlingPop = true;
                 try {
                   final shouldPop = await shouldPopScope(context);
+                  if (!context.mounted) {
+                    return;
+                  }
                   if (shouldPop) {
                     SystemNavigator.pop();
                   } else {
