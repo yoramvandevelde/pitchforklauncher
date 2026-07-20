@@ -114,6 +114,7 @@ class FLauncherApp extends StatelessWidget {
             textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
             appBarTheme: AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),
             typography: Typography.material2018(),
+            fontFamily: "Open Sans",
             inputDecorationTheme: InputDecorationTheme(
               focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
               labelStyle: Typography.material2018().white.bodyMedium,
