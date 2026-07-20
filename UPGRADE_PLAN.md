@@ -18,19 +18,24 @@ rather than one big jump that makes it impossible to tell which change broke wha
 ## Known landmines (found while scoping this, not yet hit)
 
 Two things in the current codebase are near-certain to break and are worth knowing about before
-starting, rather than being a surprise mid-upgrade:
+starting, rather than being a surprise mid-upgrade. **Both are now resolved** — left here as the
+original pre-upgrade scoping note; see the linked stops for how each actually played out.
 
 - **`WillPopScope`** is used in `lib/flauncher_app.dart` and `lib/widgets/settings/settings_panel.dart`
   for the Back-button interception logic — this is load-bearing (it's how `isDefaultLauncher()` /
   `shouldPopScope()` decides whether Back exits FLauncher), not decorative. It's deprecated in
   favor of `PopScope`, which has different callback semantics (`onPopInvoked`/`canPop` instead of
-  an awaitable `onWillPop`). Needs a deliberate rewrite, not a find-and-replace.
+  an awaitable `onWillPop`). Needs a deliberate rewrite, not a find-and-replace. **Resolved in
+  Phase 4** — took two attempts across two phases (reverted after a real freeze at the 3.16.9 stop,
+  landed successfully in Phase 4 after bisecting the actual bug — see Phase 4's landmines).
 - **Deprecated `ThemeData` fields** (`accentColor`, `backgroundColor`) are used in
   `lib/flauncher_app.dart`, already marked `// ignore: deprecated_member_use`. Newer Flutter
   versions default to Material 3 (`useMaterial3: true` became the default around Flutter 3.16) and
   may have fully *removed*, not just deprecated, some of these fields by the version we land on —
   that's a compile error, not a lint warning, and the app's whole color scheme needs re-checking
-  against Material 3 either way.
+  against Material 3 either way. **Resolved incrementally across Phase 2** — `accentColor` at the
+  3.10.7 stop, `backgroundColor` at the 3.27.4 stop, `useMaterial3` pinned to `false` explicitly at
+  the 3.16.9 stop (see each stop's landmines).
 
 ## Phase 0 — Safety net
 
