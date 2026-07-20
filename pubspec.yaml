@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  http: ^1.6.0
   image_picker: ^1.2.3
   intl: ^0.18.0
   drift: ^2.34.0
@@ -20,7 +21,7 @@ dependencies:
   shared_preferences: ^2.3.3
   sqlite3_flutter_libs: ^0.5.13
   unsplash_client: ^2.1.0+3
-  webview_flutter: ^4.10.0
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:
