@@ -42,3 +42,16 @@ button override.
   to the breaking 3.0.0 release, since the code path doesn't run — but flagged for an actual
   decision later: get a real Unsplash API key and re-enable it, or remove the dependency and UI
   entirely if it's not worth reviving.
+
+- **Focus jumps to "Add Category" after reordering with exactly 2 categories**
+  (`lib/widgets/settings/categories_panel_page.dart`). Each row's up/down arrow `IconButton` is
+  disabled (`onPressed: null`) once the row is first/last. With exactly 2 categories, moving either
+  one always lands it at the opposite extreme in a single step, so the arrow button the user just
+  pressed becomes disabled immediately after the move — Flutter then hands focus to the next
+  focusable widget in traversal order, which happens to be the "Add Category" button below the
+  list, instead of somewhere less jarring (e.g. the row's other, still-enabled arrow, or the row
+  itself). With 3+ categories a single-step move usually doesn't land on an extreme, so the pressed
+  button stays enabled and focus doesn't jump — which is why this only reproduces at exactly 2.
+  Found during Phase 4 manual testing (2026-07-20), pre-existing behavior unrelated to the upgrade.
+  Possible fix: after `_move()`, explicitly request focus on the moved row's remaining enabled
+  arrow (or the row itself) instead of leaving it to Flutter's default disabled-widget fallback.
