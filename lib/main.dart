@@ -31,6 +31,13 @@ import 'package:unsplash_client/unsplash_client.dart';
 
 import 'flauncher_app.dart';
 
+// Phase 2 stopgap for manually testing the Unsplash integration before the settings UI (TODO.md)
+// exists to store a user-supplied key: pass real values via --dart-define at build time, never
+// commit them. Empty defaults keep the feature inert (SettingsService.unsplashEnabled is also
+// still hardcoded false) when nothing is passed.
+const _unsplashAccessKey = String.fromEnvironment("UNSPLASH_ACCESS_KEY");
+const _unsplashSecretKey = String.fromEnvironment("UNSPLASH_SECRET_KEY");
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -43,7 +50,7 @@ Future<void> main() async {
       UnsplashClient(
         settings: ClientSettings(
           debug: kDebugMode,
-          credentials: AppCredentials(accessKey: "", secretKey: ""),
+          credentials: AppCredentials(accessKey: _unsplashAccessKey, secretKey: _unsplashSecretKey),
         ),
       ),
     );

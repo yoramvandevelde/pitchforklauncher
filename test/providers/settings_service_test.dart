@@ -66,11 +66,11 @@ void main() {
     });
   });
 
-  test("unsplashEnabled is always false", () async {
+  test("unsplashEnabled is always true (Phase 2 stopgap, see TODO.md)", () async {
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
 
-    expect(settingsService.unsplashEnabled, isFalse);
+    expect(settingsService.unsplashEnabled, isTrue);
   });
 
   test("unsplashAuthor", () async {

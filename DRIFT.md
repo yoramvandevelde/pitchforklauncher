@@ -29,8 +29,9 @@ Application ID`). Rather than fake credentials, Firebase was removed entirely:
   from `pubspec.yaml`, and the corresponding Gradle plugins/classpaths from `android/build.gradle`
   and `android/app/build.gradle`.
 - Crash reporting / analytics settings toggles removed from the Settings panel.
-- `unsplashEnabled` (previously gated behind Remote Config) is hardcoded `false` — see "Picsum
-  wallpaper source" below for the replacement.
+- `unsplashEnabled` (previously gated behind Remote Config) was hardcoded `false` for a while — see
+  "Picsum wallpaper source" below for the key-less replacement, and "Unsplash re-enablement" for
+  its current (in-progress) status.
 
 ## Home-button override (AccessibilityService)
 
@@ -101,3 +102,27 @@ Remote Config to turn it on) — not something worth setting up for personal use
 [picsum.photos](https://picsum.photos), a free, key-less random-image API — no signup, no
 credentials, no rate-limit management. The Unsplash code path is untouched and still there,
 dormant, in case a real Unsplash key gets added back later.
+
+## Unsplash re-enablement (in progress, see TODO.md)
+
+Decided (2026-07-20): re-enable Unsplash, but user-supplied key only — no key ever bundled or
+shipped with the app. Phased approach:
+
+- **Phase 1 (done):** bumped `unsplash_client` from `^2.1.0+3` to `^3.0.0`. Only documented breaking
+  change (nullability of `UserLinks.{likes,followers,following}`/`PhotoStatistics.likes`) didn't
+  touch any call site this app uses.
+- **Phase 2 (in progress, stopgap):** `SettingsService.unsplashEnabled` hardcoded `true` and
+  `main.dart` reads `UNSPLASH_ACCESS_KEY`/`UNSPLASH_SECRET_KEY` via `--dart-define` for manual
+  testing with a real personal key, ahead of Phase 3's real settings UI.
+- **Phase 3 (not started):** settings UI to enter/store a key persistently (`SharedPreferences`),
+  replacing the `--dart-define` stopgap.
+
+**Vendored + patched `unsplash_client`** (`vendor/unsplash_client/`, wired via a `path`
+`dependency_overrides` entry in `pubspec.yaml`): manual testing against the real Unsplash API hit
+an upstream bug — `UserLinks.fromJson` (`lib/src/model/user.dart`) hard-casts `portfolio` to a
+non-nullable `String`, but the real API returns `null` for users without a portfolio link, which
+crashes deserialization for any such photo. The package's own 3.0.0 breaking-change release made
+the *other* three `UserLinks` fields nullable but missed this one, and the package has had no
+release in 16+ months with no open issue or fix on its `main` branch either — so patched locally
+instead of waiting on upstream. `portfolio` is now `Uri?` like its siblings. If upstream ever
+ships a real fix, drop the vendored copy and the override.

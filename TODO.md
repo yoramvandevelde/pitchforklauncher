@@ -38,16 +38,20 @@ up as real default launcher is an accepted edge case, not worth building around.
 `GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube
 button override.
 
-- **Revisit the dormant Unsplash wallpaper source** (`unsplashEnabled` hardcoded `false` in
-  `lib/providers/settings_service.dart`, see `DRIFT.md`). Decided during `UPGRADE_PLAN.md`'s
-  Phase 3 (2026-07-20) to leave `unsplash_client` on its current `^2.1.0+3` pin rather than bump
-  to the breaking 3.0.0 release, since the code path doesn't run. **Decided (2026-07-20): yes,
-  re-enable it, but user-supplied key only** — bump `unsplash_client` to 3.0.0 and add a settings
-  UI where the user pastes in their own Unsplash API key, stored locally; no key ever gets bundled
-  in or shipped with the app itself, full stop, regardless of build/distribution channel. Also
-  still need a test plan before starting: this is the one wallpaper source that can't be exercised
-  without live API credentials, and now specifically needs testing the "no key entered yet" /
-  "invalid key" states too, not just the happy path with a working key.
+- **Revisit the dormant Unsplash wallpaper source** (`lib/providers/settings_service.dart`, see
+  `DRIFT.md`'s "Unsplash re-enablement" section for the full phased plan and status). **Decided
+  (2026-07-20): yes, re-enable it, but user-supplied key only** — settings UI where the user pastes
+  in their own Unsplash API key, stored locally; no key ever gets bundled in or shipped with the
+  app itself, full stop, regardless of build/distribution channel.
+  - Phase 1 (bump `unsplash_client` to 3.0.0): done, 2026-07-20.
+  - Phase 2 (`unsplashEnabled` hardcoded `true`, key via `--dart-define` for manual testing): in
+    progress, 2026-07-20. Manual testing against the real API surfaced and fixed an upstream
+    `unsplash_client` bug (`portfolio` null crash, see `DRIFT.md`, now vendored + patched in
+    `vendor/unsplash_client/`).
+  - Phase 3 (real settings UI to enter/store the key, replacing the `--dart-define` stopgap): not
+    started. Still need a test plan before starting: this is the one wallpaper source that can't
+    be exercised without live API credentials, and needs testing the "no key entered yet" /
+    "invalid key" states too, not just the happy path with a working key.
 
 - **Focus jumps to "Add Category" after reordering with exactly 2 categories**
   (`lib/widgets/settings/categories_panel_page.dart`). Each row's up/down arrow `IconButton` is
@@ -71,6 +75,18 @@ button override.
   `REQUEST_DELETE_PACKAGES`, and "Hide" is low-stakes/reversible — category deletion is the one
   genuinely unguarded destructive action. Add a confirmation dialog before calling
   `deleteCategory`. Found 2026-07-20, not yet fixed.
+
+- **Settings export/import.** Every reinstall (signing-cert change, factory reset, new device)
+  currently means manually recreating categories, wallpaper settings, and remote button mappings
+  from scratch — hit already during this fork's release-signing testing (2026-07-20). Non-trivial
+  because the data isn't in one place: app settings live in `SharedPreferences`
+  (`lib/providers/settings_service.dart`), categories/app assignments
+  in the drift/sqlite database (`lib/providers/apps_service.dart`), and button mappings are stored
+  natively on the Android side, not in Dart (`lib/providers/button_mapping_service.dart` just calls
+  through `FLauncherChannel` to Kotlin — see `HomeButtonAccessibilityService.kt` /
+  `ButtonMappings.kt`). An export/import feature needs to gather all three into one file (JSON
+  probably) and round-trip it, including the native side via a new platform channel method.
+  Suggested 2026-07-20.
 
 - **Add a grayscale option for the Picsum wallpaper source** (`lib/picsum_service.dart`,
   `lib/providers/wallpaper_service.dart`, `lib/widgets/settings/wallpaper_panel_page.dart`).

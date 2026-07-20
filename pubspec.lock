@@ -880,11 +880,10 @@ packages:
   unsplash_client:
     dependency: "direct main"
     description:
-      name: unsplash_client
-      sha256: "9827f4c1036b7a6ac8cb3f404ac179df7441eee69371d9b17f181817fe502fd7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.0"
+      path: "vendor/unsplash_client"
+      relative: true
+    source: path
+    version: "3.0.0"
   vector_math:
     dependency: transitive
     description:

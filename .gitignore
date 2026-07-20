@@ -53,5 +53,8 @@ android/app/*.jks
 android/app/*.keystore
 android/key.properties
 
+# Unsplash API credentials scratch file (never commit these)
+app.key
+
 # FVM Version Cache
 .fvm/

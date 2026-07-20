@@ -34,7 +34,9 @@ class SettingsService extends ChangeNotifier {
 
   String? get gradientUuid => _sharedPreferences.getString(_gradientUuidKey);
 
-  bool get unsplashEnabled => false;
+  // Phase 2 stopgap: hardcoded true to manually test with a --dart-define key (see main.dart)
+  // before the settings UI to store a user-supplied key exists (TODO.md).
+  bool get unsplashEnabled => true;
 
   String? get unsplashAuthor => _sharedPreferences.getString(_unsplashAuthorKey);
 

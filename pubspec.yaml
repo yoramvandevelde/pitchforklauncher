@@ -20,7 +20,7 @@ dependencies:
   provider: ^6.1.5+1
   shared_preferences: ^2.3.3
   sqlite3_flutter_libs: ^0.5.13
-  unsplash_client: ^2.1.0+3
+  unsplash_client: ^3.0.0
   webview_flutter: ^4.14.1
 
 dev_dependencies:
@@ -45,3 +45,9 @@ dependency_overrides:
   # v1 Android embedding that Flutter removed entirely at this stop -- hard compile error
   # ("cannot find symbol") otherwise.
   flutter_plugin_android_lifecycle: ^2.0.28
+
+  # Vendored + patched copy of unsplash_client 3.0.0, see DRIFT.md and vendor/unsplash_client/.
+  # Upstream never made UserLinks.portfolio nullable, so it crashes deserializing any user without
+  # one -- unmaintained package (no release in 16+ months), so patched locally instead of waiting.
+  unsplash_client:
+    path: vendor/unsplash_client
