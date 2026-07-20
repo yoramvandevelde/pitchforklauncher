@@ -534,9 +534,17 @@ the Flutter/Dart SDK, so bumping dependencies first would just get capped by the
       silently deferred.
 - [x] `http` — was never actually declared in `pubspec.yaml` despite being imported directly in
       `lib/picsum_service.dart` and `lib/unsplash_service.dart` (relying entirely on transitive
-      resolution, currently via `package_info_plus`/`webview_flutter`). Added `http: ^1.6.0` as an
-      explicit direct dependency — same version that was already resolving, no behavior change,
-      just removes the fragility of depending on an undeclared transitive package.
+      resolution). It had already jumped a full major version, `0.13.5` → `1.6.0`, as a side effect
+      of the `package_info_plus` bump above — `package_info_plus` 10.2.1 itself pins `http: ^1.6.0`
+      directly, and `unsplash_client`'s looser `>=0.13.0 <2.0.0` constraint didn't conflict with
+      that. That transitive jump happened *before* this bullet was touched at all; adding
+      `http: ^1.6.0` as an explicit direct dependency here didn't change the resolved version
+      further, it only stopped the app from depending on an undeclared transitive package. Worth
+      being explicit about, since "no behavior change" undersold a real major-version jump that did
+      happen this phase — `fvm flutter analyze`/`test` stayed clean through it, and neither service
+      file uses anything from the `http` 0.13.x→1.x breaking-change surface (both just call the
+      package-level `get()`/`get`-style helpers), but this wasn't a deliberate changelog review of
+      that jump, just an absence of symptoms.
 
 Phase 3 is now feature-complete (all six bullets above done); still needs the hardware smoke test
 and PR review before it's actually merged.
