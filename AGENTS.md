@@ -75,3 +75,10 @@ keep that line and add your own copyright line beneath it rather than replacing 
 wholly new file (not derived from his code), the header should only carry your own copyright line.
 Match the existing header format/wording in a neighboring file of the same language for the
 boilerplate GPL text.
+
+- **Bundled non-pub assets (fonts, etc.) need a manual `LicenseRegistry.addLicense()` call** in
+  `main.dart`. Flutter's "VIEW LICENSES" screen (`FLauncherAboutDialog`) auto-collects licenses
+  from pub dependencies only (including path/vendored ones, as long as they have a `LICENSE`
+  file) — it does *not* scan `assets/`. See the Open Sans registration in `main.dart` for the
+  pattern (load the license file via `rootBundle.loadString`, yield a
+  `LicenseEntryWithLineBreaks`).

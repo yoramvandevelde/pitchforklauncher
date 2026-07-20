@@ -25,6 +25,7 @@ import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unsplash_client/unsplash_client.dart';
@@ -33,6 +34,14 @@ import 'flauncher_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Open Sans (assets/fonts/) is a bundled asset, not a pub dependency, so Flutter's automatic
+  // per-package license collection (the "VIEW LICENSES" screen in FLauncherAboutDialog) doesn't
+  // pick it up on its own -- register it explicitly.
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString('assets/fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['Open Sans'], license);
+  });
 
   runZonedGuarded<void>(() async {
     final sharedPreferences = await SharedPreferences.getInstance();
