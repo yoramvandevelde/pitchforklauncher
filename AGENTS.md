@@ -55,11 +55,10 @@ items. This file is about *working on the code* — toolchain, commands, convent
   stricter package verifier blocking sideloaded/adb installs). Fix:
   `adb shell settings put global verifier_verify_adb_installs 0` and
   `adb shell settings put global package_verifier_enable 0`.
-- **Setting PitchforkLauncher as the Home app**: see the "Set PitchforkLauncher as default
-  launcher" section in `README.md` for the three options (Button Mapper, disabling the stock
-  launcher, or this fork's built-in `HomeButtonAccessibilityService`). `justfile` has
-  `disable-default-launcher` /
-  `restore-default-launcher` recipes for the second option (`just <recipe> <adb-device-serial>`).
+- **Setting PitchforkLauncher as the Home app**: see the "Set as default launcher" section in
+  `README.md` for the three options (disabling the stock launcher, this fork's built-in
+  `HomeButtonAccessibilityService`, or Button Mapper). `justfile` has `disable-default-launcher` /
+  `restore-default-launcher` recipes for the first option (`just <recipe> <adb-device-serial>`).
 
 ## Git
 

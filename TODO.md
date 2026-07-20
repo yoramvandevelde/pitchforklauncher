@@ -17,10 +17,11 @@ checks the system's actual resolved default HOME activity, which is genuinely no
 this setup, so `shouldPopScope()` in `flauncher_app.dart` always allows the pop.
 
 **Decided (2026-07-20): not fixing this in-app.** The advised path for anyone who cares about
-correct Back-button behavior is to actually set FLauncher as the real default launcher (`adb shell
-cmd package set-home-activity`, or README's "Option A: make it the real default launcher") rather than
-relying on the Home-button-override for that specific case — `isDefaultLauncher()` then genuinely
-returns `true` and `shouldPopScope()` behaves correctly with no code changes needed. This project
+correct Back-button behavior is to actually set PitchforkLauncher as the real default launcher
+(`adb shell cmd package set-home-activity`, or README's "Option A: make it the real default
+launcher") rather than relying on the Home-button-override for that specific case —
+`isDefaultLauncher()` then genuinely returns `true` and `shouldPopScope()` behaves correctly with
+no code changes needed. This project
 isn't published on the Play Store; anyone sideloading it who hits this and doesn't set themselves
 up as real default launcher is an accepted edge case, not worth building around.
 
