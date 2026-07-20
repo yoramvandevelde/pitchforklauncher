@@ -232,7 +232,7 @@ Future<void> _pumpWidgetWithProviders(
 class _MockPackageInfoPlatform with MockPlatformInterfaceMixin implements PackageInfoPlatform {
   @override
   Future<PackageInfoData> getAll({String? baseUrl}) async => PackageInfoData(
-        appName: "FLauncher",
+        appName: "PitchforkLauncher",
         packageName: "io.sifft.pitchforklauncher",
         version: "1.0.0",
         buildNumber: "1",
