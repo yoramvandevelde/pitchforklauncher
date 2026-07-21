@@ -95,41 +95,21 @@ button override.
   Not actionable from this repo alone — depends on upstream plugin authors — so just keep an eye on
   their changelogs when doing routine dependency bumps. Found 2026-07-21.
 
-## Concept: live full-screen preview for the Picsum wallpaper picker
+~~Concept: live full-screen preview for the Picsum wallpaper picker~~ — done (2026-07-21):
+`WallpaperPanelPage`'s "Random photo" now closes the Settings panel and pushes
+`WallpaperControlBar`, a bottom bar with Random/Black & White/Blur controls, live over the actual
+home screen (`PageRouteBuilder(opaque: false)`). Subsumes the earlier "Add a grayscale option"
+item. See `DRIFT.md` if a short writeup gets added there; implementation is
+`lib/widgets/wallpaper_control_bar.dart` + `lib/picsum_service.dart`'s id-capturing rewrite.
 
-Not started — captured here as a concept from a 2026-07-21 conversation, for whenever it gets
-picked up.
+~~B&W/Blur toggles were interactive even when there's no current Picsum photo to apply them to~~
+— fixed (2026-07-21): `WallpaperService.hasCurrentPicsumPhoto` exposes whether a photo is
+currently set, and `WallpaperControlBar` disables (grays out) both switches until it's true.
+`_currentPicsumPhotoId` is also now cleared whenever the wallpaper source changes away from Picsum
+(`pickWallpaper`, `setGradient`, `randomFromUnsplash`, `setFromUnsplash`).
 
-**The problem**: `WallpaperPanelPage`'s "Random photo" / "Random photo (blurred)" buttons live
-inside `SettingsPanel`'s `RightPanelDialog`, a fixed 350px-wide overlay pinned to the right side of
-the screen. That covers a meaningful chunk of the screen while you're picking, so you can't
-actually see the full wallpaper you're about to commit to before you commit to it.
+One follow-up identified during testing, not fixed yet:
 
-**The idea**: replace those two buttons with a dedicated full-screen live-preview mode instead of
-a settings-list entry.
-
-- Entering it collapses the settings UI down to a thin control bar pinned to the bottom of the
-  screen (~10% of the height), leaving ~90% of the screen showing the actual wallpaper live.
-- The bar has three controls: a **Random** trigger (fetches a new photo from Picsum and applies it
-  as the live preview), plus two independent toggles — **black & white** and **blur** — that apply
-  to whichever photo is currently showing, combinable with each other (e.g. blurred *and*
-  grayscale at once).
-- No explicit OK/Cancel. **Back commits whatever's currently on screen as the real wallpaper** —
-  decided explicitly to keep this simple: "you picked random, live with it, but you can tweak
-  first." No separate confirm/cancel affordance to build or reason about.
-
-**Implementation notes for whoever picks this up**:
-- Toggling B&W/blur on an already-fetched photo needs to re-request the *same* photo with
-  different query params, not roll a new random one. That requires capturing the photo's Picsum
-  ID at fetch time and persisting it for the duration of the preview session — currently
-  `PicsumService.randomPhoto()` uses `http.get()`, which silently follows Picsum's redirect from
-  the random endpoint (`picsum.photos/{w}/{h}`) to the ID'd one
-  (`fastly.picsum.photos/id/{id}/{w}/{h}.jpg`) and throws the ID away. Confirmed 2026-07-21 that
-  Picsum's ID'd endpoint accepts the same `?grayscale`/`?blur=N` params as the random one, so
-  re-fetching by ID with different params is straightforward once the ID is captured.
-- Subsumes the "Add a grayscale option for the Picsum wallpaper source" item above — grayscale
-  becomes one of the two toggles here instead of a third separate button.
-- `WallpaperService.randomFromPicsum()` currently writes to `_wallpaperFile` immediately on every
-  call. The live-preview screen needs to hold each candidate fetch in memory only and defer the
-  actual file write until Back is pressed, otherwise every tweak while previewing would already be
-  permanently committed.
+- **No transition when the photo changes under a filter toggle** — flipping Black & White or Blur
+  swaps the wallpaper image instantly. A quick fade between the old and new image was suggested as
+  a nice-to-have polish pass, not required. Raised 2026-07-21.
