@@ -92,6 +92,15 @@ android {
             signingConfig signingConfigs.release
         }
     }
+
+    lint {
+        // AGP's own "lint vital" analysis crashes with a NoSuchMethodError on
+        // java.util.List.removeLast() while scanning image_picker_android on CI (a bug in lint
+        // itself, not our code -- lint's own error message says as much). Our real static-analysis
+        // gate is `flutter analyze`, which already covers the Dart side and passes clean; this just
+        // turns off the redundant, currently-broken native Android lint pass for release builds.
+        checkReleaseBuilds false
+    }
 }
 
 flutter {
