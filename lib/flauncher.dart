@@ -37,7 +37,13 @@ class FLauncher extends StatelessWidget {
         child: Stack(
           children: [
             Consumer<WallpaperService>(
-              builder: (_, wallpaper, _) => _wallpaper(context, wallpaper.wallpaperBytes, wallpaper.gradient.gradient),
+              builder: (_, wallpaper, _) => AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: KeyedSubtree(
+                  key: ValueKey(wallpaper.wallpaperVersion),
+                  child: _wallpaper(context, wallpaper.wallpaperBytes, wallpaper.gradient.gradient),
+                ),
+              ),
             ),
             Scaffold(
               backgroundColor: Colors.transparent,

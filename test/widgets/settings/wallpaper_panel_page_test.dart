@@ -17,11 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:async';
+
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
 import 'package:flauncher/widgets/settings/unsplash_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
+import 'package:flauncher/widgets/wallpaper_control_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -53,33 +56,26 @@ void main() {
     expect(find.byKey(Key("UnsplashPanelPage")), findsOneWidget);
   });
 
-  testWidgets("'Random photo' calls WallpaperService", (tester) async {
+  testWidgets("'Random photo' closes the panel and shows the control bar without fetching a photo yet",
+      (tester) async {
     final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
     when(settingsService.unsplashEnabled).thenReturn(true);
     when(settingsService.unsplashAuthor).thenReturn(null);
+    when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(false);
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
-    verify(wallpaperService.randomFromPicsum());
-  });
 
-  testWidgets("'Random photo (blurred)' calls WallpaperService", (tester) async {
-    final settingsService = MockSettingsService();
-    final wallpaperService = MockWallpaperService();
-    when(settingsService.unsplashEnabled).thenReturn(true);
-    when(settingsService.unsplashAuthor).thenReturn(null);
-
-    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    verify(wallpaperService.randomFromPicsum(blur: 4));
+    // The bar itself is responsible for the first fetch (its "Random" control) -- opening it
+    // shouldn't have already rolled a photo, since that used to race with the panel-close
+    // animation when the first network request happened to be slow.
+    verifyNever(wallpaperService.randomFromPicsum());
+    expect(find.byType(WallpaperPanelPage), findsNothing);
+    expect(find.byType(WallpaperControlBar), findsOneWidget);
   });
 
   testWidgets("'Gradient' navigates to GradientPanelPage", (tester) async {
@@ -90,7 +86,6 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -107,7 +102,6 @@ void main() {
 
       await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -128,7 +122,6 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(find.byType(SnackBar), findsOneWidget);
@@ -142,6 +135,9 @@ Future<void> _pumpWidgetWithProviders(
   SettingsService settingsService,
   WallpaperService wallpaperService,
 ) async {
+  // WallpaperPanelPage's "Random photo" button pops the *root* navigator, so it needs a route
+  // underneath it to pop back to -- mirroring how it's really nested (SettingsPanel dialog, on
+  // top of the home screen) at least one level deep, rather than being MaterialApp's only route.
   await tester.pumpWidget(
     MultiProvider(
       providers: [
@@ -153,9 +149,11 @@ Future<void> _pumpWidgetWithProviders(
           UnsplashPanelPage.routeName: (_) => Container(key: Key("UnsplashPanelPage")),
           GradientPanelPage.routeName: (_) => Container(key: Key("GradientPanelPage")),
         },
-        home: Scaffold(body: WallpaperPanelPage()),
+        home: Scaffold(body: Container(key: Key("Home"))),
       ),
     ),
   );
+  final homeContext = tester.element(find.byKey(Key("Home")));
+  unawaited(Navigator.of(homeContext).push(MaterialPageRoute(builder: (_) => Scaffold(body: WallpaperPanelPage()))));
   await tester.pumpAndSettle();
 }

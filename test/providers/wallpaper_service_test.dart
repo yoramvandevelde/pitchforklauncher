@@ -19,6 +19,7 @@
 
 import 'package:drift/drift.dart';
 import 'package:flauncher/gradients.dart';
+import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -98,7 +99,8 @@ void main() {
     final unsplashService = MockUnsplashService();
     final picsumService = MockPicsumService();
     final settingsService = MockSettingsService();
-    when(picsumService.randomPhoto()).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
+    when(picsumService.randomPhoto())
+        .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
     final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
@@ -110,22 +112,43 @@ void main() {
     expect(wallpaperService.wallpaperBytes, [0x01]);
   });
 
-  test("randomFromPicsum with blur", () async {
-    final imagePicker = _MockImagePicker();
-    final fLauncherChannel = MockFLauncherChannel();
-    final unsplashService = MockUnsplashService();
-    final picsumService = MockPicsumService();
-    final settingsService = MockSettingsService();
-    when(picsumService.randomPhoto(blur: 2)).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
-      ..settingsService = settingsService;
-    await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+  group("reapplyPicsumFilters", () {
+    test("no-ops when no photo has been fetched yet", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final unsplashService = MockUnsplashService();
+      final picsumService = MockPicsumService();
+      final settingsService = MockSettingsService();
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
+        ..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
-    await wallpaperService.randomFromPicsum(blur: 2);
+      await wallpaperService.reapplyPicsumFilters(grayscale: true);
 
-    verify(picsumService.randomPhoto(blur: 2));
-    verify(settingsService.setUnsplashAuthor(null));
-    expect(wallpaperService.wallpaperBytes, [0x01]);
+      verifyNever(picsumService.photoById(any, grayscale: anyNamed("grayscale"), blur: anyNamed("blur")));
+      expect(wallpaperService.wallpaperBytes, null);
+    });
+
+    test("re-fetches the current photo with grayscale and blur combined", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final unsplashService = MockUnsplashService();
+      final picsumService = MockPicsumService();
+      final settingsService = MockSettingsService();
+      when(picsumService.randomPhoto())
+          .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
+      when(picsumService.photoById(42, grayscale: true, blur: 4))
+          .thenAnswer((_) => Future.value(Uint8List.fromList([0x02])));
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
+        ..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      await wallpaperService.randomFromPicsum();
+
+      await wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4);
+
+      verify(picsumService.photoById(42, grayscale: true, blur: 4));
+      expect(wallpaperService.wallpaperBytes, [0x02]);
+    });
   });
 
   test("searchFromUnsplash", () async {
