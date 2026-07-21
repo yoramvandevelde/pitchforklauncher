@@ -43,6 +43,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/fonts/
   fonts:
     - family: Open Sans
       fonts:
