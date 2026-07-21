@@ -95,7 +95,11 @@ enum CategoryType {
 class FLauncherDatabase extends _$FLauncherDatabase {
   late final bool wasCreated;
 
-  FLauncherDatabase(super.databaseConnection);
+  // Keep the narrower DatabaseConnection type instead of using a super parameter here: the
+  // generated super constructor accepts the broader QueryExecutor, so super.databaseConnection
+  // would silently widen this constructor's public API to accept any QueryExecutor.
+  // ignore: use_super_parameters
+  FLauncherDatabase(DatabaseConnection databaseConnection) : super(databaseConnection);
 
   FLauncherDatabase.inMemory() : super(LazyDatabase(() => NativeDatabase.memory()));
 
