@@ -54,7 +54,7 @@ Future<void> _pumpWidgetWithProviders(WidgetTester tester, WallpaperService wall
       providers: [
         ChangeNotifierProvider<WallpaperService>.value(value: wallpaperService),
       ],
-      builder: (_, __) => MaterialApp(home: GradientPanelPage()),
+      builder: (_, _) => MaterialApp(home: GradientPanelPage()),
     ),
   );
   await tester.pumpAndSettle();

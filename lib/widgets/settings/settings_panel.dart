@@ -31,7 +31,7 @@ import 'package:flutter/material.dart';
 class SettingsPanel extends StatefulWidget {
   final String? initialRoute;
 
-  const SettingsPanel({Key? key, this.initialRoute}) : super(key: key);
+  const SettingsPanel({super.key, this.initialRoute});
 
   @override
   State<SettingsPanel> createState() => _SettingsPanelState();

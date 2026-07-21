@@ -95,7 +95,7 @@ enum CategoryType {
 class FLauncherDatabase extends _$FLauncherDatabase {
   late final bool wasCreated;
 
-  FLauncherDatabase(DatabaseConnection databaseConnection) : super(databaseConnection);
+  FLauncherDatabase(super.databaseConnection);
 
   FLauncherDatabase.inMemory() : super(LazyDatabase(() => NativeDatabase.memory()));
 

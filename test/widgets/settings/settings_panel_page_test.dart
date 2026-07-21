@@ -215,7 +215,7 @@ Future<void> _pumpWidgetWithProviders(
         ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<AppsService>.value(value: appsService),
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         routes: {
           CategoriesPanelPage.routeName: (_) => Container(key: Key("CategoriesPanelPage")),
           WallpaperPanelPage.routeName: (_) => Container(key: Key("WallpaperPanelPage")),

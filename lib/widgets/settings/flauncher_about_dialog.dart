@@ -24,9 +24,9 @@ class FLauncherAboutDialog extends StatelessWidget {
   final PackageInfo packageInfo;
 
   FLauncherAboutDialog({
-    Key? key,
+    super.key,
     required this.packageInfo,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

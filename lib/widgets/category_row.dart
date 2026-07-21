@@ -30,10 +30,10 @@ class CategoryRow extends StatelessWidget {
   final List<App> applications;
 
   CategoryRow({
-    Key? key,
+    super.key,
     required this.category,
     required this.applications,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) => Column(
