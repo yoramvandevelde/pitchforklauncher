@@ -108,8 +108,7 @@ currently set, and `WallpaperControlBar` disables (grays out) both switches unti
 `_currentPicsumPhotoId` is also now cleared whenever the wallpaper source changes away from Picsum
 (`pickWallpaper`, `setGradient`, `randomFromUnsplash`, `setFromUnsplash`).
 
-One follow-up identified during testing, not fixed yet:
-
-- **No transition when the photo changes under a filter toggle** — flipping Black & White or Blur
-  swaps the wallpaper image instantly. A quick fade between the old and new image was suggested as
-  a nice-to-have polish pass, not required. Raised 2026-07-21.
+~~No transition when the photo changes under a filter toggle~~ — fixed (2026-07-21):
+`WallpaperService.wallpaperVersion` bumps on every wallpaper/gradient change, keying an
+`AnimatedSwitcher` around the background in `FLauncher` so it cross-fades (200ms) between the old
+and new wallpaper. Applies to every wallpaper source, not just Picsum toggles.
