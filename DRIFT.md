@@ -17,6 +17,14 @@ few deliberate ways, listed here so it's clear what changed and why.
   `namespace` requirement breaking several plugins' old Android implementations, Flutter's Gradle
   plugin loader dropping the imperative `apply from`/`apply plugin` style entirely, the v1 Android
   embedding's removal breaking several plugins a second time, `compileSdk` now at 36).
+- **`sqlite3_flutter_libs` dropped, depends on `sqlite3` directly** (2026-07-21). Upstream
+  deprecated `sqlite3_flutter_libs` once native SQLite binary bundling moved to Dart's build hooks
+  system — its `0.6.0+eol` release strips all code from the package. `lib/database.dart` never
+  called `sqlite3_flutter_libs`'s API directly (no `DynamicLibrary.open`, `open.overrideFor`, or
+  the old-Android workaround); it was purely there to bundle the native lib, and `drift` already
+  required `sqlite3 ^3.4.0` transitively. Straight swap: `sqlite3_flutter_libs` removed from
+  `pubspec.yaml`, `sqlite3` added as a direct dependency. Verified both a fresh install and
+  installing over an existing database (upgrade path) preserve all data with no crash.
 
 ## Removed Firebase
 
@@ -92,6 +100,15 @@ it via adb, for anyone who prefers that trade-off (real default-launcher behavio
 nothing on the home screen) over the accessibility-service approach. The YouTube button keeps
 working either way now, since the service handles it directly rather than relying on the stock
 launcher.
+
+## Open Sans font, bold category labels
+
+Switched the app's typeface to Open Sans (bundled as a variable font,
+`assets/fonts/OpenSans-Variable.ttf`) and made category labels bold, for a cleaner look than the
+platform-default font upstream uses. Since the font is a bundled non-pub asset rather than a pub
+dependency, Flutter's "VIEW LICENSES" screen doesn't pick it up automatically — its OFL license
+(`assets/fonts/OFL.txt`) is registered manually via `LicenseRegistry.addLicense()` in `main.dart`
+(see AGENTS.md's License section for the general pattern).
 
 ## Picsum wallpaper source
 
