@@ -2,18 +2,33 @@
 # See AGENTS.md. Adjust if your JDK 17 lives elsewhere.
 java_home := "~/.local/share/mise/installs/java/temurin-17.0.19+10"
 
-# Build a debug APK and install it on a device/emulator. Bakes the current git branch and
-# short commit hash into the build (shown in Settings -> About FLauncher) via --dart-define,
-# so it's easy to tell which build is actually running on a device during testing.
+# Build a debug APK and install it on a device/emulator. Stamps the version as
+# today's date + "-local" (matching the release tag format, e.g. 2026.07.21-local),
+# shown in Settings -> About FLauncher.
 build-install device:
     #!/usr/bin/env bash
     set -euo pipefail
     export JAVA_HOME={{java_home}}
     export PATH="$JAVA_HOME/bin:$PATH"
-    git_branch=$(git rev-parse --abbrev-ref HEAD)
-    git_commit=$(git rev-parse --short HEAD)
-    fvm flutter build apk --debug --dart-define=GIT_BRANCH="$git_branch" --dart-define=GIT_COMMIT="$git_commit"
+    build_name="$(date +%Y.%m.%d)-local"
+    fvm flutter build apk --debug --build-name="$build_name"
     adb -s {{device}} install -r build/app/outputs/flutter-apk/app-debug.apk
+
+# Build a signed release APK and install it on a device/emulator, for testing a release
+# build locally before cutting a tag. Same date + "-local" version stamp as build-install.
+# build_number is the current unix timestamp -- always higher than the last build, so
+# Android never refuses the install as a downgrade, no manual bumping needed. Requires
+# SIGNING_KEYSTORE_PASSWORD, SIGNING_KEY_PASSWORD and SIGNING_KEY_ALIAS to already be
+# exported, and android/app/upload-keystore.jks to be in place (see release.yml).
+build-install-release device:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export JAVA_HOME={{java_home}}
+    export PATH="$JAVA_HOME/bin:$PATH"
+    build_name="$(date +%Y.%m.%d)-local"
+    build_number="$(date +%s)"
+    fvm flutter build apk --release --build-name="$build_name" --build-number="$build_number"
+    adb -s {{device}} install -r build/app/outputs/flutter-apk/app-release.apk
 
 # README "Option A: make it the real default launcher" - disables the stock Google TV
 # launcher (and the setup wizard, which would otherwise become the new fallback)

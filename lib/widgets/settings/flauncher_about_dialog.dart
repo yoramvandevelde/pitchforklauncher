@@ -17,7 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flauncher/build_info.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -41,7 +40,6 @@ class FLauncherAboutDialog extends StatelessWidget {
       applicationIcon: Image.asset("assets/logo.png", height: 72),
       children: [
         Text("${packageInfo.version} (${packageInfo.buildNumber})", style: mutedStyle),
-        Text("${BuildInfo.gitBranch} @ ${BuildInfo.gitCommit}", style: mutedStyle),
         SizedBox(height: 8),
         Text("© 2021 Étienne Fesser\n© 2026 Yoram van de Velde", style: mutedStyle),
         SizedBox(height: 24),
