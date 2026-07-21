@@ -27,14 +27,14 @@ class FocusKeyboardListener extends StatefulWidget {
   final KeyEventResult Function(LogicalKeyboardKey)? onLongPress;
 
   FocusKeyboardListener({
-    Key? key,
+    super.key,
     required this.builder,
     this.onPressed,
     this.onLongPress,
-  }) : super(key: key);
+  });
 
   @override
-  _FocusKeyboardListenerState createState() => _FocusKeyboardListenerState();
+  State<FocusKeyboardListener> createState() => _FocusKeyboardListenerState();
 }
 
 class _FocusKeyboardListenerState extends State<FocusKeyboardListener> {
@@ -48,12 +48,12 @@ class _FocusKeyboardListenerState extends State<FocusKeyboardListener> {
       );
 
   KeyEventResult _handleKey(BuildContext context, KeyEvent keyEvent) {
-    switch (keyEvent.runtimeType) {
-      case KeyDownEvent:
+    switch (keyEvent) {
+      case KeyDownEvent _:
         return _keyDownEvent(context, keyEvent.logicalKey, isRepeat: false);
-      case KeyRepeatEvent:
+      case KeyRepeatEvent _:
         return _keyDownEvent(context, keyEvent.logicalKey, isRepeat: true);
-      case KeyUpEvent:
+      case KeyUpEvent _:
         return _keyUpEvent(context, keyEvent.logicalKey);
     }
     return KeyEventResult.handled;

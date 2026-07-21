@@ -34,7 +34,7 @@ class SettingsPanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Consumer<SettingsService>(
-        builder: (context, settingsService, __) => SingleChildScrollView(
+        builder: (context, settingsService, _) => SingleChildScrollView(
           child: Column(
             children: [
               Text("Settings", style: Theme.of(context).textTheme.titleLarge),

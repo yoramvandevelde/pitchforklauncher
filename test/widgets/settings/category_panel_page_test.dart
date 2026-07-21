@@ -195,7 +195,7 @@ Future<void> _pumpWidgetWithProviders(WidgetTester tester, AppsService appsServi
       providers: [
         ChangeNotifierProvider<AppsService>.value(value: appsService),
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         home: Scaffold(body: CategoryPanelPage(categoryId: categoryId)),
       ),
     ),

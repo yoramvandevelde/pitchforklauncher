@@ -109,7 +109,7 @@ Future<void> _pumpWidgetWithProviders(WidgetTester tester, AppsService appsServi
       providers: [
         ChangeNotifierProvider<AppsService>.value(value: appsService),
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         routes: {
           CategoryPanelPage.routeName: (_) => Container(key: Key("CategoryPanelPage")),
         },

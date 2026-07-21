@@ -123,7 +123,7 @@ Future<void> _pumpWidgetWithProviders(
         ChangeNotifierProvider<ButtonMappingService>.value(value: buttonMappingService),
         ChangeNotifierProvider<AppsService>.value(value: appsService),
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         home: Scaffold(body: ButtonMappingPanelPage()),
       ),
     ),

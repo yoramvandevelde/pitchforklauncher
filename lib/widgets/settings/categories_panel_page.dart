@@ -34,7 +34,7 @@ class CategoriesPanelPage extends StatelessWidget {
           Divider(),
           Selector<AppsService, List<CategoryWithApps>>(
             selector: (_, appsService) => appsService.categoriesWithApps,
-            builder: (_, categories, __) => Expanded(
+            builder: (_, categories, _) => Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: categories.asMap().keys.map((index) => _category(context, categories, index)).toList(),

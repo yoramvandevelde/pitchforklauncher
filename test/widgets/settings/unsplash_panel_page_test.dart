@@ -84,7 +84,7 @@ Future<void> _pumpWidgetWithProviders(WidgetTester tester, WallpaperService wall
       providers: [
         ChangeNotifierProvider<WallpaperService>.value(value: wallpaperService),
       ],
-      builder: (_, __) => MaterialApp(home: Material(child: UnsplashPanelPage())),
+      builder: (_, _) => MaterialApp(home: Material(child: UnsplashPanelPage())),
     ),
   );
   await tester.pumpAndSettle();

@@ -37,7 +37,7 @@ class FLauncher extends StatelessWidget {
         child: Stack(
           children: [
             Consumer<WallpaperService>(
-              builder: (_, wallpaper, __) => _wallpaper(context, wallpaper.wallpaperBytes, wallpaper.gradient.gradient),
+              builder: (_, wallpaper, _) => _wallpaper(context, wallpaper.wallpaperBytes, wallpaper.gradient.gradient),
             ),
             Scaffold(
               backgroundColor: Colors.transparent,

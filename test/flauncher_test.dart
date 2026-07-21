@@ -659,7 +659,7 @@ Future<void> _pumpWidgetWithProviders(
         ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         Provider<TickerModel>(create: (_) => TickerModel(tester))
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         home: FLauncher(),
       ),
     ),

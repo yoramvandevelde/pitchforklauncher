@@ -148,7 +148,7 @@ Future<void> _pumpWidgetWithProviders(
         ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<WallpaperService>.value(value: wallpaperService),
       ],
-      builder: (_, __) => MaterialApp(
+      builder: (_, _) => MaterialApp(
         routes: {
           UnsplashPanelPage.routeName: (_) => Container(key: Key("UnsplashPanelPage")),
           GradientPanelPage.routeName: (_) => Container(key: Key("GradientPanelPage")),

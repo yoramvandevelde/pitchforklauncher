@@ -39,7 +39,7 @@ class ButtonMappingPanelPage extends StatelessWidget {
           ),
           Selector<ButtonMappingService, List<ButtonMapping>>(
             selector: (_, service) => service.mappings,
-            builder: (context, mappings, __) => Expanded(
+            builder: (context, mappings, _) => Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: mappings.map((mapping) => _mapping(context, mapping)).toList(),

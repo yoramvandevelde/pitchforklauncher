@@ -40,16 +40,16 @@ class AppCard extends StatefulWidget {
   final VoidCallback onMoveEnd;
 
   AppCard({
-    Key? key,
+    super.key,
     required this.category,
     required this.application,
     required this.autofocus,
     required this.onMove,
     required this.onMoveEnd,
-  }) : super(key: key);
+  });
 
   @override
-  _AppCardState createState() => _AppCardState();
+  State<AppCard> createState() => _AppCardState();
 }
 
 class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
@@ -159,7 +159,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                   ),
                   Selector<SettingsService, bool>(
                     selector: (_, settingsService) => settingsService.appHighlightAnimationEnabled,
-                    builder: (context, appHighlightAnimationEnabled, __) {
+                    builder: (context, appHighlightAnimationEnabled, _) {
                       if (appHighlightAnimationEnabled) {
                         _animation.forward();
                         return AnimatedBuilder(

@@ -27,13 +27,13 @@ class CategoryPanelPage extends StatelessWidget {
 
   final int categoryId;
 
-  CategoryPanelPage({Key? key, required this.categoryId}) : super(key: key);
+  CategoryPanelPage({super.key, required this.categoryId});
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
         child: Selector<AppsService, Category?>(
           selector: (_, appsService) => _categorySelector(appsService),
-          builder: (_, category, __) => category != null
+          builder: (_, category, _) => category != null
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

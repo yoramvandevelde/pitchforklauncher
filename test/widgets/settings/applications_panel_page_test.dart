@@ -155,7 +155,7 @@ Future<void> _pumpWidgetWithProviders(WidgetTester tester, AppsService appsServi
       providers: [
         ChangeNotifierProvider<AppsService>.value(value: appsService),
       ],
-      builder: (_, __) => MaterialApp(home: ApplicationsPanelPage()),
+      builder: (_, _) => MaterialApp(home: ApplicationsPanelPage()),
     ),
   );
   await tester.pumpAndSettle();
