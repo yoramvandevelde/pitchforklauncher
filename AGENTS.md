@@ -67,6 +67,14 @@ items. This file is about *working on the code* — toolchain, commands, convent
   results point to — the GitHub mirror lags behind GitLab.
 - This repo's commit convention: no AI co-author trailers in commit messages.
 
+## Releases
+
+- **Label every PR** before merging: `enhancement`, `bug`, or `dependencies` (Renovate PRs get
+  `dependencies` automatically via `renovate.json`'s `labels` config). Tagging a release
+  (`YYYY.MM.DD`, see `.github/workflows/release.yml`) auto-generates the "What's Changed" release
+  notes, grouped by these labels per `.github/release.yml`. An unlabeled PR still shows up, but
+  falls into a generic "Other Changes" bucket instead of the right category.
+
 ## License
 
 GPL-3.0 (`LICENSE`). Every source file carries a header comment with the original copyright line
