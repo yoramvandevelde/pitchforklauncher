@@ -20,7 +20,7 @@ dependencies:
   package_info_plus: ^10.2.1
   provider: ^6.1.5+1
   shared_preferences: ^2.3.3
-  sqlite3_flutter_libs: ^0.5.13
+  sqlite3: ^3.5.0
   unsplash_client: ^2.1.0+3
   webview_flutter: ^4.14.1
 
