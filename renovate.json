@@ -7,6 +7,9 @@
     "before 6am on thursday"
   ],
   "minimumReleaseAge": "3 days",
+  "ignoreDeps": [
+    "unsplash_client"
+  ],
   "packageRules": [
     {
       "matchManagers": ["gradle", "gradle-wrapper"],
