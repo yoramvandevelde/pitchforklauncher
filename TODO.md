@@ -92,3 +92,15 @@ button override.
   `sqlite3_flutter_libs` from `pubspec.yaml` entirely and depend on `sqlite3` v3.x directly. Small,
   self-contained change, but do it in its own branch with a real device check (Google TV Streamer)
   rather than riding along on the Renovate bump. PR #7 closed/skipped, not merged. Found 2026-07-21.
+
+- **Migrate off the Kotlin Gradle Plugin (KGP) to Flutter's "Built-in Kotlin"** before it becomes a
+  hard build failure. Surfaced as a WARNING starting with Renovate PR #10 (AGP 8.13.2 -> 9.3.0):
+  Flutter's own Gradle tooling (`FlutterPluginUtils.kt`) only emits this check once
+  `agpVersion.major >= 9`, which is why it never showed up on `main` (still AGP 8.x) but appears as
+  soon as a project bumps past AGP 9 — not something PR #10 broke, just the threshold where
+  Flutter's early-warning switches on. Affected plugins in this project: `image_picker_android`,
+  `shared_preferences_android`, `webview_flutter_android` — they still apply KGP the old way, and
+  need to ship a version that supports Built-in Kotlin before this becomes a real build failure
+  (guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers).
+  Not actionable from this repo alone — depends on upstream plugin authors — so just keep an eye on
+  their changelogs when doing routine dependency bumps. Found 2026-07-21.
