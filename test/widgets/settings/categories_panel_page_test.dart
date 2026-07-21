@@ -69,6 +69,55 @@ void main() {
     expect(find.text("Applications"), findsOneWidget);
   });
 
+  testWidgets("Moving a category to the bottom of a 2-item list keeps focus off 'Add Category'", (tester) async {
+    final appsService = MockAppsService();
+    var categories = [
+      CategoryWithApps(fakeCategory(name: "Favorites"), []),
+      CategoryWithApps(fakeCategory(name: "Applications"), []),
+    ];
+    when(appsService.categoriesWithApps).thenAnswer((_) => categories);
+
+    // MockAppsService only `implements` AppsService, so its notifyListeners()/addListener() are
+    // no-op Mockito stubs rather than real ChangeNotifier plumbing. Capture the listener that
+    // ChangeNotifierProvider registers so we can invoke it ourselves to simulate a real
+    // notifyListeners() call after moveCategory reorders the list.
+    final listeners = <VoidCallback>[];
+    when(appsService.addListener(any)).thenAnswer((invocation) {
+      listeners.add(invocation.positionalArguments[0] as VoidCallback);
+    });
+    when(appsService.moveCategory(any, any)).thenAnswer((invocation) async {
+      final oldIndex = invocation.positionalArguments[0] as int;
+      final newIndex = invocation.positionalArguments[1] as int;
+      // A new list instance, matching how the real AppsService re-fetches from the database after
+      // a move — Selector's change detection relies on identity, so mutating in place wouldn't
+      // trigger a rebuild here the way it does in production.
+      final movedCategory = categories[oldIndex];
+      categories = List.of(categories)
+        ..removeAt(oldIndex)
+        ..insert(newIndex, movedCategory);
+      for (final listener in List.of(listeners)) {
+        listener();
+      }
+    });
+    await _pumpWidgetWithProviders(tester, appsService);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    verify(appsService.moveCategory(0, 1));
+
+    final addCategoryFocusNode = Focus.of(tester.element(find.text("Add Category")));
+    expect(addCategoryFocusNode.hasFocus, isFalse);
+
+    final favoritesUpArrow = find.descendant(
+      of: find.ancestor(of: find.text("Favorites"), matching: find.byType(Card)),
+      matching: find.byIcon(Icons.arrow_upward),
+    );
+    final favoritesUpArrowFocusNode = Focus.of(tester.element(favoritesUpArrow));
+    expect(favoritesUpArrowFocusNode.hasFocus, isTrue);
+  });
+
   testWidgets("'Settings' opens CategoryPanelPage", (tester) async {
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([

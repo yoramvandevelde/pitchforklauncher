@@ -49,18 +49,18 @@ button override.
   without live API credentials, and now specifically needs testing the "no key entered yet" /
   "invalid key" states too, not just the happy path with a working key.
 
-- **Focus jumps to "Add Category" after reordering with exactly 2 categories**
-  (`lib/widgets/settings/categories_panel_page.dart`). Each row's up/down arrow `IconButton` is
-  disabled (`onPressed: null`) once the row is first/last. With exactly 2 categories, moving either
-  one always lands it at the opposite extreme in a single step, so the arrow button the user just
-  pressed becomes disabled immediately after the move — Flutter then hands focus to the next
-  focusable widget in traversal order, which happens to be the "Add Category" button below the
-  list, instead of somewhere less jarring (e.g. the row's other, still-enabled arrow, or the row
-  itself). With 3+ categories a single-step move usually doesn't land on an extreme, so the pressed
-  button stays enabled and focus doesn't jump — which is why this only reproduces at exactly 2.
-  Found during Phase 4 manual testing (2026-07-20), pre-existing behavior unrelated to the upgrade.
-  Possible fix: after `_move()`, explicitly request focus on the moved row's remaining enabled
-  arrow (or the row itself) instead of leaving it to Flutter's default disabled-widget fallback.
+~~Focus jumps to "Add Category" after reordering with exactly 2 categories
+  (`lib/widgets/settings/categories_panel_page.dart`)~~ — fixed: each up/down arrow `IconButton`
+  now gets an explicit, per-category `FocusNode`, and after `_move()` the row's remaining enabled
+  arrow is refocused via `addPostFrameCallback` instead of leaving it to Flutter's default
+  disabled-widget fallback. Covered by a regression test in `categories_panel_page_test.dart`.
+
+- **Focus-snap on the categories reorder fix feels a bit abrupt.** Confirmed working on the
+  `GoogleTV_API34` emulator (2026-07-21), but the corrective refocus lands a frame after Flutter's
+  own disabled-widget fallback already moved focus away, so there's a brief hard cut instead of a
+  smooth transition. Not a functional bug — just visually a little wonky. Possible follow-up: a
+  quick fade-out/fade-in on the focus highlight (fast enough to not feel sluggish) instead of the
+  instant snap.
 
 - **No confirmation dialog before deleting a category** (`lib/widgets/settings/category_panel_page.dart`,
   the "Delete" `ElevatedButton`'s `onPressed`) — calls `AppsService.deleteCategory(category)`
