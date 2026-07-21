@@ -78,3 +78,17 @@ button override.
   button), and picsum.photos supports a `?grayscale` query parameter the same way it supports
   `?blur=`, so this would be a small, near free addition following the exact same pattern. Not
   urgent, just a nice easy win if picked up. Suggested 2026-07-20.
+
+- **Migrate off `sqlite3_flutter_libs` to `sqlite3` v3.x** (`pubspec.yaml`, `lib/database.dart`).
+  Renovate PR #7 wanted to bump `sqlite3_flutter_libs` to `0.6.0+eol` — upstream has deprecated
+  the package, since `sqlite3` v3.x native binary bundling moved to Dart's build hooks system and
+  `sqlite3_flutter_libs` is no longer needed at all; `0.6.0+eol` strips all code from the package.
+  Taking that bump as-is would leave the dependency pinned to a version that does nothing without
+  actually adopting the replacement mechanism, risking loss of native SQLite bundling on Android.
+  `lib/database.dart` doesn't call any of `sqlite3_flutter_libs`'s APIs directly (no
+  `DynamicLibrary.open`, `open.overrideFor`, or `applyWorkaroundToOpenSqlite3OnOldAndroidVersions`),
+  it's purely there to bundle the native lib, and drift already requires `sqlite3 ^3.4.0`
+  transitively, so most of the groundwork is already in place. The fix: drop
+  `sqlite3_flutter_libs` from `pubspec.yaml` entirely and depend on `sqlite3` v3.x directly. Small,
+  self-contained change, but do it in its own branch with a real device check (Google TV Streamer)
+  rather than riding along on the Renovate bump. PR #7 closed/skipped, not merged. Found 2026-07-21.
