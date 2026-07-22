@@ -94,14 +94,12 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _arrowButton(
-                  context: context,
                   focusNode: _upFocusNode(categoryId),
                   icon: Icons.arrow_upward,
                   onPressed:
                       index > 0 ? () => _move(context, categories.length, categoryId, index, index - 1) : null,
                 ),
                 _arrowButton(
-                  context: context,
                   focusNode: _downFocusNode(categoryId),
                   icon: Icons.arrow_downward,
                   onPressed: index < categories.length - 1
@@ -131,7 +129,6 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
   // effect. Fading each arrow's own highlight in/out (instead of Flutter's instant default) softens
   // that unavoidable one-frame hop rather than eliminating it.
   Widget _arrowButton({
-    required BuildContext context,
     required FocusNode focusNode,
     required IconData icon,
     required VoidCallback? onPressed,
