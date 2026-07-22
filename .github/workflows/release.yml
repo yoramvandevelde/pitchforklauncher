@@ -66,11 +66,11 @@ jobs:
           git checkout main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          sed -i "s/^version: .*/version: ${GITHUB_REF_NAME}+${GITHUB_RUN_NUMBER}/" pubspec.yaml
+          sed -i "s/^version: .*/version: ${GITHUB_REF_NAME}/" pubspec.yaml
           git add pubspec.yaml
           if git diff --cached --quiet; then
             echo "pubspec.yaml version already up to date, nothing to commit."
           else
-            git commit -m "Bump pubspec.yaml version to ${GITHUB_REF_NAME}+${GITHUB_RUN_NUMBER}"
+            git commit -m "Bump pubspec.yaml version to ${GITHUB_REF_NAME}"
             git push origin main
           fi
