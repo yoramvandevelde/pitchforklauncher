@@ -84,9 +84,10 @@ class PicsumService {
   int _idFromResolvedUri(Uri uri) {
     final segments = uri.pathSegments;
     final index = segments.indexOf("id");
-    if (index == -1 || index + 1 >= segments.length) {
+    final id = index == -1 || index + 1 >= segments.length ? null : int.tryParse(segments[index + 1]);
+    if (id == null) {
       throw PicsumException("Could not parse a photo id from $uri");
     }
-    return int.parse(segments[index + 1]);
+    return id;
   }
 }
