@@ -56,3 +56,21 @@ jobs:
         with:
           files: pitchforklauncher-${{ github.ref_name }}.apk
           generate_release_notes: true
+
+      # pubspec.yaml's version: field is never actually used for a real release build (the build
+      # above overrides it via --build-name/--build-number) -- this just keeps it from drifting
+      # stale, for the sake of ad-hoc local builds that don't pass those flags themselves.
+      - name: Bump pubspec.yaml version on main
+        run: |
+          git fetch origin main
+          git checkout main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          sed -i "s/^version: .*/version: ${GITHUB_REF_NAME}+${GITHUB_RUN_NUMBER}/" pubspec.yaml
+          git add pubspec.yaml
+          if git diff --cached --quiet; then
+            echo "pubspec.yaml version already up to date, nothing to commit."
+          else
+            git commit -m "Bump pubspec.yaml version to ${GITHUB_REF_NAME}+${GITHUB_RUN_NUMBER}"
+            git push origin main
+          fi
