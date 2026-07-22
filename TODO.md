@@ -113,7 +113,7 @@ so at least one layer is always fully opaque and the background never shows thro
   `AppsService._initDefaultCategories()` now sorts well-known apps into topical categories
   (`lib/default_app_categories.dart`'s hardcoded package-name map) on any genuine fresh
   install/data wipe, falling back to the original TV/Non-TV split for anything unmatched, and
-  `WallpaperService` seeds a bundled default wallpaper (`assets/default_wallpaper.png`) instead of
+  `WallpaperService` seeds a bundled default wallpaper (`assets/default_wallpaper.jpg`) instead of
   the plain gradient. Always-on production behavior, not gated behind debug mode — both paths key
   off the same fresh-install signal, so an ordinary app update/reinstall never re-triggers them.
   See `DRIFT.md`.

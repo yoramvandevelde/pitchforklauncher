@@ -142,9 +142,11 @@ On a genuine fresh install / wiped data (`FLauncherDatabase.wasCreated`, or the 
 `isFreshInstall()` helper used by `WallpaperService`), instead of just the generic "TV
 Applications"/"Non-TV Applications" split, well-known apps are automatically sorted into topical
 categories first — see `lib/default_app_categories.dart`'s hardcoded package-name-to-category map
-(currently just Streaming/Media entries, editable directly, no config file or remote source).
-Unmatched apps still fall back to the original TV/Non-TV split. A bundled default wallpaper
-(`assets/default_wallpaper.jpg`, a photo by Daniel Gomez on Unsplash, credited in the About
-dialog's license viewer) is also shown instead of the plain gradient fallback on that same first
-launch. Both gate on the same fresh-install signal, so an ordinary app update/reinstall never
-touches either — only an explicit data wipe or full uninstall+reinstall does.
+(currently Streaming/Media/System entries, editable directly, no config file or remote source).
+Both the grouping and the display order follow the map's own order directly, not the device's
+alphabetically-sorted app list. Unmatched apps still fall back to the original TV/Non-TV split. A
+bundled default wallpaper (`assets/default_wallpaper.jpg`, a photo by Daniel Gomez on Unsplash,
+credited in the About dialog's license viewer) is also shown instead of the plain gradient
+fallback on that same first launch. Both gate on the same fresh-install signal, so an ordinary app
+update/reinstall never touches either — only an explicit data wipe or full uninstall+reinstall
+does.
