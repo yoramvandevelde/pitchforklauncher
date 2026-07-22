@@ -41,13 +41,14 @@ button override.
 - **Revisit the dormant Unsplash wallpaper source** (`unsplashEnabled` hardcoded `false` in
   `lib/providers/settings_service.dart`, see `DRIFT.md`). Decided during `UPGRADE_PLAN.md`'s
   Phase 3 (2026-07-20) to leave `unsplash_client` on its current `^2.1.0+3` pin rather than bump
-  to the breaking 3.0.0 release, since the code path doesn't run. **Decided (2026-07-20): yes,
-  re-enable it, but user-supplied key only** — bump `unsplash_client` to 3.0.0 and add a settings
-  UI where the user pastes in their own Unsplash API key, stored locally; no key ever gets bundled
-  in or shipped with the app itself, full stop, regardless of build/distribution channel. Also
-  still need a test plan before starting: this is the one wallpaper source that can't be exercised
-  without live API credentials, and now specifically needs testing the "no key entered yet" /
-  "invalid key" states too, not just the happy path with a working key.
+  to the breaking 3.0.0 release, since the code path doesn't run. Was tentatively decided
+  2026-07-20 to re-enable it with a user-supplied API key, but **on hold as of 2026-07-22**: now
+  that the Picsum live full-screen preview covers "quickly get a nice random photo" well, Unsplash
+  (which needs the user to go create a developer account/API key just to unlock it) looks like it
+  wouldn't add much real value. Not picking this up for now; revisit if that assessment changes.
+  If it does get picked up: user-supplied key only, no key ever bundled with the app; and it's the
+  one wallpaper source that can't be exercised without live API credentials, so budget for testing
+  the "no key entered yet" / "invalid key" states specifically, not just the happy path.
 
 ~~Focus jumps to "Add Category" after reordering with exactly 2 categories
   (`lib/widgets/settings/categories_panel_page.dart`)~~ — fixed: each up/down arrow `IconButton`
