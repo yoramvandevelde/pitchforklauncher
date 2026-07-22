@@ -56,12 +56,10 @@ button override.
   arrow is refocused via `addPostFrameCallback` instead of leaving it to Flutter's default
   disabled-widget fallback. Covered by a regression test in `categories_panel_page_test.dart`.
 
-- **Focus-snap on the categories reorder fix feels a bit abrupt.** Confirmed working on the
-  `GoogleTV_API34` emulator (2026-07-21), but the corrective refocus lands a frame after Flutter's
-  own disabled-widget fallback already moved focus away, so there's a brief hard cut instead of a
-  smooth transition. Not a functional bug — just visually a little wonky. Possible follow-up: a
-  quick fade-out/fade-in on the focus highlight (fast enough to not feel sluggish) instead of the
-  instant snap.
+~~Focus-snap on the categories reorder fix feels a bit abrupt~~ — softened (2026-07-22): the
+one-frame hop itself can't be eliminated (Flutter defers focus updates by a frame by design,
+confirmed via its docs, regardless of mechanism), so the arrows now fade their own focus highlight
+in/out (120ms) instead of Flutter's instant default, in `categories_panel_page.dart`.
 
 ~~No confirmation dialog before deleting a category~~ — fixed (PR #16, 2026-07-22):
 `CategoryPanelPage`'s "Delete" button now shows an `AlertDialog` ("Delete category?" / Cancel /
@@ -109,6 +107,19 @@ underneath bleed through). Fixed by confining `switchInCurve`/`switchOutCurve` t
 controller runs in reverse, this makes the incoming photo reach full opacity by the midpoint and
 the outgoing one only start fading (invisibly, now hidden under the opaque new layer) after that,
 so at least one layer is always fully opaque and the background never shows through.
+
+- **Seed a richer, sane default test setup instead of the bare upstream one.** Raised in
+  conversation 2026-07-22: every fresh install/data wipe on the test emulator currently only gets
+  whatever `AppsService._initDefaultCategories()` (`lib/providers/apps_service.dart`) builds —
+  upstream FLauncher's original first-launch behavior, which just creates a "TV Applications" grid
+  category and a "Non-TV Applications" one from whatever happens to be installed (Play Store,
+  YouTube, etc. on the emulator). Fine for a real device, but it means every test-data wipe leaves
+  a bare, not-very-useful setup for actually exercising features (multiple categories, manual sort
+  order, an already-picked wallpaper, etc.), so the user ends up manually rebuilding a test
+  scenario by hand each time. Idea: a debug-only seed path (gated behind the existing DEBUG
+  build/ribbon) that additionally creates a couple of extra categories with sensible settings,
+  maybe a default wallpaper choice, so a fresh install starts from a useful baseline instead of
+  empty/bare-minimum. Not scoped/designed yet, just captured so it's not forgotten.
 
 - **Consider doing B&W/Blur as a client-side render effect instead of a server round-trip.**
   Raised in conversation 2026-07-22, explicitly for later, not now. Right now toggling a filter

@@ -93,19 +93,15 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
+                _arrowButton(
                   focusNode: _upFocusNode(categoryId),
-                  constraints: BoxConstraints(),
-                  splashRadius: 20,
-                  icon: Icon(Icons.arrow_upward),
+                  icon: Icons.arrow_upward,
                   onPressed:
                       index > 0 ? () => _move(context, categories.length, categoryId, index, index - 1) : null,
                 ),
-                IconButton(
+                _arrowButton(
                   focusNode: _downFocusNode(categoryId),
-                  constraints: BoxConstraints(),
-                  splashRadius: 20,
-                  icon: Icon(Icons.arrow_downward),
+                  icon: Icons.arrow_downward,
                   onPressed: index < categories.length - 1
                       ? () => _move(context, categories.length, categoryId, index, index + 1)
                       : null,
@@ -126,6 +122,37 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
       ),
     );
   }
+
+  // Flutter's focus system always defers actual focus changes by a frame, by design -- so when
+  // _move() lands a row on an extreme and the pressed arrow gets disabled, there's no way to avoid
+  // Flutter's default fallback briefly landing on "Add Category" before our correction takes
+  // effect. Fading each arrow's own highlight in/out (instead of Flutter's instant default) softens
+  // that unavoidable one-frame hop rather than eliminating it.
+  Widget _arrowButton({
+    required FocusNode focusNode,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) =>
+      AnimatedBuilder(
+        animation: focusNode,
+        builder: (context, child) => AnimatedContainer(
+          duration: Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: focusNode.hasFocus ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) : Colors.transparent,
+          ),
+          child: child,
+        ),
+        child: IconButton(
+          focusNode: focusNode,
+          focusColor: Colors.transparent,
+          constraints: BoxConstraints(),
+          splashRadius: 20,
+          icon: Icon(icon),
+          onPressed: onPressed,
+        ),
+      );
 
   Future<void> _move(BuildContext context, int categoriesCount, int categoryId, int oldIndex, int newIndex) async {
     await context.read<AppsService>().moveCategory(oldIndex, newIndex);
