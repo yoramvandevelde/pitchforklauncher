@@ -109,3 +109,16 @@ underneath bleed through). Fixed by confining `switchInCurve`/`switchOutCurve` t
 controller runs in reverse, this makes the incoming photo reach full opacity by the midpoint and
 the outgoing one only start fading (invisibly, now hidden under the opaque new layer) after that,
 so at least one layer is always fully opaque and the background never shows through.
+
+- **Consider doing B&W/Blur as a client-side render effect instead of a server round-trip.**
+  Raised in conversation 2026-07-22, explicitly for later, not now. Right now toggling a filter
+  calls `WallpaperService.reapplyPicsumFilters`, which re-fetches the photo from Picsum with
+  `?grayscale`/`?blur=N`. Flutter can do both live, on the GPU, over the already-downloaded bytes:
+  `ColorFilter.matrix()` for grayscale (a cheap per-pixel luminance transform), and
+  `ImageFilter.blur(sigmaX:, sigmaY:)` via `ImageFiltered` for blur — this app already uses the
+  latter elsewhere (`lib/flauncher.dart`'s settings-icon shadow). Doing it this way would make
+  toggling instant (no network round-trip, no possibility of a 404, no query-string combining) at
+  the cost of no longer persisting literal filtered image bytes to `_wallpaperFile` — would need to
+  store the base photo + filter flags and reapply the `ColorFilter`/`ImageFilter` at render time in
+  `FLauncher`'s background widget instead. Not a bug or regression, current approach works fine;
+  just a design alternative worth weighing later.
