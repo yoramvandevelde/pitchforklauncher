@@ -85,22 +85,24 @@ class AppsService extends ChangeNotifier {
       );
 
   // Sorts well-known apps (see default_app_categories.dart) into topical categories, falling back
-  // to the sideloaded/non-sideloaded split for anything unmatched. Topical categories are added
-  // *after* the TV/Non-TV fallback ones so they end up visually above them -- addCategory() always
-  // inserts at order 0, pushing existing categories down, so whichever category is added last ends
-  // up on top. TV Applications and the "System" topical category (utility/miscellaneous catch-alls,
-  // as opposed to actual content apps) render as a compact row (height 80) rather than a grid.
+  // to the sideloaded/non-sideloaded split for anything unmatched. Both which category an app
+  // lands in and the display order come directly from default_app_categories.dart's own order --
+  // scanning the map itself (rather than the device's, alphabetically-sorted app list) for
+  // grouping and per-category app order, then adding categories in *reverse* of the map's order so
+  // that order becomes the visual top-to-bottom order: addCategory() always inserts at order 0,
+  // pushing existing categories down, so whichever category is added last ends up on top. TV
+  // Applications and the "System" topical category (utility/miscellaneous catch-alls, as opposed
+  // to actual content apps) render as a compact row (height 80) rather than a grid.
   Future<void> _initDefaultCategories() => _database.transaction(() async {
+        final installedByPackageName = {for (final app in _applications) app.packageName: app};
         final matchedByCategory = <String, List<App>>{};
-        final unmatched = <App>[];
-        for (final app in _applications) {
-          final categoryName = defaultAppCategories[app.packageName];
-          if (categoryName != null) {
-            matchedByCategory.putIfAbsent(categoryName, () => []).add(app);
-          } else {
-            unmatched.add(app);
+        for (final entry in defaultAppCategories.entries) {
+          final app = installedByPackageName[entry.key];
+          if (app != null) {
+            matchedByCategory.putIfAbsent(entry.value, () => []).add(app);
           }
         }
+        final unmatched = _applications.where((app) => !defaultAppCategories.containsKey(app.packageName));
 
         final tvApplications = unmatched.where((element) => element.sideloaded == false);
         final nonTvApplications = unmatched.where((element) => element.sideloaded == true);
@@ -134,7 +136,7 @@ class AppsService extends ChangeNotifier {
           }
         }
 
-        for (final entry in matchedByCategory.entries) {
+        for (final entry in matchedByCategory.entries.toList().reversed) {
           await addCategory(entry.key, shouldNotifyListeners: false);
           final category = _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == entry.key);
           if (entry.key == "System") {

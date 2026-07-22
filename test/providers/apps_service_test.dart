@@ -310,6 +310,76 @@ void main() {
       ]);
     });
 
+    test("categorization follows default_app_categories.dart's own order, not the device's alphabetical app order",
+        () async {
+      final channel = MockFLauncherChannel();
+      final database = MockFLauncherDatabase();
+      // Jellyfin/Plex are both "Media" -- alphabetically "Jellyfin" sorts before "Plex", but
+      // default_app_categories.dart lists Plex before Jellyfin. Netflix is "Streaming", listed
+      // before "Media" in the file, but must still end up visually *above* Media.
+      when(channel.getApplications()).thenAnswer((_) => Future.value([
+            {
+              'packageName': 'org.jellyfin.androidtv',
+              'name': 'Jellyfin',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+            {
+              'packageName': 'com.plexapp.android',
+              'name': 'Plex',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+            {
+              'packageName': 'com.netflix.ninja',
+              'name': 'Netflix',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+          ]));
+      when(database.listApplications()).thenAnswer((_) => Future.value([
+            fakeApp(packageName: "org.jellyfin.androidtv", name: "Jellyfin", sideloaded: false),
+            fakeApp(packageName: "com.plexapp.android", name: "Plex", sideloaded: false),
+            fakeApp(packageName: "com.netflix.ninja", name: "Netflix", sideloaded: false),
+          ]));
+      final mediaCategory = fakeCategory(name: "Media");
+      final streamingCategory = fakeCategory(name: "Streaming");
+      when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+            CategoryWithApps(mediaCategory, []),
+            CategoryWithApps(streamingCategory, []),
+          ]));
+      when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
+      when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+      when(database.wasCreated).thenReturn(true);
+      AppsService(channel, database);
+      await untilCalled(channel.addAppsChangedListener(any));
+
+      // Media is added first (file order), then Streaming last -- so Streaming ends up on top,
+      // even though it's listed *before* Media in the file. Within Media, Plex is added before
+      // Jellyfin, matching the file's order rather than the device's alphabetical app order.
+      verifyInOrder([
+        database.insertCategory(CategoriesCompanion.insert(name: "Media", order: 0)),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(categoryId: mediaCategory.id, appPackageName: "com.plexapp.android", order: 0)
+        ]),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+              categoryId: mediaCategory.id, appPackageName: "org.jellyfin.androidtv", order: 0)
+        ]),
+        database.insertCategory(CategoriesCompanion.insert(name: "Streaming", order: 0)),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+              categoryId: streamingCategory.id, appPackageName: "com.netflix.ninja", order: 0)
+        ]),
+      ]);
+    });
+
     test("with newly installed, uninstalled and existing apps", () async {
       final channel = MockFLauncherChannel();
       final database = MockFLauncherDatabase();

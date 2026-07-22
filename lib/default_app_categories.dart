@@ -20,27 +20,51 @@
 /// (`_initDefaultCategories`) to sort well-known apps into topical categories instead of the
 /// generic sideloaded/non-sideloaded split. Anything not listed here falls back to that split.
 ///
-/// Entries are grouped by category, and that grouping determines display order (the category
-/// whose apps appear first in this map is created first) -- see `_initDefaultCategories`.
-/// Reorder/add/remove entries directly; there's deliberately no config file or remote source.
+/// Both the grouping (which category an app lands in) and the display order (which category
+/// shows first, and which app shows first within a category) directly follow this file's own
+/// order -- reorder/add/remove entries directly to change either; there's deliberately no config
+/// file or remote source. Package names were verified against the Play Store one by one (LLM
+/// suggestions for these are frequently wrong/hallucinated -- roughly 40% of an initial batch
+/// didn't exist), so don't add an entry here without checking it actually resolves to the
+/// intended app first.
 const Map<String, String> defaultAppCategories = {
-  // Apps
-  "com.google.android.youtube.tv": "Apps",
-  "com.google.android.youtube": "Apps",
-  "com.wbd.hbomax": "Apps",
-  "com.netflix.ninja": "Apps",
-  "com.netflix.mediaclient": "Apps",
-  "com.amazon.amazonvideo.livingroom": "Apps",
-  "com.disney.disneyplus": "Apps",
-  "com.plexapp.android": "Apps",
-  "com.spotify.tv.android": "Apps",
-  "org.videolan.vlc": "Apps",
-  "org.xbmc.kodi": "Apps",
-  "nl.uitzendinggemist": "Apps",
-  "nl.rtl.videoland.v2": "Apps",
+  // Streaming
+  "com.netflix.ninja": "Streaming",
+  "com.netflix.mediaclient": "Streaming",
+  "com.google.android.youtube.tv": "Streaming",
+  "com.google.android.youtube": "Streaming",
+  "com.disney.disneyplus": "Streaming",
+  "com.amazon.avod.thirdpartyclient": "Streaming",
+  "com.amazon.amazonvideo.livingroom": "Streaming",
+  "com.wbd.hbomax": "Streaming",
+  "com.apple.atve.androidtv.appletv": "Streaming",
+  "com.skyshowtime.skyshowtime.google": "Streaming",
+  "com.tubitv": "Streaming",
+  "tv.pluto.android": "Streaming",
+  "be.vrt.vrtnu": "Streaming",
+  "nl.uitzendinggemist": "Streaming",
+  "com.viaplay.android": "Streaming",
+  "com.espn.score_center": "Streaming",
+  "nl.rtl.videoland.v2": "Streaming",
+  "tv.twitch.android.app": "Streaming",
+  "com.spotify.tv.android": "Streaming",
+
+  // Media
+  "org.xbmc.kodi": "Media",
+  "org.videolan.vlc": "Media",
+  "com.plexapp.android": "Media",
+  "org.jellyfin.androidtv": "Media",
+  "com.stremio.one": "Media",
+  "com.smarttube.downloader": "Media",
 
   // System
+  "com.google.android.apps.education.cast2class": "System",
   "com.android.vending": "System",
   "com.android.tv.settings": "System",
-  "com.google.android.apps.education.cast2class": "System",
+  "com.esaba.downloader": "System",
+  "com.yablio.sendfilestotv": "System",
+  "com.lonelycatgames.Xplore": "System",
+  "com.nordvpn.android": "System",
+  "com.surfshark.vpnclient.android": "System",
+  "flar2.homebutton": "System",
 };
