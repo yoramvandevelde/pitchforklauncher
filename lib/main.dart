@@ -43,6 +43,16 @@ Future<void> main() async {
     yield LicenseEntryWithLineBreaks(['Open Sans'], license);
   });
 
+  // Not required by the Unsplash License (free to use, attribution merely appreciated), but
+  // credited anyway per house convention for bundled assets.
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(
+      ['Default wallpaper'],
+      'Photo by Daniel Gomez (Instagram: @auchynnikau) on Unsplash, used under the Unsplash '
+      'License.',
+    );
+  });
+
   runZonedGuarded<void>(() async {
     final sharedPreferences = await SharedPreferences.getInstance();
     final imagePicker = ImagePicker();

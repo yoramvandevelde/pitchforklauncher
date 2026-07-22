@@ -20,20 +20,25 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 class WallpaperService extends ChangeNotifier {
+  static const _defaultWallpaperAsset = "assets/default_wallpaper.jpg";
+
   final ImagePicker _imagePicker;
   final FLauncherChannel _fLauncherChannel;
   final UnsplashService _unsplashService;
   final PicsumService _picsumService;
+  final FLauncherDatabase _database;
   late SettingsService _settingsService;
 
   late final File _wallpaperFile;
@@ -70,7 +75,13 @@ class WallpaperService extends ChangeNotifier {
 
   set settingsService(SettingsService settingsService) => _settingsService = settingsService;
 
-  WallpaperService(this._imagePicker, this._fLauncherChannel, this._unsplashService, this._picsumService) {
+  WallpaperService(
+    this._imagePicker,
+    this._fLauncherChannel,
+    this._unsplashService,
+    this._picsumService,
+    this._database,
+  ) {
     _init();
   }
 
@@ -83,7 +94,20 @@ class WallpaperService extends ChangeNotifier {
       _picsumGrayscale = _settingsService.picsumGrayscale;
       _picsumBlur = _settingsService.picsumBlur;
       notifyListeners();
+    } else if (await _database.isFreshInstall()) {
+      await _seedDefaultWallpaper();
     }
+  }
+
+  // Gated on a genuine fresh install (not just file-absence), since setGradient() deletes the
+  // wallpaper file on every deliberate gradient choice -- file-absence alone would re-seed the
+  // default on every subsequent cold start after that, fighting the user's explicit choice.
+  Future<void> _seedDefaultWallpaper() async {
+    final bytes = (await rootBundle.load(_defaultWallpaperAsset)).buffer.asUint8List();
+    await _wallpaperFile.writeAsBytes(bytes);
+    _wallpaper = bytes;
+    _wallpaperVersion++;
+    notifyListeners();
   }
 
   Future<void> pickWallpaper() async {

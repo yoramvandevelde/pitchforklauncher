@@ -129,6 +129,119 @@ void main() {
       ]);
     });
 
+    test("sorts matched apps into topical categories, falling back to TV/Non-TV split", () async {
+      final channel = MockFLauncherChannel();
+      final database = MockFLauncherDatabase();
+      when(channel.getApplications()).thenAnswer((_) => Future.value([
+            {
+              'packageName': 'com.netflix.ninja',
+              'name': 'Netflix',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+            {
+              'packageName': 'io.sifft.pitchforklauncher',
+              'name': 'FLauncher',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+            {
+              'packageName': 'io.sifft.pitchforklauncher.2',
+              'name': 'FLauncher 2',
+              'version': '2.0.0',
+              'banner': null,
+              'icon': null,
+              'sideloaded': true
+            }
+          ]));
+      when(database.listApplications()).thenAnswer((_) => Future.value([
+            fakeApp(
+              packageName: "com.netflix.ninja",
+              name: "Netflix",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+            fakeApp(
+              packageName: "io.sifft.pitchforklauncher",
+              name: "FLauncher",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+            fakeApp(
+              packageName: "io.sifft.pitchforklauncher.2",
+              name: "FLauncher 2",
+              version: "2.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: true,
+            ),
+          ]));
+      final tvApplicationsCategory = fakeCategory(name: "TV Applications");
+      final nonTvApplicationsCategory = fakeCategory(name: "Non-TV Applications");
+      final streamingCategory = fakeCategory(name: "Streaming");
+      when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+            CategoryWithApps(tvApplicationsCategory, []),
+            CategoryWithApps(nonTvApplicationsCategory, []),
+            CategoryWithApps(streamingCategory, []),
+          ]));
+      when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
+      when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+      when(database.wasCreated).thenReturn(true);
+      AppsService(channel, database);
+      await untilCalled(channel.addAppsChangedListener(any));
+
+      // Streaming is added last (after the TV/Non-TV fallback categories) so it ends up visually
+      // above them -- addCategory() always inserts at order 0, pushing existing categories down.
+      verifyInOrder([
+        database.insertCategory(
+          CategoriesCompanion.insert(name: "TV Applications", order: 0),
+        ),
+        database.updateCategory(
+          tvApplicationsCategory.id,
+          CategoriesCompanion(type: Value(CategoryType.grid)),
+        ),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+            categoryId: tvApplicationsCategory.id,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          )
+        ]),
+        database.insertCategory(
+          CategoriesCompanion.insert(name: "Non-TV Applications", order: 0),
+        ),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+            categoryId: nonTvApplicationsCategory.id,
+            appPackageName: "io.sifft.pitchforklauncher.2",
+            order: 0,
+          )
+        ]),
+        database.insertCategory(
+          CategoriesCompanion.insert(name: "Streaming", order: 0),
+        ),
+        database.updateCategory(
+          streamingCategory.id,
+          CategoriesCompanion(type: Value(CategoryType.grid)),
+        ),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+            categoryId: streamingCategory.id,
+            appPackageName: "com.netflix.ninja",
+            order: 0,
+          )
+        ]),
+      ]);
+    });
+
     test("with newly installed, uninstalled and existing apps", () async {
       final channel = MockFLauncherChannel();
       final database = MockFLauncherDatabase();

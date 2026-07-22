@@ -1322,6 +1322,14 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
           as _i8.Future<List<_i6.CategoryWithApps>>);
 
   @override
+  _i8.Future<bool> isFreshInstall() =>
+      (super.noSuchMethod(
+            Invocation.method(#isFreshInstall, []),
+            returnValue: _i8.Future<bool>.value(false),
+          )
+          as _i8.Future<bool>);
+
+  @override
   _i8.Future<int?> nextAppCategoryOrder(int? categoryId) =>
       (super.noSuchMethod(
             Invocation.method(#nextAppCategoryOrder, [categoryId]),

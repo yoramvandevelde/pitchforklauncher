@@ -19,7 +19,7 @@
 
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
@@ -35,6 +35,9 @@ import '../mocks.mocks.dart';
 void main() {
   late final _MockPathProviderPlatform pathProviderPlatform;
   setUpAll(() {
+    // Needed for rootBundle.load() (used by the default-wallpaper seeding tests) to resolve
+    // against the real assets/ bundle.
+    TestWidgetsFlutterBinding.ensureInitialized();
     pathProviderPlatform = _MockPathProviderPlatform();
     when(pathProviderPlatform.getApplicationDocumentsPath()).thenAnswer((_) => Future.value("."));
     PathProviderPlatform.instance = pathProviderPlatform;
@@ -60,7 +63,7 @@ void main() {
       final settingsService = _mockSettingsService();
       when(imagePicker.pickImage(source: ImageSource.gallery)).thenAnswer((_) => Future.value(pickedFile));
       when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(true));
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockUnsplashService(), MockPicsumService())
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockUnsplashService(), MockPicsumService(), _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -75,7 +78,7 @@ void main() {
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
       when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(false));
-      final wallpaperService = WallpaperService(_MockImagePicker(), fLauncherChannel, MockUnsplashService(), MockPicsumService())
+      final wallpaperService = WallpaperService(_MockImagePicker(), fLauncherChannel, MockUnsplashService(), MockPicsumService(), _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -97,7 +100,7 @@ void main() {
     );
     when(unsplashService.randomPhoto("test")).thenAnswer((_) => Future.value(photo));
     when(unsplashService.downloadPhoto(photo)).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -116,7 +119,7 @@ void main() {
     final settingsService = _mockSettingsService();
     when(picsumService.randomPhoto())
         .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService, _mockDatabase())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -138,7 +141,7 @@ void main() {
       final unsplashService = MockUnsplashService();
       final picsumService = MockPicsumService();
       final settingsService = _mockSettingsService();
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService, _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -158,7 +161,7 @@ void main() {
           .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
       when(picsumService.photoById(42, grayscale: true, blur: 4))
           .thenAnswer((_) => Future.value(Uint8List.fromList([0x02])));
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService, _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
       await wallpaperService.randomFromPicsum();
@@ -187,7 +190,7 @@ void main() {
       Uri.parse("http://localhost/@author"),
     );
     when(unsplashService.searchPhotos("test")).thenAnswer((_) => Future.value([photo]));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -209,7 +212,7 @@ void main() {
       Uri.parse("http://localhost/@author"),
     );
     when(unsplashService.downloadPhoto(photo)).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -226,7 +229,7 @@ void main() {
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
     final settingsService = _mockSettingsService();
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -238,6 +241,41 @@ void main() {
     expect(wallpaperService.wallpaperBytes, null);
   });
 
+  group("seeds default wallpaper", () {
+    test("writes bundled asset when fresh install and no wallpaper file exists", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final unsplashService = MockUnsplashService();
+      final settingsService = _mockSettingsService();
+      final wallpaperService =
+          WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase(isFreshInstall: true))
+            ..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain -- pump the
+      // event queue until it settles rather than guessing a fixed number of ticks.
+      await pumpEventQueue();
+
+      expect(wallpaperService.wallpaperBytes, isNotNull);
+      expect(wallpaperService.wallpaperBytes, isNotEmpty);
+      expect(await File("./wallpaper").exists(), isTrue);
+      expect(await File("./wallpaper").readAsBytes(), wallpaperService.wallpaperBytes);
+    });
+
+    test("does not seed when not a fresh install", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final unsplashService = MockUnsplashService();
+      final settingsService = _mockSettingsService();
+      final wallpaperService =
+          WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
+            ..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      await Future.delayed(Duration.zero);
+
+      expect(wallpaperService.wallpaperBytes, isNull);
+    });
+  });
+
   group("getGradient", () {
     test("without uuid from settings", () async {
       final imagePicker = _MockImagePicker();
@@ -245,7 +283,7 @@ void main() {
       final unsplashService = MockUnsplashService();
       final settingsService = _mockSettingsService();
       when(settingsService.gradientUuid).thenReturn(null);
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -260,7 +298,7 @@ void main() {
       final unsplashService = MockUnsplashService();
       final settingsService = _mockSettingsService();
       when(settingsService.gradientUuid).thenReturn(FLauncherGradients.grassShampoo.uuid);
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
@@ -269,6 +307,15 @@ void main() {
       expect(gradient, FLauncherGradients.grassShampoo);
     });
   });
+}
+
+/// A [MockFLauncherDatabase] stubbed to report whether this is a fresh install -- gates whether
+/// [WallpaperService] seeds the bundled default wallpaper. Defaults to `false` so existing tests
+/// (which all assert behavior unrelated to seeding) are unaffected.
+MockFLauncherDatabase _mockDatabase({bool isFreshInstall = false}) {
+  final database = MockFLauncherDatabase();
+  when(database.isFreshInstall()).thenAnswer((_) => Future.value(isFreshInstall));
+  return database;
 }
 
 /// A [MockSettingsService] with sensible defaults for the Picsum persistence fields, since

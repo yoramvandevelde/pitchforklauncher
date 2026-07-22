@@ -22,6 +22,7 @@ import 'dart:collection';
 
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
+import 'package:flauncher/default_app_categories.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' hide Category;
@@ -83,9 +84,25 @@ class AppsService extends ChangeNotifier {
         sideloaded: Value(data["sideloaded"]),
       );
 
+  // Sorts well-known apps (see default_app_categories.dart) into topical categories, falling back
+  // to the sideloaded/non-sideloaded split for anything unmatched. Topical categories are added
+  // *after* the TV/Non-TV fallback ones so they end up visually above them -- addCategory() always
+  // inserts at order 0, pushing existing categories down, so whichever category is added last ends
+  // up on top.
   Future<void> _initDefaultCategories() => _database.transaction(() async {
-        final tvApplications = _applications.where((element) => element.sideloaded == false);
-        final nonTvApplications = _applications.where((element) => element.sideloaded == true);
+        final matchedByCategory = <String, List<App>>{};
+        final unmatched = <App>[];
+        for (final app in _applications) {
+          final categoryName = defaultAppCategories[app.packageName];
+          if (categoryName != null) {
+            matchedByCategory.putIfAbsent(categoryName, () => []).add(app);
+          } else {
+            unmatched.add(app);
+          }
+        }
+
+        final tvApplications = unmatched.where((element) => element.sideloaded == false);
+        final nonTvApplications = unmatched.where((element) => element.sideloaded == true);
         if (tvApplications.isNotEmpty) {
           await addCategory("TV Applications", shouldNotifyListeners: false);
           final tvAppsCategory =
@@ -114,6 +131,16 @@ class AppsService extends ChangeNotifier {
             );
           }
         }
+
+        for (final entry in matchedByCategory.entries) {
+          await addCategory(entry.key, shouldNotifyListeners: false);
+          final category = _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == entry.key);
+          await setCategoryType(category, CategoryType.grid, shouldNotifyListeners: false);
+          for (final app in entry.value) {
+            await addToCategory(app, category, shouldNotifyListeners: false);
+          }
+        }
+
         _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
       });
 
