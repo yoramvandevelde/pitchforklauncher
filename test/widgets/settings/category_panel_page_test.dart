@@ -177,7 +177,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets("shows a confirmation dialog instead of deleting immediately", (tester) async {
+    testWidgets("shows a confirmation dialog instead of deleting immediately, with Cancel focused", (tester) async {
       final appsService = MockAppsService();
       final favoritesCategory =
           fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
@@ -192,9 +192,11 @@ void main() {
 
       expect(find.byType(AlertDialog), findsOneWidget);
       verifyNever(appsService.deleteCategory(any));
+      final cancelButton = find.descendant(of: find.byType(AlertDialog), matching: find.text("Cancel"));
+      expect(Focus.of(tester.element(cancelButton)).hasFocus, isTrue);
     });
 
-    testWidgets("'Cancel' dismisses without deleting", (tester) async {
+    testWidgets("pressing enter on the default-focused 'Cancel' dismisses without deleting", (tester) async {
       final appsService = MockAppsService();
       final favoritesCategory =
           fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
@@ -206,7 +208,9 @@ void main() {
       await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
 
       await openConfirmationDialog(tester);
-      await tester.tap(find.text("Cancel"));
+      // Cancel is autofocus: true, so pressing enter without any navigation exercises exactly the
+      // D-pad safety behavior this feature is meant to guarantee.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
@@ -225,7 +229,8 @@ void main() {
       await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
 
       await openConfirmationDialog(tester);
-      await tester.tap(find.text("Delete").last);
+      final deleteAction = find.descendant(of: find.byType(AlertDialog), matching: find.text("Delete"));
+      await tester.tap(deleteAction);
       await tester.pumpAndSettle();
 
       verify(appsService.deleteCategory(favoritesCategory));
