@@ -63,15 +63,9 @@ button override.
   quick fade-out/fade-in on the focus highlight (fast enough to not feel sluggish) instead of the
   instant snap.
 
-- **No confirmation dialog before deleting a category** (`lib/widgets/settings/category_panel_page.dart`,
-  the "Delete" `ElevatedButton`'s `onPressed`) — calls `AppsService.deleteCategory(category)`
-  immediately, no "are you sure?" step. On a D-pad remote this is one accidental press away from
-  irreversible data loss (the category and its app assignments are gone, not just hidden). Checked
-  the other destructive actions for comparison: "Uninstall" (`application_info_panel.dart`) is
-  guarded by Android's own system confirmation dialog since it goes through
-  `REQUEST_DELETE_PACKAGES`, and "Hide" is low-stakes/reversible — category deletion is the one
-  genuinely unguarded destructive action. Add a confirmation dialog before calling
-  `deleteCategory`. Found 2026-07-20, not yet fixed.
+~~No confirmation dialog before deleting a category~~ — fixed (PR #16, 2026-07-22):
+`CategoryPanelPage`'s "Delete" button now shows an `AlertDialog` ("Delete category?" / Cancel /
+Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather than Delete.
 
 ~~Migrate off `sqlite3_flutter_libs` to `sqlite3` v3.x~~ — done (PR #11, 2026-07-21): dropped
   `sqlite3_flutter_libs` from `pubspec.yaml` entirely, depend on `sqlite3` v3.x directly. See
