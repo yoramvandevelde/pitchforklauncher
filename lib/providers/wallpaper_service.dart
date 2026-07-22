@@ -188,8 +188,8 @@ class WallpaperService extends ChangeNotifier {
     _picsumBlur = null;
     _wallpaper = null;
     _wallpaperVersion++;
-    _settingsService.setUnsplashAuthor(null);
-    _settingsService.setGradientUuid(fLauncherGradient.uuid);
+    await _settingsService.setUnsplashAuthor(null);
+    await _settingsService.setGradientUuid(fLauncherGradient.uuid);
     await _clearPicsumSettings();
     notifyListeners();
   }

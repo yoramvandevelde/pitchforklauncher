@@ -60,7 +60,7 @@ class PicsumService {
     final resolved = uri.resolve(location);
     final id = _idFromResolvedUri(resolved);
     final response = await _client.get(resolved);
-    return PicsumPhoto(id: id, bytes: response.bodyBytes);
+    return PicsumPhoto(id: id, bytes: _bodyBytesOrThrow(response, resolved));
   }
 
   /// Re-fetches the same numbered photo, optionally with grayscale/blur applied. Both filters are
@@ -71,6 +71,13 @@ class PicsumService {
     final params = <String>[if (grayscale) "grayscale", if (blur != null) "blur=$blur"];
     final uri = Uri.parse(params.isEmpty ? base : "$base?${params.join("&")}");
     final response = await _client.get(uri);
+    return _bodyBytesOrThrow(response, uri);
+  }
+
+  Uint8List _bodyBytesOrThrow(Response response, Uri uri) {
+    if (response.statusCode != 200) {
+      throw PicsumException("Expected a 200 response from $uri, got ${response.statusCode}");
+    }
     return response.bodyBytes;
   }
 

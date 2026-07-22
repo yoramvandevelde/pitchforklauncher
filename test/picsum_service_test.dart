@@ -57,6 +57,22 @@ void main() {
 
       expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
     });
+
+    test("throws when the resolved photo request isn't a 200", () async {
+      final client = MockClient((request) async {
+        if (request.url.host == "picsum.photos") {
+          return Response(
+            "",
+            302,
+            headers: {"location": "https://fastly.picsum.photos/id/568/300/200.jpg?hmac=abc"},
+          );
+        }
+        return Response("", 500);
+      });
+      final picsumService = PicsumService(client: client);
+
+      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
+    });
   });
 
   // Width/height come from PlatformDispatcher.instance.implicitView, which isn't controllable
@@ -105,6 +121,13 @@ void main() {
 
       expect(capturedUri!.pathSegments.take(2), ["id", "568"]);
       expect(capturedUri!.query, "grayscale");
+    });
+
+    test("throws when the response isn't a 200", () async {
+      final client = MockClient((request) async => Response("", 404));
+      final picsumService = PicsumService(client: client);
+
+      expect(() => picsumService.photoById(568), throwsA(isA<PicsumException>()));
     });
   });
 }
