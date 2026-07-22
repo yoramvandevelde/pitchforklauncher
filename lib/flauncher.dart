@@ -39,6 +39,15 @@ class FLauncher extends StatelessWidget {
             Consumer<WallpaperService>(
               builder: (_, wallpaper, _) => AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
+                // A plain linear cross-fade has both layers partially transparent around the
+                // midpoint, letting the dark canvas beneath bleed through as a brightness dip.
+                // Confining each curve to the first half of its own [0,1] range means the
+                // incoming photo reaches full opacity by the midpoint and the outgoing one only
+                // starts fading (invisibly, since it's now hidden under an opaque top layer)
+                // after that -- at every instant at least one layer is fully opaque, so the
+                // background never shows through.
+                switchInCurve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+                switchOutCurve: const Interval(0.0, 0.5, curve: Curves.easeOut),
                 child: KeyedSubtree(
                   key: ValueKey(wallpaper.wallpaperVersion),
                   child: _wallpaper(context, wallpaper.wallpaperBytes, wallpaper.gradient.gradient),

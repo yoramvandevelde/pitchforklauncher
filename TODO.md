@@ -113,12 +113,11 @@ currently set, and `WallpaperControlBar` disables (grays out) both switches unti
 `AnimatedSwitcher` around the background in `FLauncher` so it cross-fades (200ms) between the old
 and new wallpaper. Applies to every wallpaper source, not just Picsum toggles.
 
-- **The cross-fade visibly dips in brightness partway through**, noticed 2026-07-21 on real
-  hardware. Likely a real, explainable artifact rather than a lighting-conditions illusion: the
-  outgoing and incoming images fade independently (old 100%→0%, new 0%→100%) stacked over each
-  other, so at the midpoint both are ~50% opaque and whatever's behind them (a dark
-  background/canvas) shows through — a known characteristic of naive two-layer alpha crossfades,
-  as opposed to a true dissolve. To revisit: try a lighter/neutral background behind the
-  transition, a shorter duration, or a different transition technique that doesn't pass through a
-  half-transparent-both-layers state. User wants to confirm on real hardware in normal lighting
-  before deciding on a fix.
+~~The cross-fade visibly dips in brightness partway through~~ — fixed (2026-07-22), confirmed gone
+on real hardware: was a genuine artifact of the naive two-layer alpha crossfade (old 100%→0%, new
+0%→100% simultaneously means both are ~50% opaque at the midpoint, letting the dark canvas
+underneath bleed through). Fixed by confining `switchInCurve`/`switchOutCurve` to
+`Interval(0.0, 0.5, ...)` each on `FLauncher`'s `AnimatedSwitcher` — since the outgoing entry's
+controller runs in reverse, this makes the incoming photo reach full opacity by the midpoint and
+the outgoing one only start fading (invisibly, now hidden under the opaque new layer) after that,
+so at least one layer is always fully opaque and the background never shows through.
