@@ -339,6 +339,22 @@ class MockWallpaperService extends _i1.Mock implements _i10.WallpaperService {
           as bool);
 
   @override
+  bool get picsumGrayscale =>
+      (super.noSuchMethod(
+            Invocation.getter(#picsumGrayscale),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool get picsumBlurEnabled =>
+      (super.noSuchMethod(
+            Invocation.getter(#picsumBlurEnabled),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   _i2.FLauncherGradient get gradient =>
       (super.noSuchMethod(
             Invocation.getter(#gradient),
@@ -770,6 +786,14 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
           as bool);
 
   @override
+  bool get picsumGrayscale =>
+      (super.noSuchMethod(
+            Invocation.getter(#picsumGrayscale),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   bool get hasListeners =>
       (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
           as bool);
@@ -805,6 +829,33 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
   _i8.Future<void> setUnsplashAuthor(String? value) =>
       (super.noSuchMethod(
             Invocation.method(#setUnsplashAuthor, [value]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> setPicsumPhotoId(int? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#setPicsumPhotoId, [value]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> setPicsumGrayscale(bool? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#setPicsumGrayscale, [value]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> setPicsumBlur(int? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#setPicsumBlur, [value]),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )

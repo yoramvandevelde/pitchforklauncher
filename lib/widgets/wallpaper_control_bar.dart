@@ -23,7 +23,7 @@ import 'package:provider/provider.dart';
 
 const _picsumBlurAmount = 4;
 
-class WallpaperControlBar extends StatefulWidget {
+class WallpaperControlBar extends StatelessWidget {
   const WallpaperControlBar({super.key});
 
   static Route<void> route() => PageRouteBuilder<void>(
@@ -34,7 +34,7 @@ class WallpaperControlBar extends StatefulWidget {
         pageBuilder: (context, animation, secondaryAnimation) => Align(
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.only(bottom: 8),
             child: UnconstrainedBox(
               child: SlideTransition(
                 position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
@@ -49,39 +49,26 @@ class WallpaperControlBar extends StatefulWidget {
         ),
       );
 
-  @override
-  State<WallpaperControlBar> createState() => _WallpaperControlBarState();
-}
-
-class _WallpaperControlBarState extends State<WallpaperControlBar> {
-  bool _grayscale = false;
-  bool _blur = false;
-
-  Future<void> _onRandom() async {
-    setState(() {
-      _grayscale = false;
-      _blur = false;
-    });
-    await context.read<WallpaperService>().randomFromPicsum();
+  Future<void> _onGrayscaleChanged(BuildContext context, bool value) {
+    final wallpaperService = context.read<WallpaperService>();
+    return wallpaperService.reapplyPicsumFilters(
+      grayscale: value,
+      blur: wallpaperService.picsumBlurEnabled ? _picsumBlurAmount : null,
+    );
   }
 
-  Future<void> _onGrayscaleChanged(bool value) async {
-    setState(() => _grayscale = value);
-    await context
-        .read<WallpaperService>()
-        .reapplyPicsumFilters(grayscale: _grayscale, blur: _blur ? _picsumBlurAmount : null);
-  }
-
-  Future<void> _onBlurChanged(bool value) async {
-    setState(() => _blur = value);
-    await context
-        .read<WallpaperService>()
-        .reapplyPicsumFilters(grayscale: _grayscale, blur: _blur ? _picsumBlurAmount : null);
+  Future<void> _onBlurChanged(BuildContext context, bool value) {
+    final wallpaperService = context.read<WallpaperService>();
+    return wallpaperService.reapplyPicsumFilters(
+      grayscale: wallpaperService.picsumGrayscale,
+      blur: value ? _picsumBlurAmount : null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasPhoto = context.watch<WallpaperService>().hasCurrentPicsumPhoto;
+    final wallpaperService = context.watch<WallpaperService>();
+    final hasPhoto = wallpaperService.hasCurrentPicsumPhoto;
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(24),
@@ -92,7 +79,7 @@ class _WallpaperControlBarState extends State<WallpaperControlBar> {
           children: [
             TextButton(
               autofocus: true,
-              onPressed: _onRandom,
+              onPressed: () => context.read<WallpaperService>().randomFromPicsum(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -105,16 +92,16 @@ class _WallpaperControlBarState extends State<WallpaperControlBar> {
             SizedBox(width: 32),
             _FilterToggle(
               icon: Icons.filter_b_and_w,
-              label: "Black & White",
-              value: _grayscale,
-              onChanged: hasPhoto ? _onGrayscaleChanged : null,
+              label: "B/W",
+              value: wallpaperService.picsumGrayscale,
+              onChanged: hasPhoto ? (value) => _onGrayscaleChanged(context, value) : null,
             ),
             SizedBox(width: 32),
             _FilterToggle(
               icon: Icons.blur_on,
               label: "Blur",
-              value: _blur,
-              onChanged: hasPhoto ? _onBlurChanged : null,
+              value: wallpaperService.picsumBlurEnabled,
+              onChanged: hasPhoto ? (value) => _onBlurChanged(context, value) : null,
             ),
           ],
         ),

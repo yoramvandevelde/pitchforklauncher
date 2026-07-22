@@ -63,6 +63,8 @@ void main() {
     when(settingsService.unsplashEnabled).thenReturn(true);
     when(settingsService.unsplashAuthor).thenReturn(null);
     when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(false);
+    when(wallpaperService.picsumGrayscale).thenReturn(false);
+    when(wallpaperService.picsumBlurEnabled).thenReturn(false);
 
     await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
 

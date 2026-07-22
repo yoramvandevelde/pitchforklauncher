@@ -24,6 +24,9 @@ const _use24HourTimeFormatKey = "use_24_hour_time_format";
 const _appHighlightAnimationEnabledKey = "app_highlight_animation_enabled";
 const _gradientUuidKey = "gradient_uuid";
 const _unsplashAuthorKey = "unsplash_author";
+const _picsumPhotoIdKey = "picsum_photo_id";
+const _picsumGrayscaleKey = "picsum_grayscale";
+const _picsumBlurKey = "picsum_blur";
 
 class SettingsService extends ChangeNotifier {
   final SharedPreferences _sharedPreferences;
@@ -37,6 +40,12 @@ class SettingsService extends ChangeNotifier {
   bool get unsplashEnabled => false;
 
   String? get unsplashAuthor => _sharedPreferences.getString(_unsplashAuthorKey);
+
+  int? get picsumPhotoId => _sharedPreferences.getInt(_picsumPhotoIdKey);
+
+  bool get picsumGrayscale => _sharedPreferences.getBool(_picsumGrayscaleKey) ?? false;
+
+  int? get picsumBlur => _sharedPreferences.getInt(_picsumBlurKey);
 
   SettingsService(this._sharedPreferences);
 
@@ -60,6 +69,29 @@ class SettingsService extends ChangeNotifier {
       await _sharedPreferences.remove(_unsplashAuthorKey);
     } else {
       await _sharedPreferences.setString(_unsplashAuthorKey, value);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setPicsumPhotoId(int? value) async {
+    if (value == null) {
+      await _sharedPreferences.remove(_picsumPhotoIdKey);
+    } else {
+      await _sharedPreferences.setInt(_picsumPhotoIdKey, value);
+    }
+    notifyListeners();
+  }
+
+  Future<void> setPicsumGrayscale(bool value) async {
+    await _sharedPreferences.setBool(_picsumGrayscaleKey, value);
+    notifyListeners();
+  }
+
+  Future<void> setPicsumBlur(int? value) async {
+    if (value == null) {
+      await _sharedPreferences.remove(_picsumBlurKey);
+    } else {
+      await _sharedPreferences.setInt(_picsumBlurKey, value);
     }
     notifyListeners();
   }

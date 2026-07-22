@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/picsum_service.dart';
@@ -38,13 +40,24 @@ void main() {
     PathProviderPlatform.instance = pathProviderPlatform;
   });
 
+  // Every test shares the same fake "." documents directory, so a wallpaper file written by one
+  // test would otherwise still exist for the next -- making that next test's WallpaperService
+  // construction race its own _init() (which reads the file, plus the Picsum settings) against
+  // the test's explicit method calls.
+  tearDown(() async {
+    final file = File("./wallpaper");
+    if (await file.exists()) {
+      await file.delete();
+    }
+  });
+
   group("pickWallpaper", () {
     test("picks image", () async {
       final pickedFile = _MockXFile();
       when(pickedFile.readAsBytes()).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
-      final settingsService = MockSettingsService();
+      final settingsService = _mockSettingsService();
       when(imagePicker.pickImage(source: ImageSource.gallery)).thenAnswer((_) => Future.value(pickedFile));
       when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(true));
       final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockUnsplashService(), MockPicsumService())
@@ -60,8 +73,10 @@ void main() {
 
     test("throws error when no file explorer installed", () async {
       final fLauncherChannel = MockFLauncherChannel();
+      final settingsService = _mockSettingsService();
       when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(false));
-      final wallpaperService = WallpaperService(_MockImagePicker(), fLauncherChannel, MockUnsplashService(), MockPicsumService());
+      final wallpaperService = WallpaperService(_MockImagePicker(), fLauncherChannel, MockUnsplashService(), MockPicsumService())
+        ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
       expect(() async => await wallpaperService.pickWallpaper(), throwsA(isInstanceOf<NoFileExplorerException>()));
@@ -72,7 +87,7 @@ void main() {
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
-    final settingsService = MockSettingsService();
+    final settingsService = _mockSettingsService();
     final photo = Photo(
       "e07ebff3-0b4d-4e0a-ae94-97ef32bd59e6",
       "John Doe",
@@ -98,7 +113,7 @@ void main() {
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
     final picsumService = MockPicsumService();
-    final settingsService = MockSettingsService();
+    final settingsService = _mockSettingsService();
     when(picsumService.randomPhoto())
         .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
     final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
@@ -109,7 +124,11 @@ void main() {
 
     verify(picsumService.randomPhoto());
     verify(settingsService.setUnsplashAuthor(null));
+    verify(settingsService.setPicsumPhotoId(42));
+    verify(settingsService.setPicsumGrayscale(false));
+    verify(settingsService.setPicsumBlur(null));
     expect(wallpaperService.wallpaperBytes, [0x01]);
+    expect(wallpaperService.hasCurrentPicsumPhoto, isTrue);
   });
 
   group("reapplyPicsumFilters", () {
@@ -118,7 +137,7 @@ void main() {
       final fLauncherChannel = MockFLauncherChannel();
       final unsplashService = MockUnsplashService();
       final picsumService = MockPicsumService();
-      final settingsService = MockSettingsService();
+      final settingsService = _mockSettingsService();
       final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, picsumService)
         ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
@@ -129,12 +148,12 @@ void main() {
       expect(wallpaperService.wallpaperBytes, null);
     });
 
-    test("re-fetches the current photo with grayscale and blur combined", () async {
+    test("re-fetches the current photo with grayscale and blur combined, and persists the filters", () async {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final unsplashService = MockUnsplashService();
       final picsumService = MockPicsumService();
-      final settingsService = MockSettingsService();
+      final settingsService = _mockSettingsService();
       when(picsumService.randomPhoto())
           .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
       when(picsumService.photoById(42, grayscale: true, blur: 4))
@@ -147,7 +166,11 @@ void main() {
       await wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4);
 
       verify(picsumService.photoById(42, grayscale: true, blur: 4));
+      verify(settingsService.setPicsumGrayscale(true));
+      verify(settingsService.setPicsumBlur(4));
       expect(wallpaperService.wallpaperBytes, [0x02]);
+      expect(wallpaperService.picsumGrayscale, isTrue);
+      expect(wallpaperService.picsumBlurEnabled, isTrue);
     });
   });
 
@@ -155,6 +178,7 @@ void main() {
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
+    final settingsService = _mockSettingsService();
     final photo = Photo(
       "e07ebff3-0b4d-4e0a-ae94-97ef32bd59e6",
       "Username",
@@ -163,7 +187,8 @@ void main() {
       Uri.parse("http://localhost/@author"),
     );
     when(unsplashService.searchPhotos("test")).thenAnswer((_) => Future.value([photo]));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService());
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
+      ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
     final photos = await wallpaperService.searchFromUnsplash("test");
@@ -175,7 +200,7 @@ void main() {
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
-    final settingsService = MockSettingsService();
+    final settingsService = _mockSettingsService();
     final photo = Photo(
       "e07ebff3-0b4d-4e0a-ae94-97ef32bd59e6",
       "John Doe",
@@ -192,6 +217,7 @@ void main() {
 
     verify(unsplashService.downloadPhoto(photo));
     verify(settingsService.setUnsplashAuthor('{"username":"John Doe","link":"http://localhost/@author"}'));
+    verify(settingsService.setPicsumPhotoId(null));
     expect(wallpaperService.wallpaperBytes, [0x01]);
   });
 
@@ -199,7 +225,7 @@ void main() {
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final unsplashService = MockUnsplashService();
-    final settingsService = MockSettingsService();
+    final settingsService = _mockSettingsService();
     final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
       ..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
@@ -208,6 +234,7 @@ void main() {
 
     verify(settingsService.setGradientUuid(FLauncherGradients.greatWhale.uuid));
     verify(settingsService.setUnsplashAuthor(null));
+    verify(settingsService.setPicsumPhotoId(null));
     expect(wallpaperService.wallpaperBytes, null);
   });
 
@@ -216,7 +243,7 @@ void main() {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final unsplashService = MockUnsplashService();
-      final settingsService = MockSettingsService();
+      final settingsService = _mockSettingsService();
       when(settingsService.gradientUuid).thenReturn(null);
       final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
         ..settingsService = settingsService;
@@ -231,7 +258,7 @@ void main() {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final unsplashService = MockUnsplashService();
-      final settingsService = MockSettingsService();
+      final settingsService = _mockSettingsService();
       when(settingsService.gradientUuid).thenReturn(FLauncherGradients.grassShampoo.uuid);
       final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService())
         ..settingsService = settingsService;
@@ -242,6 +269,21 @@ void main() {
       expect(gradient, FLauncherGradients.grassShampoo);
     });
   });
+}
+
+/// A [MockSettingsService] with sensible defaults for the Picsum persistence fields, since
+/// [WallpaperService]'s constructor kicks off an async `_init()` that reads them if a wallpaper
+/// file happens to already exist on disk (these tests all share the same fake "." documents
+/// directory, so a file written by an earlier test can still be there for a later one).
+MockSettingsService _mockSettingsService() {
+  final settingsService = MockSettingsService();
+  when(settingsService.picsumPhotoId).thenReturn(null);
+  when(settingsService.picsumGrayscale).thenReturn(false);
+  when(settingsService.picsumBlur).thenReturn(null);
+  when(settingsService.setPicsumPhotoId(any)).thenAnswer((_) => Future.value());
+  when(settingsService.setPicsumGrayscale(any)).thenAnswer((_) => Future.value());
+  when(settingsService.setPicsumBlur(any)).thenAnswer((_) => Future.value());
+  return settingsService;
 }
 
 class _MockImagePicker extends Mock implements ImagePicker {

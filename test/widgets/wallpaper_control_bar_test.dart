@@ -45,20 +45,23 @@ void main() {
     expect(Focus.of(tester.element(find.text("Random"))).hasFocus, isTrue);
   });
 
-  testWidgets("'Random' rerolls and resets both switches off", (tester) async {
+  testWidgets("'Random' calls randomFromPicsum, not reapplyPicsumFilters", (tester) async {
     final wallpaperService = MockWallpaperService();
     await _pumpWithControlBar(tester, wallpaperService, MockAppsService());
-    await tester.tap(find.byType(Switch).first);
-    await tester.pumpAndSettle();
-    clearInteractions(wallpaperService);
 
     await tester.tap(find.text("Random"));
     await tester.pumpAndSettle();
 
     verify(wallpaperService.randomFromPicsum());
     verifyNever(wallpaperService.reapplyPicsumFilters(grayscale: anyNamed("grayscale"), blur: anyNamed("blur")));
+  });
+
+  testWidgets("switches reflect the service's current filter state", (tester) async {
+    final wallpaperService = MockWallpaperService();
+    await _pumpWithControlBar(tester, wallpaperService, MockAppsService(), grayscale: true, blurEnabled: true);
+
     for (final switchWidget in tester.widgetList<Switch>(find.byType(Switch))) {
-      expect(switchWidget.value, isFalse);
+      expect(switchWidget.value, isTrue);
     }
   });
 
@@ -82,13 +85,11 @@ void main() {
     verify(wallpaperService.reapplyPicsumFilters(grayscale: false, blur: 4));
   });
 
-  testWidgets("both filters combine into a single call", (tester) async {
+  testWidgets("toggling Blur while Black & White is already on combines both in one call", (tester) async {
     final wallpaperService = MockWallpaperService();
-    await _pumpWithControlBar(tester, wallpaperService, MockAppsService());
+    await _pumpWithControlBar(tester, wallpaperService, MockAppsService(), grayscale: true);
 
-    await tester.tap(find.byType(Switch).at(0));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(Switch).at(1));
+    await tester.tap(find.byType(Switch).at(1)); // Blur is the second switch
     await tester.pumpAndSettle();
 
     verify(wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4));
@@ -124,8 +125,12 @@ Future<void> _pumpWithControlBar(
   WallpaperService wallpaperService,
   AppsService appsService, {
   bool hasCurrentPicsumPhoto = true,
+  bool grayscale = false,
+  bool blurEnabled = false,
 }) async {
   when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(hasCurrentPicsumPhoto);
+  when(wallpaperService.picsumGrayscale).thenReturn(grayscale);
+  when(wallpaperService.picsumBlurEnabled).thenReturn(blurEnabled);
   // Replicates flauncher_app.dart's real root BackIntent binding (remote's back-equivalent key ->
   // BackIntent -> systemNavigator:true, which runs the launcher-exit check) so a test can prove
   // the control bar's own Actions binding intercepts BackIntent first and never reaches this root.
