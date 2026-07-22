@@ -95,18 +95,27 @@ class WallpaperService extends ChangeNotifier {
       _picsumBlur = _settingsService.picsumBlur;
       notifyListeners();
     } else if (await _database.isFreshInstall()) {
-      await _seedDefaultWallpaper();
+      await _writeDefaultWallpaper();
+      notifyListeners();
     }
   }
 
-  // Gated on a genuine fresh install (not just file-absence), since setGradient() deletes the
-  // wallpaper file on every deliberate gradient choice -- file-absence alone would re-seed the
-  // default on every subsequent cold start after that, fighting the user's explicit choice.
-  Future<void> _seedDefaultWallpaper() async {
+  Future<void> _writeDefaultWallpaper() async {
     final bytes = (await rootBundle.load(_defaultWallpaperAsset)).buffer.asUint8List();
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
     _wallpaperVersion++;
+  }
+
+  /// Explicitly resets the wallpaper back to the bundled default, same image [_init] seeds on a
+  /// fresh install -- lets the user return to it later without wiping their data.
+  Future<void> resetToDefaultWallpaper() async {
+    _currentPicsumPhotoId = null;
+    _picsumGrayscale = false;
+    _picsumBlur = null;
+    await _writeDefaultWallpaper();
+    await _settingsService.setUnsplashAuthor(null);
+    await _clearPicsumSettings();
     notifyListeners();
   }
 

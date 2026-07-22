@@ -241,6 +241,27 @@ void main() {
     expect(wallpaperService.wallpaperBytes, null);
   });
 
+  test("resetToDefaultWallpaper writes the bundled asset and clears other sources' state", () async {
+    final imagePicker = _MockImagePicker();
+    final fLauncherChannel = MockFLauncherChannel();
+    final unsplashService = MockUnsplashService();
+    final settingsService = _mockSettingsService();
+    final wallpaperService =
+        WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase())
+          ..settingsService = settingsService;
+    await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+
+    await wallpaperService.resetToDefaultWallpaper();
+
+    verify(settingsService.setUnsplashAuthor(null));
+    verify(settingsService.setPicsumPhotoId(null));
+    verify(settingsService.setPicsumGrayscale(false));
+    verify(settingsService.setPicsumBlur(null));
+    expect(wallpaperService.wallpaperBytes, isNotNull);
+    expect(wallpaperService.wallpaperBytes, isNotEmpty);
+    expect(wallpaperService.hasCurrentPicsumPhoto, isFalse);
+  });
+
   group("seeds default wallpaper", () {
     test("writes bundled asset when fresh install and no wallpaper file exists", () async {
       final imagePicker = _MockImagePicker();

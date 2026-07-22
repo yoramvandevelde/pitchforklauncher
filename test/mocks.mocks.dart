@@ -378,6 +378,15 @@ class MockWallpaperService extends _i1.Mock implements _i10.WallpaperService {
           as bool);
 
   @override
+  _i8.Future<void> resetToDefaultWallpaper() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetToDefaultWallpaper, []),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
   _i8.Future<void> pickWallpaper() =>
       (super.noSuchMethod(
             Invocation.method(#pickWallpaper, []),

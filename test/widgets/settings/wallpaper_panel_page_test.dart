@@ -130,6 +130,24 @@ void main() {
       expect(find.text("Please install a file explorer in order to pick an image."), findsOneWidget);
     });
   });
+
+  testWidgets("'Default' resets the wallpaper to the bundled default", (tester) async {
+    final settingsService = MockSettingsService();
+    final wallpaperService = MockWallpaperService();
+    when(settingsService.unsplashEnabled).thenReturn(true);
+    when(settingsService.unsplashAuthor).thenReturn(null);
+    when(wallpaperService.resetToDefaultWallpaper()).thenAnswer((_) => Future.value());
+
+    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    verify(wallpaperService.resetToDefaultWallpaper());
+  });
 }
 
 Future<void> _pumpWidgetWithProviders(
