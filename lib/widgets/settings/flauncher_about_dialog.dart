@@ -64,7 +64,10 @@ class FLauncherAboutDialog extends StatelessWidget {
               TextSpan(text: ", "),
               TextSpan(text: "design by "),
               TextSpan(text: "@FXCostanzo", style: underlined),
-              TextSpan(text: "."),
+              TextSpan(text: ".\n"),
+              TextSpan(text: "Default wallpaper photo by Daniel Gomez ("),
+              TextSpan(text: "@auchynnikau", style: underlined),
+              TextSpan(text: ") on Unsplash."),
             ],
           ),
         )
