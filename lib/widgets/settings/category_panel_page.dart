@@ -155,10 +155,7 @@ class CategoryPanelPage extends StatelessWidget {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red[400]),
                         child: Text("Delete"),
-                        onPressed: () async {
-                          await context.read<AppsService>().deleteCategory(category);
-                          Navigator.of(context).pop();
-                        },
+                        onPressed: () => _deleteCategory(context, category),
                       ),
                     )
                   ],
@@ -188,6 +185,33 @@ class CategoryPanelPage extends StatelessWidget {
         await showDialog<String>(context: context, builder: (_) => AddCategoryDialog(initialValue: category.name));
     if (categoryName != null) {
       await context.read<AppsService>().renameCategory(category, categoryName);
+    }
+  }
+
+  Future<void> _deleteCategory(BuildContext context, Category category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text("Delete category?"),
+        content: Text('"${category.name}" and its app assignments will be permanently removed.'),
+        actions: [
+          TextButton(
+            autofocus: true,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text("Delete"),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await context.read<AppsService>().deleteCategory(category);
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 }

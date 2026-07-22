@@ -166,26 +166,70 @@ void main() {
     verify(appsService.setCategoryRowHeight(favoritesCategory, 120));
   });
 
-  testWidgets("'Delete' calls AppsService", (tester) async {
-    final appsService = MockAppsService();
-    final favoritesCategory =
-        fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
-    when(appsService.categoriesWithApps).thenReturn([
-      CategoryWithApps(favoritesCategory, []),
-      CategoryWithApps(fakeCategory(name: "Applications"), []),
-    ]);
+  group("'Delete'", () {
+    Future<void> openConfirmationDialog(WidgetTester tester) async {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+    }
 
-    await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
+    testWidgets("shows a confirmation dialog instead of deleting immediately", (tester) async {
+      final appsService = MockAppsService();
+      final favoritesCategory =
+          fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
+      when(appsService.categoriesWithApps).thenReturn([
+        CategoryWithApps(favoritesCategory, []),
+        CategoryWithApps(fakeCategory(name: "Applications"), []),
+      ]);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
+      await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
 
-    verify(appsService.deleteCategory(favoritesCategory));
+      await openConfirmationDialog(tester);
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      verifyNever(appsService.deleteCategory(any));
+    });
+
+    testWidgets("'Cancel' dismisses without deleting", (tester) async {
+      final appsService = MockAppsService();
+      final favoritesCategory =
+          fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
+      when(appsService.categoriesWithApps).thenReturn([
+        CategoryWithApps(favoritesCategory, []),
+        CategoryWithApps(fakeCategory(name: "Applications"), []),
+      ]);
+
+      await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
+
+      await openConfirmationDialog(tester);
+      await tester.tap(find.text("Cancel"));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      verifyNever(appsService.deleteCategory(any));
+    });
+
+    testWidgets("'Delete' in the dialog calls AppsService", (tester) async {
+      final appsService = MockAppsService();
+      final favoritesCategory =
+          fakeCategory(name: "Favorites", sort: CategorySort.alphabetical, type: CategoryType.row, rowHeight: 110);
+      when(appsService.categoriesWithApps).thenReturn([
+        CategoryWithApps(favoritesCategory, []),
+        CategoryWithApps(fakeCategory(name: "Applications"), []),
+      ]);
+
+      await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
+
+      await openConfirmationDialog(tester);
+      await tester.tap(find.text("Delete").last);
+      await tester.pumpAndSettle();
+
+      verify(appsService.deleteCategory(favoritesCategory));
+    });
   });
 }
 
