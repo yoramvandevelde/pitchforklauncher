@@ -72,13 +72,6 @@ button override.
   genuinely unguarded destructive action. Add a confirmation dialog before calling
   `deleteCategory`. Found 2026-07-20, not yet fixed.
 
-- **Add a grayscale option for the Picsum wallpaper source** (`lib/picsum_service.dart`,
-  `lib/providers/wallpaper_service.dart`, `lib/widgets/settings/wallpaper_panel_page.dart`).
-  Blur is already implemented (`randomPhoto({int? blur})`, exposed as the "Random photo (blurred)"
-  button), and picsum.photos supports a `?grayscale` query parameter the same way it supports
-  `?blur=`, so this would be a small, near free addition following the exact same pattern. Not
-  urgent, just a nice easy win if picked up. Suggested 2026-07-20.
-
 ~~Migrate off `sqlite3_flutter_libs` to `sqlite3` v3.x~~ — done (PR #11, 2026-07-21): dropped
   `sqlite3_flutter_libs` from `pubspec.yaml` entirely, depend on `sqlite3` v3.x directly. See
   `DRIFT.md`.
