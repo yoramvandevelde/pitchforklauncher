@@ -18,6 +18,7 @@
 
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
+import 'package:flauncher/default_app_categories.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -106,7 +107,11 @@ void main() {
         ),
         database.updateCategory(
           tvApplicationsCategory.id,
-          CategoriesCompanion(type: Value(CategoryType.grid)),
+          CategoriesCompanion(type: Value(CategoryType.row)),
+        ),
+        database.updateCategory(
+          tvApplicationsCategory.id,
+          CategoriesCompanion(rowHeight: Value(80)),
         ),
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
@@ -184,13 +189,16 @@ void main() {
               sideloaded: true,
             ),
           ]));
+      // Read from the actual map rather than hardcoding a category name, so this test doesn't go
+      // stale whenever default_app_categories.dart's entries get edited/reorganized.
+      final matchedCategoryName = defaultAppCategories["com.netflix.ninja"]!;
       final tvApplicationsCategory = fakeCategory(name: "TV Applications");
       final nonTvApplicationsCategory = fakeCategory(name: "Non-TV Applications");
-      final streamingCategory = fakeCategory(name: "Streaming");
+      final matchedCategory = fakeCategory(name: matchedCategoryName);
       when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
             CategoryWithApps(tvApplicationsCategory, []),
             CategoryWithApps(nonTvApplicationsCategory, []),
-            CategoryWithApps(streamingCategory, []),
+            CategoryWithApps(matchedCategory, []),
           ]));
       when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
       when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
@@ -198,15 +206,20 @@ void main() {
       AppsService(channel, database);
       await untilCalled(channel.addAppsChangedListener(any));
 
-      // Streaming is added last (after the TV/Non-TV fallback categories) so it ends up visually
-      // above them -- addCategory() always inserts at order 0, pushing existing categories down.
+      // The matched category is added last (after the TV/Non-TV fallback categories) so it ends
+      // up visually above them -- addCategory() always inserts at order 0, pushing existing
+      // categories down.
       verifyInOrder([
         database.insertCategory(
           CategoriesCompanion.insert(name: "TV Applications", order: 0),
         ),
         database.updateCategory(
           tvApplicationsCategory.id,
-          CategoriesCompanion(type: Value(CategoryType.grid)),
+          CategoriesCompanion(type: Value(CategoryType.row)),
+        ),
+        database.updateCategory(
+          tvApplicationsCategory.id,
+          CategoriesCompanion(rowHeight: Value(80)),
         ),
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
@@ -226,16 +239,71 @@ void main() {
           )
         ]),
         database.insertCategory(
-          CategoriesCompanion.insert(name: "Streaming", order: 0),
+          CategoriesCompanion.insert(name: matchedCategoryName, order: 0),
         ),
         database.updateCategory(
-          streamingCategory.id,
+          matchedCategory.id,
           CategoriesCompanion(type: Value(CategoryType.grid)),
         ),
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
-            categoryId: streamingCategory.id,
+            categoryId: matchedCategory.id,
             appPackageName: "com.netflix.ninja",
+            order: 0,
+          )
+        ]),
+      ]);
+    });
+
+    test("sorts a matched app into the System category as a compact row", () async {
+      final channel = MockFLauncherChannel();
+      final database = MockFLauncherDatabase();
+      when(channel.getApplications()).thenAnswer((_) => Future.value([
+            {
+              'packageName': 'com.android.vending',
+              'name': 'Play Store',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+          ]));
+      when(database.listApplications()).thenAnswer((_) => Future.value([
+            fakeApp(
+              packageName: "com.android.vending",
+              name: "Play Store",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+          ]));
+      final systemCategory = fakeCategory(name: "System");
+      when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+            CategoryWithApps(systemCategory, []),
+          ]));
+      when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
+      when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+      when(database.wasCreated).thenReturn(true);
+      AppsService(channel, database);
+      await untilCalled(channel.addAppsChangedListener(any));
+
+      verifyInOrder([
+        database.insertCategory(
+          CategoriesCompanion.insert(name: "System", order: 0),
+        ),
+        database.updateCategory(
+          systemCategory.id,
+          CategoriesCompanion(type: Value(CategoryType.row)),
+        ),
+        database.updateCategory(
+          systemCategory.id,
+          CategoriesCompanion(rowHeight: Value(80)),
+        ),
+        database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+            categoryId: systemCategory.id,
+            appPackageName: "com.android.vending",
             order: 0,
           )
         ]),

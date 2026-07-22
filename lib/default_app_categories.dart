@@ -24,16 +24,23 @@
 /// whose apps appear first in this map is created first) -- see `_initDefaultCategories`.
 /// Reorder/add/remove entries directly; there's deliberately no config file or remote source.
 const Map<String, String> defaultAppCategories = {
-  // Streaming
-  "com.google.android.youtube.tv": "Streaming",
-  "com.google.android.youtube": "Streaming",
-  "com.netflix.ninja": "Streaming",
-  "com.netflix.mediaclient": "Streaming",
-  "com.amazon.amazonvideo.livingroom": "Streaming",
-  "com.disney.disneyplus": "Streaming",
+  // Apps
+  "com.google.android.youtube.tv": "Apps",
+  "com.google.android.youtube": "Apps",
+  "com.wbd.hbomax": "Apps",
+  "com.netflix.ninja": "Apps",
+  "com.netflix.mediaclient": "Apps",
+  "com.amazon.amazonvideo.livingroom": "Apps",
+  "com.disney.disneyplus": "Apps",
+  "com.plexapp.android": "Apps",
+  "com.spotify.tv.android": "Apps",
+  "org.videolan.vlc": "Apps",
+  "org.xbmc.kodi": "Apps",
+  "nl.uitzendinggemist": "Apps",
+  "nl.rtl.videoland.v2": "Apps",
 
-  // Media
-  "com.plexapp.android": "Media",
-  "com.spotify.tv.android": "Media",
-  "org.videolan.vlc": "Media",
+  // System
+  "com.android.vending": "System",
+  "com.android.tv.settings": "System",
+  "com.google.android.apps.education.cast2class": "System",
 };

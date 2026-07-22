@@ -728,10 +728,15 @@ class MockAppsService extends _i1.Mock implements _i13.AppsService {
   @override
   _i8.Future<void> setCategoryRowHeight(
     _i6.Category? category,
-    int? rowHeight,
-  ) =>
+    int? rowHeight, {
+    bool? shouldNotifyListeners = true,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#setCategoryRowHeight, [category, rowHeight]),
+            Invocation.method(
+              #setCategoryRowHeight,
+              [category, rowHeight],
+              {#shouldNotifyListeners: shouldNotifyListeners},
+            ),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )

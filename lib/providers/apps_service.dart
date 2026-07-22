@@ -88,7 +88,8 @@ class AppsService extends ChangeNotifier {
   // to the sideloaded/non-sideloaded split for anything unmatched. Topical categories are added
   // *after* the TV/Non-TV fallback ones so they end up visually above them -- addCategory() always
   // inserts at order 0, pushing existing categories down, so whichever category is added last ends
-  // up on top.
+  // up on top. TV Applications and the "System" topical category (utility/miscellaneous catch-alls,
+  // as opposed to actual content apps) render as a compact row (height 80) rather than a grid.
   Future<void> _initDefaultCategories() => _database.transaction(() async {
         final matchedByCategory = <String, List<App>>{};
         final unmatched = <App>[];
@@ -109,9 +110,10 @@ class AppsService extends ChangeNotifier {
               _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == "TV Applications");
           await setCategoryType(
             tvAppsCategory,
-            CategoryType.grid,
+            CategoryType.row,
             shouldNotifyListeners: false,
           );
+          await setCategoryRowHeight(tvAppsCategory, 80, shouldNotifyListeners: false);
           for (final app in tvApplications) {
             await addToCategory(app, tvAppsCategory, shouldNotifyListeners: false);
           }
@@ -135,7 +137,12 @@ class AppsService extends ChangeNotifier {
         for (final entry in matchedByCategory.entries) {
           await addCategory(entry.key, shouldNotifyListeners: false);
           final category = _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == entry.key);
-          await setCategoryType(category, CategoryType.grid, shouldNotifyListeners: false);
+          if (entry.key == "System") {
+            await setCategoryType(category, CategoryType.row, shouldNotifyListeners: false);
+            await setCategoryRowHeight(category, 80, shouldNotifyListeners: false);
+          } else {
+            await setCategoryType(category, CategoryType.grid, shouldNotifyListeners: false);
+          }
           for (final app in entry.value) {
             await addToCategory(app, category, shouldNotifyListeners: false);
           }
@@ -301,9 +308,11 @@ class AppsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setCategoryRowHeight(Category category, int rowHeight) async {
+  Future<void> setCategoryRowHeight(Category category, int rowHeight, {bool shouldNotifyListeners = true}) async {
     await _database.updateCategory(category.id, CategoriesCompanion(rowHeight: Value(rowHeight)));
     _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
-    notifyListeners();
+    if (shouldNotifyListeners) {
+      notifyListeners();
+    }
   }
 }
