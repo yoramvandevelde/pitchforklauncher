@@ -651,6 +651,7 @@ Future<void> _pumpWidgetWithProviders(
   AppsService appsService,
   SettingsService settingsService,
 ) async {
+  when(wallpaperService.wallpaperVersion).thenReturn(0);
   await tester.pumpWidget(
     MultiProvider(
       providers: [

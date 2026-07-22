@@ -23,6 +23,7 @@ import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
 import 'package:flauncher/widgets/settings/unsplash_panel_page.dart';
+import 'package:flauncher/widgets/wallpaper_control_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -56,17 +57,11 @@ class WallpaperPanelPage extends StatelessWidget {
                 Text("Random photo", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () => context.read<WallpaperService>().randomFromPicsum(),
-          ),
-          TextButton(
-            child: Row(
-              children: [
-                Icon(Icons.blur_on),
-                Container(width: 8),
-                Text("Random photo (blurred)", style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            onPressed: () => context.read<WallpaperService>().randomFromPicsum(blur: 4),
+            onPressed: () {
+              final rootNavigator = Navigator.of(context, rootNavigator: true);
+              rootNavigator.pop();
+              rootNavigator.push(WallpaperControlBar.route());
+            },
           ),
           TextButton(
             child: Row(

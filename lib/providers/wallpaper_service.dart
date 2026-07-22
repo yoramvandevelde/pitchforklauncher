@@ -38,8 +38,30 @@ class WallpaperService extends ChangeNotifier {
 
   late final File _wallpaperFile;
   Uint8List? _wallpaper;
+  int? _currentPicsumPhotoId;
+  bool _picsumGrayscale = false;
+  int? _picsumBlur;
+  int _picsumRequestId = 0;
+  int _wallpaperVersion = 0;
 
   Uint8List? get wallpaperBytes => _wallpaper;
+
+  /// Bumped every time the wallpaper (or gradient) changes. Lets the UI key its background widget
+  /// so it can cross-fade between the old and new wallpaper instead of swapping instantly.
+  int get wallpaperVersion => _wallpaperVersion;
+
+  /// Whether a Picsum photo has been fetched via [randomFromPicsum] and can be re-filtered via
+  /// [reapplyPicsumFilters]. False before the first [randomFromPicsum] call, or after switching to
+  /// a different wallpaper source (Gradient, Custom, Unsplash).
+  bool get hasCurrentPicsumPhoto => _currentPicsumPhotoId != null;
+
+  /// The filters last applied via [reapplyPicsumFilters] (or reset by [randomFromPicsum]). Lives
+  /// here rather than in the control bar's widget state so it survives the bar being closed and
+  /// reopened -- otherwise reopening it would show both switches off even though the wallpaper
+  /// itself is still filtered.
+  bool get picsumGrayscale => _picsumGrayscale;
+
+  bool get picsumBlurEnabled => _picsumBlur != null;
 
   FLauncherGradient get gradient => FLauncherGradients.all.firstWhere(
         (gradient) => gradient.uuid == _settingsService.gradientUuid,
@@ -57,6 +79,9 @@ class WallpaperService extends ChangeNotifier {
     _wallpaperFile = File("${directory.path}/wallpaper");
     if (await _wallpaperFile.exists()) {
       _wallpaper = await _wallpaperFile.readAsBytes();
+      _currentPicsumPhotoId = _settingsService.picsumPhotoId;
+      _picsumGrayscale = _settingsService.picsumGrayscale;
+      _picsumBlur = _settingsService.picsumBlur;
       notifyListeners();
     }
   }
@@ -68,9 +93,14 @@ class WallpaperService extends ChangeNotifier {
     final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
+      _currentPicsumPhotoId = null;
+      _picsumGrayscale = false;
+      _picsumBlur = null;
       await _wallpaperFile.writeAsBytes(bytes);
       _wallpaper = bytes;
+      _wallpaperVersion++;
       await _settingsService.setUnsplashAuthor(null);
+      await _clearPicsumSettings();
       notifyListeners();
     }
   }
@@ -78,29 +108,74 @@ class WallpaperService extends ChangeNotifier {
   Future<void> randomFromUnsplash(String query) async {
     final photo = await _unsplashService.randomPhoto(query);
     final bytes = await _unsplashService.downloadPhoto(photo);
+    _currentPicsumPhotoId = null;
+    _picsumGrayscale = false;
+    _picsumBlur = null;
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
+    _wallpaperVersion++;
     await _settingsService
         .setUnsplashAuthor(jsonEncode({"username": photo.username, "link": photo.userLink.toString()}));
+    await _clearPicsumSettings();
     notifyListeners();
   }
 
   Future<List<Photo>> searchFromUnsplash(String query) => _unsplashService.searchPhotos(query);
 
-  Future<void> randomFromPicsum({int? blur}) async {
-    final bytes = await _picsumService.randomPhoto(blur: blur);
+  Future<void> randomFromPicsum() async {
+    final requestId = ++_picsumRequestId;
+    final photo = await _picsumService.randomPhoto();
+    if (requestId != _picsumRequestId) {
+      return;
+    }
+    _currentPicsumPhotoId = photo.id;
+    _picsumGrayscale = false;
+    _picsumBlur = null;
+    await _wallpaperFile.writeAsBytes(photo.bytes);
+    _wallpaper = photo.bytes;
+    _wallpaperVersion++;
+    await _settingsService.setUnsplashAuthor(null);
+    await _settingsService.setPicsumPhotoId(photo.id);
+    await _settingsService.setPicsumGrayscale(false);
+    await _settingsService.setPicsumBlur(null);
+    notifyListeners();
+  }
+
+  /// Re-fetches the current Picsum photo with the given filters, replacing the roll from
+  /// [randomFromPicsum] rather than fetching a new random photo. No-ops if called before any
+  /// photo was fetched via [randomFromPicsum].
+  Future<void> reapplyPicsumFilters({bool grayscale = false, int? blur}) async {
+    final id = _currentPicsumPhotoId;
+    if (id == null) {
+      return;
+    }
+    final requestId = ++_picsumRequestId;
+    final bytes = await _picsumService.photoById(id, grayscale: grayscale, blur: blur);
+    if (requestId != _picsumRequestId) {
+      return;
+    }
+    _picsumGrayscale = grayscale;
+    _picsumBlur = blur;
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
+    _wallpaperVersion++;
     await _settingsService.setUnsplashAuthor(null);
+    await _settingsService.setPicsumGrayscale(grayscale);
+    await _settingsService.setPicsumBlur(blur);
     notifyListeners();
   }
 
   Future<void> setFromUnsplash(Photo photo) async {
     final bytes = await _unsplashService.downloadPhoto(photo);
+    _currentPicsumPhotoId = null;
+    _picsumGrayscale = false;
+    _picsumBlur = null;
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
+    _wallpaperVersion++;
     await _settingsService
         .setUnsplashAuthor(jsonEncode({"username": photo.username, "link": photo.userLink.toString()}));
+    await _clearPicsumSettings();
     notifyListeners();
   }
 
@@ -108,10 +183,21 @@ class WallpaperService extends ChangeNotifier {
     if (await _wallpaperFile.exists()) {
       await _wallpaperFile.delete();
     }
+    _currentPicsumPhotoId = null;
+    _picsumGrayscale = false;
+    _picsumBlur = null;
     _wallpaper = null;
-    _settingsService.setUnsplashAuthor(null);
-    _settingsService.setGradientUuid(fLauncherGradient.uuid);
+    _wallpaperVersion++;
+    await _settingsService.setUnsplashAuthor(null);
+    await _settingsService.setGradientUuid(fLauncherGradient.uuid);
+    await _clearPicsumSettings();
     notifyListeners();
+  }
+
+  Future<void> _clearPicsumSettings() async {
+    await _settingsService.setPicsumPhotoId(null);
+    await _settingsService.setPicsumGrayscale(false);
+    await _settingsService.setPicsumBlur(null);
   }
 }
 

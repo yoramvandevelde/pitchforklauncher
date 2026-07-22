@@ -114,7 +114,24 @@ dependency, Flutter's "VIEW LICENSES" screen doesn't pick it up automatically �
 
 The existing Unsplash wallpaper source needs a developer API key (and, in the original app,
 Remote Config to turn it on) — not something worth setting up for personal use. `PicsumService`
-(`lib/picsum_service.dart`) adds a "Random photo" / "Random photo (blurred)" option using
-[picsum.photos](https://picsum.photos), a free, key-less random-image API — no signup, no
-credentials, no rate-limit management. The Unsplash code path is untouched and still there,
-dormant, in case a real Unsplash key gets added back later.
+(`lib/picsum_service.dart`) adds a "Random photo" option using [picsum.photos](https://picsum.photos),
+a free, key-less random-image API — no signup, no credentials, no rate-limit management. The
+Unsplash code path is untouched and still there, dormant, in case a real Unsplash key gets added
+back later.
+
+Picking "Random photo" (Settings → Wallpaper) closes the Settings panel entirely and shows a live
+full-screen preview instead of choosing from behind the docked 350px settings dialog: a rounded,
+content-sized control bar (`lib/widgets/wallpaper_control_bar.dart`) slides up from the bottom of
+the screen, directly over the real home screen, with **Random** / **Black & White** / **Blur**
+controls (2026-07-21).
+
+Picsum's "random" endpoint (`picsum.photos/{w}/{h}`) is itself just a redirect to a specific
+numbered photo (`fastly.picsum.photos/id/{id}/{w}/{h}.jpg`). `PicsumService` follows that redirect
+manually to capture the id (`http.get()` would otherwise auto-follow it and discard it), so
+toggling Black & White or Blur re-fetches the *same* photo with `?grayscale`/`?blur=N` instead of
+rolling a new random one — both filters combine in a single request. The switches are disabled
+until a photo actually exists to filter (`WallpaperService.hasCurrentPicsumPhoto`).
+
+Wallpaper changes also cross-fade (200ms) instead of cutting instantly — a `wallpaperVersion`
+counter on `WallpaperService` keys an `AnimatedSwitcher` around the background in `FLauncher`.
+This applies to every wallpaper source, not just Picsum.
