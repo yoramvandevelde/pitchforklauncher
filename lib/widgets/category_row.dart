@@ -18,6 +18,7 @@
 
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/text_shadows.dart';
 import 'package:flauncher/widgets/app_card.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
@@ -42,9 +43,10 @@ class CategoryRow extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(left: 16, bottom: 8),
             child: Text(category.name,
-                style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                    fontWeight: FontWeight.bold,
-                    shadows: [Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)])),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge!
+                    .copyWith(fontWeight: FontWeight.bold, shadows: kOverlayTextShadows)),
           ),
           applications.isNotEmpty
               ? SizedBox(

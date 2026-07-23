@@ -17,12 +17,12 @@
  */
 
 import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:flauncher/custom_traversal_policy.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
+import 'package:flauncher/text_shadows.dart';
 import 'package:flauncher/widgets/apps_grid.dart';
 import 'package:flauncher/widgets/category_row.dart';
 import 'package:flauncher/widgets/settings/settings_panel.dart';
@@ -31,6 +31,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FLauncher extends StatelessWidget {
+  // Shared with _appBar's toolbarHeight: extendBodyBehindAppBar lets the category list scroll up
+  // behind the transparent app bar instead of being hard-clipped below it, but the body's own
+  // layout box now starts at y=0 -- without this compensating top padding, the resting (unscrolled)
+  // position would sit this much higher than before.
+  static const double _appBarHeight = 40;
+
   @override
   Widget build(BuildContext context) => FocusTraversalGroup(
         policy: RowByRowTraversalPolicy(),
@@ -56,12 +62,26 @@ class FLauncher extends StatelessWidget {
             ),
             Scaffold(
               backgroundColor: Colors.transparent,
+              extendBodyBehindAppBar: true,
               appBar: _appBar(context),
               body: Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
                 child: Consumer<AppsService>(
                   builder: (context, appsService, _) => appsService.initialized
-                      ? SingleChildScrollView(child: _categories(appsService.categoriesWithApps))
+                      ? SingleChildScrollView(
+                          // The top gap lives inside the scrollable content (rather than as
+                          // padding around the whole SingleChildScrollView) so the viewport itself
+                          // spans the full screen -- scrolling can then carry categories all the
+                          // way up behind the transparent app bar instead of hard-clipping them at
+                          // a fixed line. At rest (scroll offset 0) this spacer keeps the first
+                          // category at the same position as before.
+                          child: Column(
+                            children: [
+                              SizedBox(height: 16 + _appBarHeight),
+                              _categories(appsService.categoriesWithApps),
+                            ],
+                          ),
+                        )
                       : _emptyState(context),
                 ),
               ),
@@ -94,31 +114,25 @@ class FLauncher extends StatelessWidget {
       );
 
   AppBar _appBar(BuildContext context) => AppBar(
+        toolbarHeight: _appBarHeight,
         actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                left: 2.0,
-                top: 18.0,
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 2, sigmaY: 2, tileMode: TileMode.decal),
-                  child: Icon(Icons.settings_outlined, color: Colors.black54),
-                ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: IconButton(
+              padding: EdgeInsets.all(2),
+              constraints: BoxConstraints(),
+              splashRadius: 20,
+              icon: Icon(
+                Icons.settings_outlined,
+                shadows: kOverlayTextShadows,
               ),
-              IconButton(
-                padding: EdgeInsets.all(2),
-                constraints: BoxConstraints(),
-                splashRadius: 20,
-                icon: Icon(Icons.settings_outlined),
-                onPressed: () => showDialog(context: context, builder: (_) => SettingsPanel()),
-              ),
-            ],
+              onPressed: () => showDialog(context: context, builder: (_) => SettingsPanel()),
+            ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 16, right: 32),
             child: Align(
-              alignment: Alignment.center,
+              alignment: Alignment.bottomCenter,
               child: TimeWidget(),
             ),
           ),

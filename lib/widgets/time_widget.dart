@@ -19,6 +19,7 @@
 import 'dart:async';
 
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/text_shadows.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +52,8 @@ class _TimeWidgetState extends State<TimeWidget> {
         builder: (context, use24HourTimeFormat, _) => Text(
           use24HourTimeFormat ? DateFormat.Hm().format(_now) : DateFormat.jm().format(_now),
           style: Theme.of(context).textTheme.titleLarge!.copyWith(
-            shadows: [Shadow(color: Colors.black54, offset: Offset(1, 1), blurRadius: 8)],
+            fontWeight: FontWeight.bold,
+            shadows: kOverlayTextShadows,
           ),
           textAlign: TextAlign.end,
         ),
