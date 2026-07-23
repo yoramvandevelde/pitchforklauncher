@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +25,14 @@ import 'package:provider/provider.dart';
 class AddToCategoryDialog extends StatelessWidget {
   final App application;
 
-  AddToCategoryDialog(this.application);
+  /// When set, selecting a category also removes [application] from this category instead of
+  /// just adding it to the new one -- i.e. this dialog doubles as "Move to..." (used from the
+  /// home screen's app context menu) as well as plain "Add to..." (used from Settings >
+  /// Applications). The category list is unaffected either way: it's already filtered down to
+  /// categories that don't contain the app yet, so [moveFrom] itself never appears as an option.
+  final Category? moveFrom;
+
+  AddToCategoryDialog(this.application, {this.moveFrom});
 
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<Category>>(
@@ -33,7 +41,7 @@ class AddToCategoryDialog extends StatelessWidget {
             .map((categoryWithApps) => categoryWithApps.category)
             .toList(),
         builder: (context, categories, _) => SimpleDialog(
-          title: Text("Add to..."),
+          title: Text(moveFrom != null ? "Move to..." : "Add to..."),
           contentPadding: EdgeInsets.all(16),
           children: categories
               .map(
@@ -41,7 +49,12 @@ class AddToCategoryDialog extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
                     onTap: () async {
-                      await context.read<AppsService>().addToCategory(application, category);
+                      final appsService = context.read<AppsService>();
+                      if (moveFrom != null) {
+                        await appsService.moveToCategory(application, moveFrom!, category);
+                      } else {
+                        await appsService.addToCategory(application, category);
+                      }
                       Navigator.of(context).pop();
                     },
                     title: Text(category.name),

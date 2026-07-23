@@ -24,6 +24,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
+import 'package:flauncher/widgets/add_to_category_dialog.dart';
 import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/apps_grid.dart';
 import 'package:flauncher/widgets/category_row.dart';
@@ -225,6 +226,49 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ApplicationInfoPanel), findsOneWidget);
+  });
+
+  testWidgets("'Move to...' opens AddToCategoryDialog and moves the app to the chosen category",
+      (tester) async {
+    final wallpaperService = MockWallpaperService();
+    final appsService = MockAppsService();
+    final settingsService = MockSettingsService();
+    when(appsService.initialized).thenReturn(true);
+    when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(wallpaperService.gradient).thenReturn(FLauncherGradients.greatWhale);
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+    final sourceCategory = fakeCategory(name: "Applications", order: 1);
+    final targetCategory = fakeCategory(name: "Favorites", order: 0);
+    final app = fakeApp(
+      packageName: "io.sifft.pitchforklauncher",
+      name: "FLauncher",
+      version: "1.0.0",
+      banner: kTransparentImage,
+      icon: kTransparentImage,
+    );
+    when(appsService.categoriesWithApps).thenReturn([
+      CategoryWithApps(targetCategory, []),
+      CategoryWithApps(sourceCategory, [app]),
+    ]);
+    await _pumpWidgetWithProviders(tester, wallpaperService, appsService, settingsService);
+
+    await tester.longPress(find.byKey(Key("${sourceCategory.id}-io.sifft.pitchforklauncher")));
+    await tester.pump();
+    // Open, Reorder (default fakeCategory sort is manual), Hide, Move to...
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+
+    expect(find.byType(AddToCategoryDialog), findsOneWidget);
+
+    await tester.tap(find.descendant(of: find.byType(AddToCategoryDialog), matching: find.text("Favorites")));
+    await tester.pump();
+
+    verify(appsService.moveToCategory(app, sourceCategory, targetCategory));
   });
 
   testWidgets("AppCard moves in grid", (tester) async {

@@ -175,3 +175,16 @@ hard clip. The bar's own height/alignment are back to Flutter's plain defaults (
 `Alignment.center`): shrinking it was only ever about reclaiming space for content, which
 transparency already solves, and centering is also the only alignment that doesn't clip the
 settings icon's splash circle against the bar's edge.
+
+## "Move to..." from the home screen's app context menu
+
+Long-pressing an app on the home screen already offered "Remove from `<category>`"; the only way
+to place it under a *different* category used to be Settings > Applications' "+" button
+(`AddToCategoryDialog`). `ApplicationInfoPanel` now also offers "Move to...", which reuses that
+same dialog rather than duplicating its category-picker UI — `AddToCategoryDialog` takes an
+optional `moveFrom` category, and when set, picking a category calls the new
+`AppsService.moveToCategory(app, from, to)` instead of just `addToCategory`. That method does the
+insert-into-new-category and delete-from-old-category in a single `_database.transaction()` with
+one `categoriesWithApps` reload/`notifyListeners()` at the end, rather than calling `addToCategory`
+then `removeFromCategory` back to back (two full reloads, and the app would transiently show up in
+both categories at once).

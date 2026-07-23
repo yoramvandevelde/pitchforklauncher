@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -107,6 +108,17 @@ class ApplicationInfoPanel extends StatelessWidget {
               TextButton(
                 child: Row(
                   children: [
+                    Icon(Icons.drive_file_move_outlined),
+                    Container(width: 8),
+                    Text("Move to...", style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+                onPressed: () => Navigator.of(context).pop(ApplicationInfoPanelResult.moveApp),
+              ),
+            if (category != null)
+              TextButton(
+                child: Row(
+                  children: [
                     Icon(Icons.delete_sweep_outlined),
                     Container(width: 8),
                     Flexible(
@@ -153,4 +165,4 @@ class ApplicationInfoPanel extends StatelessWidget {
       );
 }
 
-enum ApplicationInfoPanelResult { none, reorderApp }
+enum ApplicationInfoPanelResult { none, reorderApp, moveApp }

@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@ import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
+import 'package:flauncher/widgets/add_to_category_dialog.dart';
 import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/color_helpers.dart';
 import 'package:flauncher/widgets/focus_keyboard_listener.dart';
@@ -267,6 +269,11 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     );
     if (result == ApplicationInfoPanelResult.reorderApp) {
       setState(() => _moving = true);
+    } else if (result == ApplicationInfoPanelResult.moveApp) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => AddToCategoryDialog(widget.application, moveFrom: widget.category),
+      );
     }
   }
 }

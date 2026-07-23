@@ -202,6 +202,23 @@ class AppsService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Combines an add and a remove into a single transaction/reload/notify instead of the two full
+  /// round-trips calling [addToCategory] then [removeFromCategory] separately would cause -- doing
+  /// those separately also has the app transiently showing up in both categories at once.
+  Future<void> moveToCategory(App app, Category from, Category to) => _database.transaction(() async {
+        final index = await _database.nextAppCategoryOrder(to.id) ?? 0;
+        await _database.insertAppsCategories([
+          AppsCategoriesCompanion.insert(
+            categoryId: to.id,
+            appPackageName: app.packageName,
+            order: index,
+          )
+        ]);
+        await _database.deleteAppCategory(from.id, app.packageName);
+        _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
+        notifyListeners();
+      });
+
   Future<void> saveOrderInCategory(Category category) async {
     final applications = _categoriesWithApps.firstWhere((element) => element.category.id == category.id).applications;
     final orderedAppCategories = <AppsCategoriesCompanion>[];
