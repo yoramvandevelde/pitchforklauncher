@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'package:flauncher/database.dart';
+
 /// Package name -> category name, used by [AppsService]'s first-run seeding
 /// (`_initDefaultCategories`) to sort well-known apps into topical categories instead of the
 /// generic sideloaded/non-sideloaded split. Anything not listed here falls back to that split.
@@ -68,3 +70,27 @@ const Map<String, String> defaultAppCategories = {
   "com.surfshark.vpnclient.android": "System",
   "flar2.homebutton": "System",
 };
+
+/// Per-category display overrides applied by [AppsService]'s first-run seeding, keyed by category
+/// name -- both the topical names above and the "TV Applications"/"System" fallback names. A
+/// category with no entry here (e.g. "Non-TV Applications") is left at the app's normal defaults
+/// (grid, row height 110, 6 columns; see `Categories` in database.dart). Edit directly to change
+/// how any seeded category looks, same as [defaultAppCategories] -- no config file or remote
+/// source. Every field is stated explicitly rather than relying on "leave it at the default" for
+/// categories that need grid: the actual database column default is `CategoryType.row` (index 0),
+/// not grid, so an omitted [DefaultCategorySettings.type] is only safe for categories that are
+/// genuinely meant to render as a row.
+const Map<String, DefaultCategorySettings> defaultCategorySettings = {
+  "TV Applications": DefaultCategorySettings(type: CategoryType.row, rowHeight: 80),
+  "Streaming": DefaultCategorySettings(type: CategoryType.grid, columnsCount: 5),
+  "Media": DefaultCategorySettings(type: CategoryType.grid),
+  "System": DefaultCategorySettings(type: CategoryType.row, rowHeight: 80),
+};
+
+class DefaultCategorySettings {
+  final CategoryType? type;
+  final int? rowHeight;
+  final int? columnsCount;
+
+  const DefaultCategorySettings({this.type, this.rowHeight, this.columnsCount});
+}

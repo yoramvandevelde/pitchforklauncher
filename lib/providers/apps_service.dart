@@ -88,11 +88,12 @@ class AppsService extends ChangeNotifier {
   // to the sideloaded/non-sideloaded split for anything unmatched. Both which category an app
   // lands in and the display order come directly from default_app_categories.dart's own order --
   // scanning the map itself (rather than the device's, alphabetically-sorted app list) for
-  // grouping and per-category app order, then adding categories in *reverse* of the map's order so
-  // that order becomes the visual top-to-bottom order: addCategory() always inserts at order 0,
-  // pushing existing categories down, so whichever category is added last ends up on top. TV
-  // Applications and the "System" topical category (utility/miscellaneous catch-alls, as opposed
-  // to actual content apps) render as a compact row (height 80) rather than a grid.
+  // grouping and per-category app order. Categories are seeded in reverse of the desired
+  // top-to-bottom order: addCategory() always inserts at order 0, pushing existing categories
+  // down, so whichever category is seeded last ends up on top -- that's why the topical
+  // categories loop runs after (i.e. on top of) TV/Non-TV Applications below. Per-category display
+  // (grid/row, row height, column count) comes from default_app_categories.dart's
+  // defaultCategorySettings, keyed by category name.
   Future<void> _initDefaultCategories() => _database.transaction(() async {
         final installedByPackageName = {for (final app in _applications) app.packageName: app};
         final matchedByCategory = <String, List<App>>{};
@@ -104,54 +105,40 @@ class AppsService extends ChangeNotifier {
         }
         final unmatched = _applications.where((app) => !defaultAppCategories.containsKey(app.packageName));
 
-        final tvApplications = unmatched.where((element) => element.sideloaded == false);
-        final nonTvApplications = unmatched.where((element) => element.sideloaded == true);
-        if (tvApplications.isNotEmpty) {
-          await addCategory("TV Applications", shouldNotifyListeners: false);
-          final tvAppsCategory =
-              _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == "TV Applications");
-          await setCategoryType(
-            tvAppsCategory,
-            CategoryType.row,
-            shouldNotifyListeners: false,
-          );
-          await setCategoryRowHeight(tvAppsCategory, 80, shouldNotifyListeners: false);
-          for (final app in tvApplications) {
-            await addToCategory(app, tvAppsCategory, shouldNotifyListeners: false);
-          }
-        }
-        if (nonTvApplications.isNotEmpty) {
-          await addCategory(
-            "Non-TV Applications",
-            shouldNotifyListeners: false,
-          );
-          final nonTvAppsCategory =
-              _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == "Non-TV Applications");
-          for (final app in nonTvApplications) {
-            await addToCategory(
-              app,
-              nonTvAppsCategory,
-              shouldNotifyListeners: false,
-            );
-          }
-        }
+        await _seedCategory("TV Applications", unmatched.where((app) => app.sideloaded == false));
+        await _seedCategory("Non-TV Applications", unmatched.where((app) => app.sideloaded == true));
 
         for (final entry in matchedByCategory.entries.toList().reversed) {
-          await addCategory(entry.key, shouldNotifyListeners: false);
-          final category = _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == entry.key);
-          if (entry.key == "System") {
-            await setCategoryType(category, CategoryType.row, shouldNotifyListeners: false);
-            await setCategoryRowHeight(category, 80, shouldNotifyListeners: false);
-          } else {
-            await setCategoryType(category, CategoryType.grid, shouldNotifyListeners: false);
-          }
-          for (final app in entry.value) {
-            await addToCategory(app, category, shouldNotifyListeners: false);
-          }
+          await _seedCategory(entry.key, entry.value);
         }
 
         _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
       });
+
+  /// Creates a category (skipped entirely if [apps] is empty) using [defaultCategorySettings]'s
+  /// entry for [name] (a category with no entry is left at the database column defaults), then
+  /// adds [apps] to it in order. Used only during [_initDefaultCategories]'s first-run seed, where
+  /// every category is freshly created so looking it up by name right after is unambiguous.
+  Future<void> _seedCategory(String name, Iterable<App> apps) async {
+    if (apps.isEmpty) {
+      return;
+    }
+    await addCategory(name, shouldNotifyListeners: false);
+    final category = _categoriesWithApps.map((e) => e.category).firstWhere((element) => element.name == name);
+    final settings = defaultCategorySettings[name];
+    if (settings?.type != null) {
+      await setCategoryType(category, settings!.type!, shouldNotifyListeners: false);
+    }
+    if (settings?.rowHeight != null) {
+      await setCategoryRowHeight(category, settings!.rowHeight!, shouldNotifyListeners: false);
+    }
+    if (settings?.columnsCount != null) {
+      await setCategoryColumnsCount(category, settings!.columnsCount!, shouldNotifyListeners: false);
+    }
+    for (final app in apps) {
+      await addToCategory(app, category, shouldNotifyListeners: false);
+    }
+  }
 
   Future<void> _refreshState({bool shouldNotifyListeners = true}) async {
     await _database.transaction(() async {
@@ -304,10 +291,12 @@ class AppsService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setCategoryColumnsCount(Category category, int columnsCount) async {
+  Future<void> setCategoryColumnsCount(Category category, int columnsCount, {bool shouldNotifyListeners = true}) async {
     await _database.updateCategory(category.id, CategoriesCompanion(columnsCount: Value(columnsCount)));
     _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
-    notifyListeners();
+    if (shouldNotifyListeners) {
+      notifyListeners();
+    }
   }
 
   Future<void> setCategoryRowHeight(Category category, int rowHeight, {bool shouldNotifyListeners = true}) async {

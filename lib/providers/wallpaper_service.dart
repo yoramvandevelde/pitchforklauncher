@@ -95,28 +95,39 @@ class WallpaperService extends ChangeNotifier {
       _picsumBlur = _settingsService.picsumBlur;
       notifyListeners();
     } else if (await _database.isFreshInstall()) {
-      await _writeDefaultWallpaper();
+      await _writeWallpaperBytes(await _loadDefaultWallpaperBytes());
       notifyListeners();
     }
   }
 
-  Future<void> _writeDefaultWallpaper() async {
-    final bytes = (await rootBundle.load(_defaultWallpaperAsset)).buffer.asUint8List();
+  Future<Uint8List> _loadDefaultWallpaperBytes() async =>
+      (await rootBundle.load(_defaultWallpaperAsset)).buffer.asUint8List();
+
+  Future<void> _writeWallpaperBytes(Uint8List bytes) async {
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
     _wallpaperVersion++;
   }
 
-  /// Explicitly resets the wallpaper back to the bundled default, same image [_init] seeds on a
-  /// fresh install -- lets the user return to it later without wiping their data.
-  Future<void> resetToDefaultWallpaper() async {
+  /// Shared by every "replace the wallpaper wholesale" path (picked file, Unsplash, the bundled
+  /// default): resets Picsum/gradient state, writes the new bytes, and records the Unsplash
+  /// author credit (or clears it for non-Unsplash sources). [randomFromPicsum],
+  /// [reapplyPicsumFilters] and [setGradient] manage their own state instead of using this, since
+  /// they need to set (rather than clear) Picsum-specific settings.
+  Future<void> _applyWallpaper(Uint8List bytes, {String? unsplashAuthorJson}) async {
     _currentPicsumPhotoId = null;
     _picsumGrayscale = false;
     _picsumBlur = null;
-    await _writeDefaultWallpaper();
-    await _settingsService.setUnsplashAuthor(null);
+    await _writeWallpaperBytes(bytes);
+    await _settingsService.setUnsplashAuthor(unsplashAuthorJson);
     await _clearPicsumSettings();
     notifyListeners();
+  }
+
+  /// Explicitly resets the wallpaper back to the bundled default, same image [_init] seeds on a
+  /// fresh install -- lets the user return to it later without wiping their data.
+  Future<void> resetToDefaultWallpaper() async {
+    await _applyWallpaper(await _loadDefaultWallpaperBytes());
   }
 
   Future<void> pickWallpaper() async {
@@ -125,32 +136,17 @@ class WallpaperService extends ChangeNotifier {
     }
     final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      final bytes = await pickedFile.readAsBytes();
-      _currentPicsumPhotoId = null;
-      _picsumGrayscale = false;
-      _picsumBlur = null;
-      await _wallpaperFile.writeAsBytes(bytes);
-      _wallpaper = bytes;
-      _wallpaperVersion++;
-      await _settingsService.setUnsplashAuthor(null);
-      await _clearPicsumSettings();
-      notifyListeners();
+      await _applyWallpaper(await pickedFile.readAsBytes());
     }
   }
 
   Future<void> randomFromUnsplash(String query) async {
     final photo = await _unsplashService.randomPhoto(query);
     final bytes = await _unsplashService.downloadPhoto(photo);
-    _currentPicsumPhotoId = null;
-    _picsumGrayscale = false;
-    _picsumBlur = null;
-    await _wallpaperFile.writeAsBytes(bytes);
-    _wallpaper = bytes;
-    _wallpaperVersion++;
-    await _settingsService
-        .setUnsplashAuthor(jsonEncode({"username": photo.username, "link": photo.userLink.toString()}));
-    await _clearPicsumSettings();
-    notifyListeners();
+    await _applyWallpaper(
+      bytes,
+      unsplashAuthorJson: jsonEncode({"username": photo.username, "link": photo.userLink.toString()}),
+    );
   }
 
   Future<List<Photo>> searchFromUnsplash(String query) => _unsplashService.searchPhotos(query);
@@ -200,16 +196,10 @@ class WallpaperService extends ChangeNotifier {
 
   Future<void> setFromUnsplash(Photo photo) async {
     final bytes = await _unsplashService.downloadPhoto(photo);
-    _currentPicsumPhotoId = null;
-    _picsumGrayscale = false;
-    _picsumBlur = null;
-    await _wallpaperFile.writeAsBytes(bytes);
-    _wallpaper = bytes;
-    _wallpaperVersion++;
-    await _settingsService
-        .setUnsplashAuthor(jsonEncode({"username": photo.username, "link": photo.userLink.toString()}));
-    await _clearPicsumSettings();
-    notifyListeners();
+    await _applyWallpaper(
+      bytes,
+      unsplashAuthorJson: jsonEncode({"username": photo.username, "link": photo.userLink.toString()}),
+    );
   }
 
   Future<void> setGradient(FLauncherGradient fLauncherGradient) async {

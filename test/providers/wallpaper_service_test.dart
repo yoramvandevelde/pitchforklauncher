@@ -272,9 +272,15 @@ void main() {
           WallpaperService(imagePicker, fLauncherChannel, unsplashService, MockPicsumService(), _mockDatabase(isFreshInstall: true))
             ..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-      // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain -- pump the
-      // event queue until it settles rather than guessing a fixed number of ticks.
-      await pumpEventQueue();
+      // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
+      // includes a real (multi-MB) disk read/write, so pumpEventQueue() -- which only drains
+      // already-queued microtasks a fixed number of times rather than letting wall-clock time
+      // pass -- can exit before the write actually finishes. Poll for the real completion signal
+      // instead, bounded by a generous timeout.
+      final stopwatch = Stopwatch()..start();
+      while (wallpaperService.wallpaperBytes == null && stopwatch.elapsed < const Duration(seconds: 10)) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
 
       expect(wallpaperService.wallpaperBytes, isNotNull);
       expect(wallpaperService.wallpaperBytes, isNotEmpty);

@@ -310,6 +310,46 @@ void main() {
       ]);
     });
 
+    test("seeds the Streaming category with default_app_categories.dart's configured column count", () async {
+      final channel = MockFLauncherChannel();
+      final database = MockFLauncherDatabase();
+      when(channel.getApplications()).thenAnswer((_) => Future.value([
+            {
+              'packageName': 'com.netflix.ninja',
+              'name': 'Netflix',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false
+            },
+          ]));
+      when(database.listApplications()).thenAnswer((_) => Future.value([
+            fakeApp(
+              packageName: "com.netflix.ninja",
+              name: "Netflix",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+          ]));
+      final streamingCategory = fakeCategory(name: "Streaming");
+      when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+            CategoryWithApps(streamingCategory, []),
+          ]));
+      when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
+      when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+      when(database.wasCreated).thenReturn(true);
+      AppsService(channel, database);
+      await untilCalled(channel.addAppsChangedListener(any));
+
+      final expectedColumnsCount = defaultCategorySettings["Streaming"]!.columnsCount!;
+      verify(database.updateCategory(
+        streamingCategory.id,
+        CategoriesCompanion(columnsCount: Value(expectedColumnsCount)),
+      ));
+    });
+
     test("categorization follows default_app_categories.dart's own order, not the device's alphabetical app order",
         () async {
       final channel = MockFLauncherChannel();
