@@ -31,11 +31,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FLauncher extends StatelessWidget {
-  // Shared with _appBar's toolbarHeight: extendBodyBehindAppBar lets the category list scroll up
-  // behind the transparent app bar instead of being hard-clipped below it, but the body's own
-  // layout box now starts at y=0 -- without this compensating top padding, the resting (unscrolled)
-  // position would sit this much higher than before.
-  static const double _appBarHeight = 40;
+  // How far down the category list's resting (unscrolled) position sits -- the original, pre-
+  // transparency gap (16 padding + the app bar's own default height). Hardcoded rather than
+  // derived from the app bar below on purpose: extendBodyBehindAppBar means the app bar floats
+  // over the content instead of reserving space for it, so nothing here actually depends on the
+  // app bar's own height -- shrinking that bar was only ever about reclaiming space for content,
+  // which transparency already solved, so the bar itself is back to its original size/alignment.
+  static const double _categoriesTopGap = 16 + kToolbarHeight;
 
   @override
   Widget build(BuildContext context) => FocusTraversalGroup(
@@ -77,7 +79,7 @@ class FLauncher extends StatelessWidget {
                           // category at the same position as before.
                           child: Column(
                             children: [
-                              SizedBox(height: 16 + _appBarHeight),
+                              SizedBox(height: _categoriesTopGap),
                               _categories(appsService.categoriesWithApps),
                             ],
                           ),
@@ -114,10 +116,9 @@ class FLauncher extends StatelessWidget {
       );
 
   AppBar _appBar(BuildContext context) => AppBar(
-        toolbarHeight: _appBarHeight,
         actions: [
           Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.center,
             child: IconButton(
               padding: EdgeInsets.all(2),
               constraints: BoxConstraints(),
@@ -132,7 +133,7 @@ class FLauncher extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(left: 16, right: 32),
             child: Align(
-              alignment: Alignment.bottomCenter,
+              alignment: Alignment.center,
               child: TimeWidget(),
             ),
           ),
