@@ -108,18 +108,15 @@ controller runs in reverse, this makes the incoming photo reach full opacity by 
 the outgoing one only start fading (invisibly, now hidden under the opaque new layer) after that,
 so at least one layer is always fully opaque and the background never shows through.
 
-- **Seed a richer, sane default test setup instead of the bare upstream one.** Raised in
-  conversation 2026-07-22: every fresh install/data wipe on the test emulator currently only gets
-  whatever `AppsService._initDefaultCategories()` (`lib/providers/apps_service.dart`) builds —
-  upstream FLauncher's original first-launch behavior, which just creates a "TV Applications" grid
-  category and a "Non-TV Applications" one from whatever happens to be installed (Play Store,
-  YouTube, etc. on the emulator). Fine for a real device, but it means every test-data wipe leaves
-  a bare, not-very-useful setup for actually exercising features (multiple categories, manual sort
-  order, an already-picked wallpaper, etc.), so the user ends up manually rebuilding a test
-  scenario by hand each time. Idea: a debug-only seed path (gated behind the existing DEBUG
-  build/ribbon) that additionally creates a couple of extra categories with sensible settings,
-  maybe a default wallpaper choice, so a fresh install starts from a useful baseline instead of
-  empty/bare-minimum. Not scoped/designed yet, just captured so it's not forgotten.
+~~Seed a richer, sane default test setup instead of the bare upstream one.~~ — shipped
+  (2026-07-22), wider in scope than originally captured: rather than a debug-only convenience,
+  `AppsService._initDefaultCategories()` now sorts well-known apps into topical categories
+  (`lib/default_app_categories.dart`'s hardcoded package-name map) on any genuine fresh
+  install/data wipe, falling back to the original TV/Non-TV split for anything unmatched, and
+  `WallpaperService` seeds a bundled default wallpaper (`assets/default_wallpaper.jpg`) instead of
+  the plain gradient. Always-on production behavior, not gated behind debug mode — both paths key
+  off the same fresh-install signal, so an ordinary app update/reinstall never re-triggers them.
+  See `DRIFT.md`.
 
 - **Consider doing B&W/Blur as a client-side render effect instead of a server round-trip.**
   Raised in conversation 2026-07-22, explicitly for later, not now. Right now toggling a filter

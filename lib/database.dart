@@ -205,6 +205,15 @@ class FLauncherDatabase extends _$FLauncherDatabase {
     return categoriesToApps.entries.map((entry) => CategoryWithApps(entry.key, entry.value)).toList();
   }
 
+  /// Forces the (possibly still-unopened) connection open via a trivial no-op query, then returns
+  /// whether this database file was freshly created. [AppsService] gets this for free via its own
+  /// early transaction() call; [WallpaperService] needs its own forcing call since there's no
+  /// ordering guarantee between the two services' init.
+  Future<bool> isFreshInstall() async {
+    await customStatement('SELECT 1');
+    return wasCreated;
+  }
+
   Future<int?> nextAppCategoryOrder(int categoryId) async {
     final query = selectOnly(appsCategories);
     final maxExpression = coalesce([appsCategories.order.max(), Constant(-1)]) + Constant(1);

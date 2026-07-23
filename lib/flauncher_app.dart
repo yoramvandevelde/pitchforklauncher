@@ -80,7 +80,8 @@ class FLauncherApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => AppsService(_fLauncherChannel, _fLauncherDatabase)),
           ChangeNotifierProvider(create: (_) => ButtonMappingService(_fLauncherChannel)),
           ChangeNotifierProxyProvider<SettingsService, WallpaperService>(
-              create: (_) => WallpaperService(_imagePicker, _fLauncherChannel, _unsplashService, _picsumService),
+              create: (_) =>
+                  WallpaperService(_imagePicker, _fLauncherChannel, _unsplashService, _picsumService, _fLauncherDatabase),
               update: (_, settingsService, wallpaperService) => wallpaperService!..settingsService = settingsService),
           Provider<TickerModel>(create: (context) => TickerModel(null))
         ],

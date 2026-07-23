@@ -100,6 +100,16 @@ class WallpaperPanelPage extends StatelessWidget {
               }
             },
           ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.restore),
+                Container(width: 8),
+                Text("Default", style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            onPressed: () async => await context.read<WallpaperService>().resetToDefaultWallpaper(),
+          ),
           Spacer(),
           Selector<SettingsService, String?>(
             selector: (_, settingsService) => settingsService.unsplashAuthor,

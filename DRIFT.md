@@ -135,3 +135,31 @@ until a photo actually exists to filter (`WallpaperService.hasCurrentPicsumPhoto
 Wallpaper changes also cross-fade (200ms) instead of cutting instantly — a `wallpaperVersion`
 counter on `WallpaperService` keys an `AnimatedSwitcher` around the background in `FLauncher`.
 This applies to every wallpaper source, not just Picsum.
+
+## Smart first-run seed
+
+On a genuine fresh install / wiped data (`FLauncherDatabase.wasCreated`, or the new
+`isFreshInstall()` helper used by `WallpaperService`), instead of just the generic "TV
+Applications"/"Non-TV Applications" split, well-known apps are automatically sorted into topical
+categories first — see `lib/default_app_categories.dart`'s hardcoded package-name-to-category map
+(currently Streaming/Media/System entries, editable directly, no config file or remote source).
+Both the grouping and the display order follow the map's own order directly, not the device's
+alphabetically-sorted app list. Unmatched apps still fall back to the original TV/Non-TV split.
+
+Per-category display (grid vs. row, row height, grid column count) comes from the same file's
+`defaultCategorySettings` map, keyed by category name (both the topical names and the
+"TV Applications"/"System" fallback names) — e.g. Streaming is a 5-wide grid, System is an 80px
+row. A category with no entry is left at the app's normal defaults. Every field that matters is
+stated explicitly rather than left to "the default": the actual database column default for a
+category's type is `CategoryType.row`, not grid, so any topical category meant to render as a grid
+(Streaming, Media) must say so. `AppsService._seedCategory()` is the single place that reads this
+map and applies it, shared by every seeded category (TV/Non-TV Applications and the topical ones)
+instead of repeating the create/type/height/columns/add-apps dance per category.
+
+A bundled default wallpaper (`assets/default_wallpaper.jpg`, a photo by Wilhelm Gunkel on
+Unsplash, credited both in the About dialog itself and in its license viewer) is also shown instead
+of the plain gradient fallback on that same first launch, and can be restored later via the
+"Default" button on the wallpaper panel (`WallpaperService.resetToDefaultWallpaper()`). Both the
+category seed and the wallpaper seed gate on the same fresh-install signal, so an ordinary app
+update/reinstall never triggers either — only an explicit data wipe or full uninstall+reinstall
+does.

@@ -378,6 +378,15 @@ class MockWallpaperService extends _i1.Mock implements _i10.WallpaperService {
           as bool);
 
   @override
+  _i8.Future<void> resetToDefaultWallpaper() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetToDefaultWallpaper, []),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
   _i8.Future<void> pickWallpaper() =>
       (super.noSuchMethod(
             Invocation.method(#pickWallpaper, []),
@@ -704,13 +713,15 @@ class MockAppsService extends _i1.Mock implements _i13.AppsService {
   @override
   _i8.Future<void> setCategoryColumnsCount(
     _i6.Category? category,
-    int? columnsCount,
-  ) =>
+    int? columnsCount, {
+    bool? shouldNotifyListeners = true,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#setCategoryColumnsCount, [
-              category,
-              columnsCount,
-            ]),
+            Invocation.method(
+              #setCategoryColumnsCount,
+              [category, columnsCount],
+              {#shouldNotifyListeners: shouldNotifyListeners},
+            ),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
@@ -719,10 +730,15 @@ class MockAppsService extends _i1.Mock implements _i13.AppsService {
   @override
   _i8.Future<void> setCategoryRowHeight(
     _i6.Category? category,
-    int? rowHeight,
-  ) =>
+    int? rowHeight, {
+    bool? shouldNotifyListeners = true,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#setCategoryRowHeight, [category, rowHeight]),
+            Invocation.method(
+              #setCategoryRowHeight,
+              [category, rowHeight],
+              {#shouldNotifyListeners: shouldNotifyListeners},
+            ),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
@@ -1320,6 +1336,14 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
             ),
           )
           as _i8.Future<List<_i6.CategoryWithApps>>);
+
+  @override
+  _i8.Future<bool> isFreshInstall() =>
+      (super.noSuchMethod(
+            Invocation.method(#isFreshInstall, []),
+            returnValue: _i8.Future<bool>.value(false),
+          )
+          as _i8.Future<bool>);
 
   @override
   _i8.Future<int?> nextAppCategoryOrder(int? categoryId) =>
