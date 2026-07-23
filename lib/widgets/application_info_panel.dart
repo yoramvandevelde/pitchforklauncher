@@ -107,6 +107,17 @@ class ApplicationInfoPanel extends StatelessWidget {
               TextButton(
                 child: Row(
                   children: [
+                    Icon(Icons.drive_file_move_outlined),
+                    Container(width: 8),
+                    Text("Move to...", style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+                onPressed: () => Navigator.of(context).pop(ApplicationInfoPanelResult.moveApp),
+              ),
+            if (category != null)
+              TextButton(
+                child: Row(
+                  children: [
                     Icon(Icons.delete_sweep_outlined),
                     Container(width: 8),
                     Flexible(
@@ -153,4 +164,4 @@ class ApplicationInfoPanel extends StatelessWidget {
       );
 }
 
-enum ApplicationInfoPanelResult { none, reorderApp }
+enum ApplicationInfoPanelResult { none, reorderApp, moveApp }

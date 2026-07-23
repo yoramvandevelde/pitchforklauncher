@@ -24,7 +24,14 @@ import 'package:provider/provider.dart';
 class AddToCategoryDialog extends StatelessWidget {
   final App application;
 
-  AddToCategoryDialog(this.application);
+  /// When set, selecting a category also removes [application] from this category instead of
+  /// just adding it to the new one -- i.e. this dialog doubles as "Move to..." (used from the
+  /// home screen's app context menu) as well as plain "Add to..." (used from Settings >
+  /// Applications). The category list is unaffected either way: it's already filtered down to
+  /// categories that don't contain the app yet, so [moveFrom] itself never appears as an option.
+  final Category? moveFrom;
+
+  AddToCategoryDialog(this.application, {this.moveFrom});
 
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<Category>>(
@@ -33,7 +40,7 @@ class AddToCategoryDialog extends StatelessWidget {
             .map((categoryWithApps) => categoryWithApps.category)
             .toList(),
         builder: (context, categories, _) => SimpleDialog(
-          title: Text("Add to..."),
+          title: Text(moveFrom != null ? "Move to..." : "Add to..."),
           contentPadding: EdgeInsets.all(16),
           children: categories
               .map(
@@ -42,6 +49,9 @@ class AddToCategoryDialog extends StatelessWidget {
                   child: ListTile(
                     onTap: () async {
                       await context.read<AppsService>().addToCategory(application, category);
+                      if (moveFrom != null) {
+                        await context.read<AppsService>().removeFromCategory(application, moveFrom!);
+                      }
                       Navigator.of(context).pop();
                     },
                     title: Text(category.name),
