@@ -268,8 +268,7 @@ void main() {
     await tester.tap(find.descendant(of: find.byType(AddToCategoryDialog), matching: find.text("Favorites")));
     await tester.pump();
 
-    verify(appsService.addToCategory(app, targetCategory));
-    verify(appsService.removeFromCategory(app, sourceCategory));
+    verify(appsService.moveToCategory(app, sourceCategory, targetCategory));
   });
 
   testWidgets("AppCard moves in grid", (tester) async {

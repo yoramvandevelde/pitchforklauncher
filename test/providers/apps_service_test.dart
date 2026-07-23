@@ -571,6 +571,23 @@ void main() {
     verify(database.listCategoriesWithVisibleApps());
   });
 
+  test("moveToCategory adds app to the target category and removes it from the source category", () async {
+    final channel = MockFLauncherChannel();
+    final database = MockFLauncherDatabase();
+    final appsService = await _buildInitialisedAppsService(channel, database, []);
+    final app = fakeApp(packageName: "app.to.be.moved");
+    final from = fakeCategory(name: "From");
+    final to = fakeCategory(name: "To");
+    when(database.nextAppCategoryOrder(to.id)).thenAnswer((_) => Future.value(2));
+
+    await appsService.moveToCategory(app, from, to);
+
+    verify(database.insertAppsCategories(
+        [AppsCategoriesCompanion.insert(categoryId: to.id, appPackageName: app.packageName, order: 2)]));
+    verify(database.deleteAppCategory(from.id, app.packageName));
+    verify(database.listCategoriesWithVisibleApps());
+  });
+
   test("saveOrderInCategory persists apps order from memory to database", () async {
     final channel = MockFLauncherChannel();
     final database = MockFLauncherDatabase();

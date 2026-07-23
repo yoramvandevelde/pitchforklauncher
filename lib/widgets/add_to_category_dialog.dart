@@ -48,9 +48,11 @@ class AddToCategoryDialog extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: ListTile(
                     onTap: () async {
-                      await context.read<AppsService>().addToCategory(application, category);
+                      final appsService = context.read<AppsService>();
                       if (moveFrom != null) {
-                        await context.read<AppsService>().removeFromCategory(application, moveFrom!);
+                        await appsService.moveToCategory(application, moveFrom!, category);
+                      } else {
+                        await appsService.addToCategory(application, category);
                       }
                       Navigator.of(context).pop();
                     },
