@@ -48,8 +48,7 @@ Future<void> main() async {
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(
       ['Default wallpaper'],
-      'Photo by Daniel Gomez (Instagram: @auchynnikau) on Unsplash, used under the Unsplash '
-      'License.',
+      'Photo by Wilhelm Gunkel, used under the Unsplash License.',
     );
   });
 
