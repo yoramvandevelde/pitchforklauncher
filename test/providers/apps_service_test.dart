@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -568,6 +569,23 @@ void main() {
     await appsService.removeFromCategory(app, category);
 
     verify(database.deleteAppCategory(category.id, app.packageName));
+    verify(database.listCategoriesWithVisibleApps());
+  });
+
+  test("moveToCategory adds app to the target category and removes it from the source category", () async {
+    final channel = MockFLauncherChannel();
+    final database = MockFLauncherDatabase();
+    final appsService = await _buildInitialisedAppsService(channel, database, []);
+    final app = fakeApp(packageName: "app.to.be.moved");
+    final from = fakeCategory(name: "From");
+    final to = fakeCategory(name: "To");
+    when(database.nextAppCategoryOrder(to.id)).thenAnswer((_) => Future.value(2));
+
+    await appsService.moveToCategory(app, from, to);
+
+    verify(database.insertAppsCategories(
+        [AppsCategoriesCompanion.insert(categoryId: to.id, appPackageName: app.packageName, order: 2)]));
+    verify(database.deleteAppCategory(from.id, app.packageName));
     verify(database.listCategoriesWithVisibleApps());
   });
 

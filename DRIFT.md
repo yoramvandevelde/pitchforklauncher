@@ -163,3 +163,16 @@ of the plain gradient fallback on that same first launch, and can be restored la
 category seed and the wallpaper seed gate on the same fresh-install signal, so an ordinary app
 update/reinstall never triggers either — only an explicit data wipe or full uninstall+reinstall
 does.
+
+## "Move to..." from the home screen's app context menu
+
+Long-pressing an app on the home screen already offered "Remove from `<category>`"; the only way
+to place it under a *different* category used to be Settings > Applications' "+" button
+(`AddToCategoryDialog`). `ApplicationInfoPanel` now also offers "Move to...", which reuses that
+same dialog rather than duplicating its category-picker UI — `AddToCategoryDialog` takes an
+optional `moveFrom` category, and when set, picking a category calls the new
+`AppsService.moveToCategory(app, from, to)` instead of just `addToCategory`. That method does the
+insert-into-new-category and delete-from-old-category in a single `_database.transaction()` with
+one `categoriesWithApps` reload/`notifyListeners()` at the end, rather than calling `addToCategory`
+then `removeFromCategory` back to back (two full reloads, and the app would transiently show up in
+both categories at once).
