@@ -163,3 +163,15 @@ of the plain gradient fallback on that same first launch, and can be restored la
 category seed and the wallpaper seed gate on the same fresh-install signal, so an ordinary app
 update/reinstall never triggers either — only an explicit data wipe or full uninstall+reinstall
 does.
+
+## Transparent, floating app bar
+
+The settings icon/clock bar (`FLauncher._appBar`) uses `Scaffold.extendBodyBehindAppBar` so the
+category list can scroll all the way up behind it instead of being hard-clipped below a reserved,
+opaque-looking strip. The gap the category list rests at (unscrolled) lives as a `SizedBox` inside
+the scrollable content itself (`_categoriesTopGap`), not as padding around the whole
+`SingleChildScrollView` — padding there would shrink the scrollable viewport and reintroduce the
+hard clip. The bar's own height/alignment are back to Flutter's plain defaults (`kToolbarHeight`,
+`Alignment.center`): shrinking it was only ever about reclaiming space for content, which
+transparency already solves, and centering is also the only alignment that doesn't clip the
+settings icon's splash circle against the bar's edge.
