@@ -108,7 +108,7 @@ class WallpaperPanelPage extends StatelessWidget {
                 Text("Default", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () => context.read<WallpaperService>().resetToDefaultWallpaper(),
+            onPressed: () async => await context.read<WallpaperService>().resetToDefaultWallpaper(),
           ),
           Spacer(),
           Selector<SettingsService, String?>(

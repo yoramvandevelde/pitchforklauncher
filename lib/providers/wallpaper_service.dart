@@ -110,10 +110,11 @@ class WallpaperService extends ChangeNotifier {
   }
 
   /// Shared by every "replace the wallpaper wholesale" path (picked file, Unsplash, the bundled
-  /// default): resets Picsum/gradient state, writes the new bytes, and records the Unsplash
-  /// author credit (or clears it for non-Unsplash sources). [randomFromPicsum],
-  /// [reapplyPicsumFilters] and [setGradient] manage their own state instead of using this, since
-  /// they need to set (rather than clear) Picsum-specific settings.
+  /// default): resets Picsum state, writes the new bytes, and records the Unsplash author credit
+  /// (or clears it for non-Unsplash sources). Doesn't touch the gradient setting -- it's simply
+  /// dormant while a non-null wallpaper is set, same as before this was extracted.
+  /// [randomFromPicsum], [reapplyPicsumFilters] and [setGradient] manage their own state instead
+  /// of using this, since they need to set (rather than clear) Picsum-specific settings.
   Future<void> _applyWallpaper(Uint8List bytes, {String? unsplashAuthorJson}) async {
     _currentPicsumPhotoId = null;
     _picsumGrayscale = false;
