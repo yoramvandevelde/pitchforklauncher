@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "25"
 
       - name: Decode signing keystore
         run: echo -n "${{ secrets.SIGNING_JKS_FILE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks

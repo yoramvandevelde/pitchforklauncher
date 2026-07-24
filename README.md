@@ -37,7 +37,7 @@ adb install build/app/outputs/flutter-apk/app-debug.apk
 Builds `--debug` here on purpose: a `--release` build needs the private signing keystore, which
 isn't part of this repo. The Releases APK above is the signed release build.
 
-See `AGENTS.md` for the full toolchain setup (FVM, JDK 17, the `just` recipes used below). Once
+See `AGENTS.md` for the full toolchain setup (FVM, JDK 25, the `just` recipes used below). Once
 installed, see "Set as default launcher" below to make it your home screen.
 
 ## Set as default launcher

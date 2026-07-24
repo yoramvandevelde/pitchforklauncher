@@ -25,6 +25,15 @@ few deliberate ways, listed here so it's clear what changed and why.
   required `sqlite3 ^3.4.0` transitively. Straight swap: `sqlite3_flutter_libs` removed from
   `pubspec.yaml`, `sqlite3` added as a direct dependency. Verified both a fresh install and
   installing over an existing database (upgrade path) preserve all data with no crash.
+- **JDK bumped from 17 to 25 (LTS)** (2026-07-24). `AGENTS.md` had claimed since this fork's
+  earliest commit (back when AGP was still 7.1.1) that this project's AGP version "fails dexing on
+  JDK 21+" and needed to stay on 17 — that claim was never re-checked through the several AGP bumps
+  since and turned out to be stale: building on JDK 21 and JDK 25 both succeed cleanly on the
+  current toolchain (AGP 9.3.1 / Gradle 9.6.1 / Kotlin 2.4.10), verified with a real
+  `flutter build apk --debug` plus install and launch on the emulator, not just assumed. JDK 17
+  remains the actual floor (Gradle 9.x itself dropped support for running its daemon on JDK 16 or
+  older), but there's no reason to sit at the floor once a newer LTS is confirmed to work — CI
+  (`ci.yml`, `release.yml`) and the `justfile` recipes now all target JDK 25.
 
 ## Removed Firebase
 
