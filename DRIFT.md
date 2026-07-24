@@ -1,7 +1,9 @@
 # Drift from upstream
 
 This fork diverges from the original [FLauncher](https://gitlab.com/flauncher/flauncher) in a
-few deliberate ways, listed here so it's clear what changed and why.
+few deliberate ways, listed here so it's clear what changed and why. New feature proposals are
+weighed against `ADR_001_Project_Scope_and_Feature_Governance.md`'s governance gate before landing
+here — see that file for the criteria and for examples of what's been rejected on that basis.
 
 ## Toolchain
 
