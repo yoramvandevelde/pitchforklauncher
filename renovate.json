@@ -9,7 +9,6 @@
   "minimumReleaseAge": "3 days",
   "labels": ["dependencies"],
   "ignoreDeps": [
-    "unsplash_client",
     "dev.flutter.flutter-plugin-loader"
   ],
   "packageRules": [
