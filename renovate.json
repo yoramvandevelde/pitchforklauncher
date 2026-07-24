@@ -8,6 +8,10 @@
   ],
   "minimumReleaseAge": "3 days",
   "labels": ["dependencies"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on thursday"]
+  },
   "ignoreDeps": [
     "dev.flutter.flutter-plugin-loader"
   ],
