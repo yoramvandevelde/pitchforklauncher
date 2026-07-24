@@ -10,6 +10,7 @@ others find it useful.
 ## Features
 
 - **No external telemetry.** No Firebase, no analytics, no crash reporting, nothing phoning home.
+- **No ads, no suggestions. Focus on core functionality of a laucher**
 - **Home Button override** (Accessibility Service): become the home screen without disabling the
   stock launcher, so things like the remote's dedicated YouTube button keep working. Comes with a
   trade off, see "Set as default launcher" below.
@@ -18,7 +19,6 @@ others find it useful.
 - **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos). No API key
   needed.
 - **Modern toolchain**, current as of July 2026 (Flutter, AGP, Kotlin, compileSdk).
-- No ads, no suggestions, no external pressure
 - Customizable categories, manually reorderable
 
 ## Installation
