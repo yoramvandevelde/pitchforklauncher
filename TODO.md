@@ -76,17 +76,29 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
   `sqlite3_flutter_libs` from `pubspec.yaml` entirely, depend on `sqlite3` v3.x directly. See
   `DRIFT.md`.
 
-- **Migrate off the Kotlin Gradle Plugin (KGP) to Flutter's "Built-in Kotlin"** before it becomes a
-  hard build failure. Surfaced as a WARNING starting with Renovate PR #10 (AGP 8.13.2 -> 9.3.0):
-  Flutter's own Gradle tooling (`FlutterPluginUtils.kt`) only emits this check once
-  `agpVersion.major >= 9`, which is why it never showed up on `main` (still AGP 8.x) but appears as
-  soon as a project bumps past AGP 9 — not something PR #10 broke, just the threshold where
-  Flutter's early-warning switches on. Affected plugins in this project: `image_picker_android`,
-  `shared_preferences_android` — they still apply KGP the old way, and need to ship a version that
-  supports Built-in Kotlin before this becomes a real build failure (guide:
-  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers).
-  Not actionable from this repo alone — depends on upstream plugin authors — so just keep an eye on
-  their changelogs when doing routine dependency bumps. Found 2026-07-21.
+~~Migrate off the Kotlin Gradle Plugin (KGP) applied by `image_picker_android`/
+  `shared_preferences_android`~~ — resolved (2026-07-24): both plugins already shipped their
+  Built-in Kotlin migration upstream on 2026-06-02, but plain `flutter pub get` never picks up a
+  newer transitive dependency once it's already in `pubspec.lock` (that needs an explicit
+  `pub upgrade`), and Renovate had no `lockFileMaintenance` rule to force that either — so the fix
+  sat unused for weeks despite being available. Bumped via
+  `flutter pub upgrade image_picker_android shared_preferences_android`
+  (`0.8.13+17` -> `0.8.13+19`, `2.4.23` -> `2.4.27`); the "uses the following plugins that apply
+  KGP" half of the warning is gone. Root cause fixed too, not just this one instance:
+  `renovate.json` now has `lockFileMaintenance` enabled (weekly, same schedule as everything else),
+  so Renovate periodically opens a PR refreshing the lockfile to the latest versions still allowed
+  by existing constraints — this exact class of "the umbrella package's declared range already
+  permits it, so nothing ever prompts an upgrade" gap shouldn't recur silently again.
+
+- **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
+  the above: with both plugins fixed, the *only* remaining KGP warning is our own module still
+  applying `id "org.jetbrains.kotlin.android"` directly. Tried the obvious toggle (drop that plugin
+  line, flip `android.builtInKotlin=true` in `gradle.properties`) and it's not that simple: KGP then
+  needs declaring in `settings.gradle`'s plugins block instead, and the old `kotlinOptions { }` DSL
+  in `build.gradle` needs replacing with Built-in Kotlin's newer compiler-options API — a small,
+  self-contained migration, just not a one-line change. See
+  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
+  Not started.
 
 ~~Concept: live full-screen preview for the Picsum wallpaper picker~~ — done (2026-07-21):
 `WallpaperPanelPage`'s "Random photo" now closes the Settings panel and pushes
