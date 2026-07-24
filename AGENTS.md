@@ -10,20 +10,28 @@ items. This file is about *working on the code* — toolchain, commands, convent
 - **Flutter is pinned via FVM**, not globally installed. Always run `fvm flutter ...` /
   `fvm dart ...`, never a bare `flutter`/`dart`. The pinned version is in `.fvmrc`; if `fvm` itself
   isn't installed, `brew install leoafarias/fvm/fvm` (or see fvm.app) then `fvm install`.
-- **Gradle needs JDK 17**, not whatever newer JDK might be the machine's default — this project's
-  Android Gradle Plugin version fails dexing on JDK 21+. Don't change a global/system Java version
-  for this; set `JAVA_HOME` (and prepend `$JAVA_HOME/bin` to `PATH`) to a JDK 17 install for the
-  duration of the build/test command instead, e.g.:
+- **Gradle needs at least JDK 17** (Gradle 9.x dropped support for running its daemon on JDK 16 or
+  older), but not necessarily the machine's default JDK. Pinned to **JDK 25** (LTS) as of
+  2026-07-24 — verified by actually building on it (`fvm flutter build apk --debug`, clean install
+  + launch on the emulator), not assumed. An earlier note here claimed AGP failed dexing above
+  JDK 17; that turned out to be stale, dating back to this file's original AGP 7.1.1-era version
+  and never re-checked through several AGP bumps since. JDK 21 and 25 both build cleanly on the
+  current toolchain (AGP 9.3.1 / Gradle 9.6.1 / Kotlin 2.4.10) once a stale Gradle daemon isn't the
+  actual culprit (`./android/gradlew -p android --stop` before switching JDKs if a build fails
+  right after changing `JAVA_HOME`). Don't change a global/system Java version for this; set
+  `JAVA_HOME` (and prepend `$JAVA_HOME/bin` to `PATH`) to a JDK 25 install for the duration of the
+  build/test command instead, e.g.:
   ```shell
-  export JAVA_HOME=/path/to/a/jdk-17
+  export JAVA_HOME=/path/to/a/jdk-25
   export PATH="$JAVA_HOME/bin:$PATH"
   fvm flutter build apk --debug
   ```
-  If `/usr/libexec/java_home -V` doesn't list a JDK 17 (only shows 11 and/or 21), check whether one
-  is managed by `mise` before installing a new one via Homebrew — `mise` installs land under
-  `~/.local/share/mise/installs/java/...`, a path `java_home` doesn't scan, so a `mise`-managed
-  JDK 17 can look "missing" when it's actually already there. `mise list java` shows what's
-  installed; `mise where java@temurin-17` (or similar) prints the exact path to use as `JAVA_HOME`.
+  If `/usr/libexec/java_home -V` doesn't list a JDK 25, check whether one is managed by `mise`
+  before installing a new one via Homebrew — `mise` installs land under
+  `~/.local/share/mise/installs/java/...`, a path `java_home` doesn't scan, so a `mise`-managed JDK
+  can look "missing" when it's actually already there. `mise list java` shows what's installed;
+  `mise install java@temurin-25` then `mise where java@temurin-25` installs it and prints the exact
+  path to use as `JAVA_HOME`.
 - **Regenerate mocks after touching `test/mocks.dart`** (the `@GenerateMocks([...])` list) or any
   class it mocks:
   ```shell

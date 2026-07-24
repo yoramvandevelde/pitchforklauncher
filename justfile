@@ -1,6 +1,6 @@
-# JDK 17 is required for this project's Gradle/AGP version — newer JDKs fail dexing.
-# See AGENTS.md. Adjust if your JDK 17 lives elsewhere.
-java_home := "~/.local/share/mise/installs/java/temurin-17.0.19+10"
+# Gradle needs at least JDK 17; pinned to JDK 25 (LTS) here, verified working. See AGENTS.md.
+# Adjust if your JDK 25 lives elsewhere.
+java_home := "~/.local/share/mise/installs/java/temurin-25.0.3+9.0.LTS"
 
 # Build a debug APK and install it on a device/emulator. Stamps the version as
 # today's date + "-local" (matching the release tag format, e.g. 2026.07.21-local),
