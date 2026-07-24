@@ -46,10 +46,3 @@ flutter:
     - family: Open Sans
       fonts:
         - asset: assets/fonts/OpenSans-Variable.ttf
-
-dependency_overrides:
-  # Transitively pulled in by path_provider_android/shared_preferences_android/etc. 2.0.17's
-  # Java code still references io.flutter.plugin.common.PluginRegistry.Registrar, part of the
-  # v1 Android embedding that Flutter removed entirely at this stop -- hard compile error
-  # ("cannot find symbol") otherwise.
-  flutter_plugin_android_lifecycle: ^2.0.28
