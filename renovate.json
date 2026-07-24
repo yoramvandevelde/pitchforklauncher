@@ -12,6 +12,10 @@
     "enabled": true,
     "schedule": ["before 6am on thursday"]
   },
+  // dev.flutter.flutter-plugin-loader (android/settings.gradle) is Flutter's own Gradle plugin
+  // loader, pulled in directly from the local Flutter SDK install (includeBuild), not fetched from
+  // Maven -- Renovate can't resolve it as a real package and warns on every run. Its version tracks
+  // whatever Flutter SDK you're on (bumped via .fvmrc), not something Renovate should touch anyway.
   "ignoreDeps": [
     "dev.flutter.flutter-plugin-loader"
   ],
