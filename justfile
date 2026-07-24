@@ -1,6 +1,8 @@
 # Gradle needs at least JDK 17; pinned to JDK 25 (LTS) here, verified working. See AGENTS.md.
-# Adjust if your JDK 25 lives elsewhere.
-java_home := "~/.local/share/mise/installs/java/temurin-25.0.3+9.0.LTS"
+# Resolved via mise at recipe-run time instead of a hardcoded patch version, so a mise-managed
+# JDK 25 patch bump doesn't silently break these recipes. Override JAVA_HOME_25 if your JDK 25
+# isn't mise-managed.
+java_home := env_var_or_default("JAVA_HOME_25", `mise where java@temurin-25`)
 
 # Build a debug APK and install it on a device/emulator. Stamps the version as
 # today's date + "-local" (matching the release tag format, e.g. 2026.07.21-local),
