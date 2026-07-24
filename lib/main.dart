@@ -22,13 +22,11 @@ import 'dart:async';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/picsum_service.dart';
-import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unsplash_client/unsplash_client.dart';
 
 import 'flauncher_app.dart';
 
@@ -57,14 +55,6 @@ Future<void> main() async {
     final imagePicker = ImagePicker();
     final fLauncherChannel = FLauncherChannel();
     final fLauncherDatabase = FLauncherDatabase(connect());
-    final unsplashService = UnsplashService(
-      UnsplashClient(
-        settings: ClientSettings(
-          debug: kDebugMode,
-          credentials: AppCredentials(accessKey: "", secretKey: ""),
-        ),
-      ),
-    );
     final picsumService = PicsumService();
     runApp(
       FLauncherApp(
@@ -72,7 +62,6 @@ Future<void> main() async {
         imagePicker,
         fLauncherChannel,
         fLauncherDatabase,
-        unsplashService,
         picsumService,
       ),
     );

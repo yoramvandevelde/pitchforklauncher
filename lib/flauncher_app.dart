@@ -24,7 +24,6 @@ import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
-import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,7 +47,6 @@ class FLauncherApp extends StatelessWidget {
   final ImagePicker _imagePicker;
   final FLauncherChannel _fLauncherChannel;
   final FLauncherDatabase _fLauncherDatabase;
-  final UnsplashService _unsplashService;
   final PicsumService _picsumService;
 
   static const MaterialColor _swatch = MaterialColor(0xFF011526, <int, Color>{
@@ -69,7 +67,6 @@ class FLauncherApp extends StatelessWidget {
     this._imagePicker,
     this._fLauncherChannel,
     this._fLauncherDatabase,
-    this._unsplashService,
     this._picsumService,
   );
 
@@ -80,8 +77,7 @@ class FLauncherApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => AppsService(_fLauncherChannel, _fLauncherDatabase)),
           ChangeNotifierProvider(create: (_) => ButtonMappingService(_fLauncherChannel)),
           ChangeNotifierProxyProvider<SettingsService, WallpaperService>(
-              create: (_) =>
-                  WallpaperService(_imagePicker, _fLauncherChannel, _unsplashService, _picsumService, _fLauncherDatabase),
+              create: (_) => WallpaperService(_imagePicker, _fLauncherChannel, _picsumService, _fLauncherDatabase),
               update: (_, settingsService, wallpaperService) => wallpaperService!..settingsService = settingsService),
           Provider<TickerModel>(create: (context) => TickerModel(null))
         ],

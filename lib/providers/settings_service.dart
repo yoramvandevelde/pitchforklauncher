@@ -23,7 +23,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _use24HourTimeFormatKey = "use_24_hour_time_format";
 const _appHighlightAnimationEnabledKey = "app_highlight_animation_enabled";
 const _gradientUuidKey = "gradient_uuid";
-const _unsplashAuthorKey = "unsplash_author";
 const _picsumPhotoIdKey = "picsum_photo_id";
 const _picsumGrayscaleKey = "picsum_grayscale";
 const _picsumBlurKey = "picsum_blur";
@@ -36,10 +35,6 @@ class SettingsService extends ChangeNotifier {
   bool get appHighlightAnimationEnabled => _sharedPreferences.getBool(_appHighlightAnimationEnabledKey) ?? true;
 
   String? get gradientUuid => _sharedPreferences.getString(_gradientUuidKey);
-
-  bool get unsplashEnabled => false;
-
-  String? get unsplashAuthor => _sharedPreferences.getString(_unsplashAuthorKey);
 
   int? get picsumPhotoId => _sharedPreferences.getInt(_picsumPhotoIdKey);
 
@@ -61,15 +56,6 @@ class SettingsService extends ChangeNotifier {
 
   Future<void> setGradientUuid(String value) async {
     await _sharedPreferences.setString(_gradientUuidKey, value);
-    notifyListeners();
-  }
-
-  Future<void> setUnsplashAuthor(String? value) async {
-    if (value == null) {
-      await _sharedPreferences.remove(_unsplashAuthorKey);
-    } else {
-      await _sharedPreferences.setString(_unsplashAuthorKey, value);
-    }
     notifyListeners();
   }
 

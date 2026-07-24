@@ -45,44 +45,6 @@ void main() {
     expect(sharedPreferences.getString("gradient_uuid"), "4730aa2d-1a90-49a6-9942-ffe82f470e26");
   });
 
-  group("setUnsplashAuthor", () {
-    test("with value saves author info", () async {
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
-
-      await settingsService.setUnsplashAuthor("unsplash author");
-
-      expect(sharedPreferences.getString("unsplash_author"), "unsplash author");
-    });
-
-    test("without value erases author info", () async {
-      final sharedPreferences = await SharedPreferences.getInstance();
-      await sharedPreferences.setString("unsplash_author", "unsplash author");
-      final settingsService = SettingsService(sharedPreferences);
-
-      await settingsService.setUnsplashAuthor(null);
-
-      expect(sharedPreferences.getString("unsplash_author"), isNull);
-    });
-  });
-
-  test("unsplashEnabled is always false", () async {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    final settingsService = SettingsService(sharedPreferences);
-
-    expect(settingsService.unsplashEnabled, isFalse);
-  });
-
-  test("unsplashAuthor", () async {
-    final sharedPreferences = await SharedPreferences.getInstance();
-    await sharedPreferences.setString("unsplash_author", "unsplash author");
-    final settingsService = SettingsService(sharedPreferences);
-
-    final unsplashAuthor = settingsService.unsplashAuthor;
-
-    expect(unsplashAuthor, "unsplash author");
-  });
-
   group("getGradientUuid", () {
     test("without uuid from shared preferences", () async {
       final sharedPreferences = await SharedPreferences.getInstance();

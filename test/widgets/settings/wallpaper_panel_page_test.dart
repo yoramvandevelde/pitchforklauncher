@@ -19,10 +19,8 @@
 
 import 'dart:async';
 
-import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
-import 'package:flauncher/widgets/settings/unsplash_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flauncher/widgets/wallpaper_control_bar.dart';
 import 'package:flutter/material.dart';
@@ -42,33 +40,15 @@ void main() {
     binding.platformDispatcher.textScaleFactorTestValue = 0.8;
   });
 
-  testWidgets("'Unsplash' navigates to UnsplashPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
-    final wallpaperService = MockWallpaperService();
-    when(settingsService.unsplashEnabled).thenReturn(true);
-    when(settingsService.unsplashAuthor).thenReturn('{"username": "John Doe", "link": "https://localhost"}');
-
-    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
-
-    expect(find.text("Photo by John Doe on Unsplash"), findsOneWidget);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(find.byKey(Key("UnsplashPanelPage")), findsOneWidget);
-  });
-
   testWidgets("'Random photo' closes the panel and shows the control bar without fetching a photo yet",
       (tester) async {
-    final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
-    when(settingsService.unsplashEnabled).thenReturn(true);
-    when(settingsService.unsplashAuthor).thenReturn(null);
     when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(false);
     when(wallpaperService.picsumGrayscale).thenReturn(false);
     when(wallpaperService.picsumBlurEnabled).thenReturn(false);
 
-    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+    await _pumpWidgetWithProviders(tester, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
 
@@ -81,14 +61,10 @@ void main() {
   });
 
   testWidgets("'Gradient' navigates to GradientPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
-    when(settingsService.unsplashEnabled).thenReturn(true);
-    when(settingsService.unsplashAuthor).thenReturn(null);
 
-    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+    await _pumpWidgetWithProviders(tester, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
@@ -97,14 +73,10 @@ void main() {
 
   group("'Custom'", () {
     testWidgets("opens file explorer if available", (tester) async {
-      final settingsService = MockSettingsService();
       final wallpaperService = MockWallpaperService();
-      when(settingsService.unsplashEnabled).thenReturn(true);
-      when(settingsService.unsplashAuthor).thenReturn(null);
 
-      await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+      await _pumpWidgetWithProviders(tester, wallpaperService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -113,15 +85,11 @@ void main() {
     });
 
     testWidgets("shows snack bar if not file explorer available", (tester) async {
-      final settingsService = MockSettingsService();
       final wallpaperService = MockWallpaperService();
-      when(settingsService.unsplashEnabled).thenReturn(true);
       when(wallpaperService.pickWallpaper()).thenThrow(NoFileExplorerException());
-      when(settingsService.unsplashAuthor).thenReturn(null);
 
-      await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+      await _pumpWidgetWithProviders(tester, wallpaperService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -132,15 +100,11 @@ void main() {
   });
 
   testWidgets("'Default' resets the wallpaper to the bundled default", (tester) async {
-    final settingsService = MockSettingsService();
     final wallpaperService = MockWallpaperService();
-    when(settingsService.unsplashEnabled).thenReturn(true);
-    when(settingsService.unsplashAuthor).thenReturn(null);
     when(wallpaperService.resetToDefaultWallpaper()).thenAnswer((_) => Future.value());
 
-    await _pumpWidgetWithProviders(tester, settingsService, wallpaperService);
+    await _pumpWidgetWithProviders(tester, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -152,7 +116,6 @@ void main() {
 
 Future<void> _pumpWidgetWithProviders(
   WidgetTester tester,
-  SettingsService settingsService,
   WallpaperService wallpaperService,
 ) async {
   // WallpaperPanelPage's "Random photo" button pops the *root* navigator, so it needs a route
@@ -161,12 +124,10 @@ Future<void> _pumpWidgetWithProviders(
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<WallpaperService>.value(value: wallpaperService),
       ],
       builder: (_, _) => MaterialApp(
         routes: {
-          UnsplashPanelPage.routeName: (_) => Container(key: Key("UnsplashPanelPage")),
           GradientPanelPage.routeName: (_) => Container(key: Key("GradientPanelPage")),
         },
         home: Scaffold(body: Container(key: Key("Home"))),
