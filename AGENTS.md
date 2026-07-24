@@ -2,8 +2,10 @@
 
 PitchforkLauncher is a personal fork of [FLauncher](https://gitlab.com/flauncher/flauncher), an
 Android TV launcher built with Flutter. Read `README.md` first for what this fork changes and why,
-`DRIFT.md` for the detailed rationale behind each change, and `TODO.md` for known issues and open
-items. This file is about *working on the code* — toolchain, commands, conventions.
+`DRIFT.md` for the detailed rationale behind each change, `TODO.md` for known issues and open
+items, and `ADR_001_Project_Scope_and_Feature_Governance.md` before proposing any new feature —
+it's the gate new work gets weighed against, not just this project's history. This file is about
+*working on the code* — toolchain, commands, conventions.
 
 ## Toolchain
 
