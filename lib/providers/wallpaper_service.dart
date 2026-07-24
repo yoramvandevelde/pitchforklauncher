@@ -17,7 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flauncher/database.dart';
@@ -25,7 +24,6 @@ import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
-import 'package:flauncher/unsplash_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -36,7 +34,6 @@ class WallpaperService extends ChangeNotifier {
 
   final ImagePicker _imagePicker;
   final FLauncherChannel _fLauncherChannel;
-  final UnsplashService _unsplashService;
   final PicsumService _picsumService;
   final FLauncherDatabase _database;
   late SettingsService _settingsService;
@@ -57,7 +54,7 @@ class WallpaperService extends ChangeNotifier {
 
   /// Whether a Picsum photo has been fetched via [randomFromPicsum] and can be re-filtered via
   /// [reapplyPicsumFilters]. False before the first [randomFromPicsum] call, or after switching to
-  /// a different wallpaper source (Gradient, Custom, Unsplash).
+  /// a different wallpaper source (Gradient, Custom).
   bool get hasCurrentPicsumPhoto => _currentPicsumPhotoId != null;
 
   /// The filters last applied via [reapplyPicsumFilters] (or reset by [randomFromPicsum]). Lives
@@ -78,7 +75,6 @@ class WallpaperService extends ChangeNotifier {
   WallpaperService(
     this._imagePicker,
     this._fLauncherChannel,
-    this._unsplashService,
     this._picsumService,
     this._database,
   ) {
@@ -109,18 +105,16 @@ class WallpaperService extends ChangeNotifier {
     _wallpaperVersion++;
   }
 
-  /// Shared by every "replace the wallpaper wholesale" path (picked file, Unsplash, the bundled
-  /// default): resets Picsum state, writes the new bytes, and records the Unsplash author credit
-  /// (or clears it for non-Unsplash sources). Doesn't touch the gradient setting -- it's simply
-  /// dormant while a non-null wallpaper is set, same as before this was extracted.
+  /// Shared by every "replace the wallpaper wholesale" path (picked file, the bundled default):
+  /// resets Picsum state and writes the new bytes. Doesn't touch the gradient setting -- it's
+  /// simply dormant while a non-null wallpaper is set, same as before this was extracted.
   /// [randomFromPicsum], [reapplyPicsumFilters] and [setGradient] manage their own state instead
   /// of using this, since they need to set (rather than clear) Picsum-specific settings.
-  Future<void> _applyWallpaper(Uint8List bytes, {String? unsplashAuthorJson}) async {
+  Future<void> _applyWallpaper(Uint8List bytes) async {
     _currentPicsumPhotoId = null;
     _picsumGrayscale = false;
     _picsumBlur = null;
     await _writeWallpaperBytes(bytes);
-    await _settingsService.setUnsplashAuthor(unsplashAuthorJson);
     await _clearPicsumSettings();
     notifyListeners();
   }
@@ -141,17 +135,6 @@ class WallpaperService extends ChangeNotifier {
     }
   }
 
-  Future<void> randomFromUnsplash(String query) async {
-    final photo = await _unsplashService.randomPhoto(query);
-    final bytes = await _unsplashService.downloadPhoto(photo);
-    await _applyWallpaper(
-      bytes,
-      unsplashAuthorJson: jsonEncode({"username": photo.username, "link": photo.userLink.toString()}),
-    );
-  }
-
-  Future<List<Photo>> searchFromUnsplash(String query) => _unsplashService.searchPhotos(query);
-
   Future<void> randomFromPicsum() async {
     final requestId = ++_picsumRequestId;
     final photo = await _picsumService.randomPhoto();
@@ -164,7 +147,6 @@ class WallpaperService extends ChangeNotifier {
     await _wallpaperFile.writeAsBytes(photo.bytes);
     _wallpaper = photo.bytes;
     _wallpaperVersion++;
-    await _settingsService.setUnsplashAuthor(null);
     await _settingsService.setPicsumPhotoId(photo.id);
     await _settingsService.setPicsumGrayscale(false);
     await _settingsService.setPicsumBlur(null);
@@ -189,18 +171,9 @@ class WallpaperService extends ChangeNotifier {
     await _wallpaperFile.writeAsBytes(bytes);
     _wallpaper = bytes;
     _wallpaperVersion++;
-    await _settingsService.setUnsplashAuthor(null);
     await _settingsService.setPicsumGrayscale(grayscale);
     await _settingsService.setPicsumBlur(blur);
     notifyListeners();
-  }
-
-  Future<void> setFromUnsplash(Photo photo) async {
-    final bytes = await _unsplashService.downloadPhoto(photo);
-    await _applyWallpaper(
-      bytes,
-      unsplashAuthorJson: jsonEncode({"username": photo.username, "link": photo.userLink.toString()}),
-    );
   }
 
   Future<void> setGradient(FLauncherGradient fLauncherGradient) async {
@@ -212,7 +185,6 @@ class WallpaperService extends ChangeNotifier {
     _picsumBlur = null;
     _wallpaper = null;
     _wallpaperVersion++;
-    await _settingsService.setUnsplashAuthor(null);
     await _settingsService.setGradientUuid(fLauncherGradient.uuid);
     await _clearPicsumSettings();
     notifyListeners();

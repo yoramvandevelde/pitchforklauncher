@@ -37,8 +37,8 @@ Application ID`). Rather than fake credentials, Firebase was removed entirely:
   from `pubspec.yaml`, and the corresponding Gradle plugins/classpaths from `android/build.gradle`
   and `android/app/build.gradle`.
 - Crash reporting / analytics settings toggles removed from the Settings panel.
-- `unsplashEnabled` (previously gated behind Remote Config) is hardcoded `false` — see "Picsum
-  wallpaper source" below for the replacement.
+- The Unsplash wallpaper source (previously gated behind Remote Config) was removed entirely —
+  see "Picsum wallpaper source" below for the replacement, and why.
 
 ## Home-button override (AccessibilityService)
 
@@ -112,12 +112,16 @@ dependency, Flutter's "VIEW LICENSES" screen doesn't pick it up automatically �
 
 ## Picsum wallpaper source
 
-The existing Unsplash wallpaper source needs a developer API key (and, in the original app,
+The existing Unsplash wallpaper source needed a developer API key (and, in the original app,
 Remote Config to turn it on) — not something worth setting up for personal use. `PicsumService`
 (`lib/picsum_service.dart`) adds a "Random photo" option using [picsum.photos](https://picsum.photos),
 a free, key-less random-image API — no signup, no credentials, no rate-limit management. The
-Unsplash code path is untouched and still there, dormant, in case a real Unsplash key gets added
-back later.
+Unsplash integration (`unsplash_client` dependency, `UnsplashService`, `UnsplashPanelPage`, the
+`WallpaperService`/`SettingsService` methods and fields backing it) sat dormant, unreachable, for a
+while, then was removed entirely (2026-07-24) per `ADR_001_Project_Scope_and_Feature_Governance.md`
+ADR-001 once it became clear there was no path back to turning it on — dead code with no owner
+requirement doesn't get a special exemption from that gate. `webview_flutter` was removed alongside
+it, since its only use was rendering the Unsplash photo author's profile link.
 
 Picking "Random photo" (Settings → Wallpaper) closes the Settings panel entirely and shows a live
 full-screen preview instead of choosing from behind the docked 350px settings dialog: a rounded,
