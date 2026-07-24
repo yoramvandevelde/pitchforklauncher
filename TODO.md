@@ -38,17 +38,24 @@ up as real default launcher is an accepted edge case, not worth building around.
 `GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube
 button override.
 
-- **Revisit the dormant Unsplash wallpaper source** (`unsplashEnabled` hardcoded `false` in
-  `lib/providers/settings_service.dart`, see `DRIFT.md`). Decided during `UPGRADE_PLAN.md`'s
-  Phase 3 (2026-07-20) to leave `unsplash_client` on its current `^2.1.0+3` pin rather than bump
-  to the breaking 3.0.0 release, since the code path doesn't run. Was tentatively decided
-  2026-07-20 to re-enable it with a user-supplied API key, but **on hold as of 2026-07-22**: now
-  that the Picsum live full-screen preview covers "quickly get a nice random photo" well, Unsplash
-  (which needs the user to go create a developer account/API key just to unlock it) looks like it
-  wouldn't add much real value. Not picking this up for now; revisit if that assessment changes.
-  If it does get picked up: user-supplied key only, no key ever bundled with the app; and it's the
-  one wallpaper source that can't be exercised without live API credentials, so budget for testing
-  the "no key entered yet" / "invalid key" states specifically, not just the happy path.
+~~Revisit the dormant Unsplash wallpaper source~~ (`unsplashEnabled` hardcoded `false` in
+  `lib/providers/settings_service.dart`, see `DRIFT.md`) — **superseded 2026-07-24: not revisiting,
+  removing it instead.** Was already on hold since 2026-07-22 (Picsum's live preview covers the
+  need well enough that a user-supplied-API-key flow wasn't worth the friction); with `ADR_001_Project_Scope_and_Feature_Governance.md`
+  ADR-001's governance gate now in effect, re-enabling it doesn't clear question 1 (no personal
+  irritation it solves) either, so this isn't "on hold pending reassessment" anymore, it's just
+  dead code sitting in the base with no path to being turned on.
+
+~~Remove the dormant Unsplash wallpaper source entirely.~~ — done (2026-07-24): the
+  `unsplash_client` and `webview_flutter` (only used for the Unsplash author-credit link)
+  pubspec dependencies, `lib/unsplash_service.dart`, `UnsplashService`'s registration in
+  `flauncher_app.dart`/`main.dart`, `WallpaperService.randomFromUnsplash`/`setFromUnsplash`/
+  `searchFromUnsplash`, the `unsplashEnabled`/`unsplashAuthor` settings fields,
+  `lib/widgets/settings/unsplash_panel_page.dart` and its route, the wallpaper picker's "Unsplash"
+  menu entry and author-credit display in `wallpaper_panel_page.dart`, the ten
+  category/random-photo asset images plus `assets/unsplash.png`, and the corresponding tests. The
+  bundled default wallpaper's Unsplash-License photo credit (About dialog, license registry) is
+  unrelated to this SDK integration and was kept as-is.
 
 ~~Focus jumps to "Add Category" after reordering with exactly 2 categories
   (`lib/widgets/settings/categories_panel_page.dart`)~~ — fixed: each up/down arrow `IconButton`
@@ -75,9 +82,9 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
   `agpVersion.major >= 9`, which is why it never showed up on `main` (still AGP 8.x) but appears as
   soon as a project bumps past AGP 9 — not something PR #10 broke, just the threshold where
   Flutter's early-warning switches on. Affected plugins in this project: `image_picker_android`,
-  `shared_preferences_android`, `webview_flutter_android` — they still apply KGP the old way, and
-  need to ship a version that supports Built-in Kotlin before this becomes a real build failure
-  (guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers).
+  `shared_preferences_android` — they still apply KGP the old way, and need to ship a version that
+  supports Built-in Kotlin before this becomes a real build failure (guide:
+  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers).
   Not actionable from this repo alone — depends on upstream plugin authors — so just keep an eye on
   their changelogs when doing routine dependency bumps. Found 2026-07-21.
 
@@ -118,15 +125,33 @@ so at least one layer is always fully opaque and the background never shows thro
   off the same fresh-install signal, so an ordinary app update/reinstall never re-triggers them.
   See `DRIFT.md`.
 
-- **Consider doing B&W/Blur as a client-side render effect instead of a server round-trip.**
-  Raised in conversation 2026-07-22, explicitly for later, not now. Right now toggling a filter
-  calls `WallpaperService.reapplyPicsumFilters`, which re-fetches the photo from Picsum with
-  `?grayscale`/`?blur=N`. Flutter can do both live, on the GPU, over the already-downloaded bytes:
-  `ColorFilter.matrix()` for grayscale (a cheap per-pixel luminance transform), and
-  `ImageFilter.blur(sigmaX:, sigmaY:)` via `ImageFiltered` for blur — this app already uses the
-  latter elsewhere (`lib/flauncher.dart`'s settings-icon shadow). Doing it this way would make
-  toggling instant (no network round-trip, no possibility of a 404, no query-string combining) at
-  the cost of no longer persisting literal filtered image bytes to `_wallpaperFile` — would need to
-  store the base photo + filter flags and reapply the `ColorFilter`/`ImageFilter` at render time in
-  `FLauncher`'s background widget instead. Not a bug or regression, current approach works fine;
-  just a design alternative worth weighing later.
+~~Concept: universal wallpaper filters (B&W, Blur, Contrast) for any wallpaper source, not just
+  Picsum.~~ — **rejected per `ADR_001_Project_Scope_and_Feature_Governance.md` ADR-001** (2026-07-24): named explicitly in that ADR's
+  "Negative / Accepted Trade-offs" as the kind of technically-elegant-but-scope-expanding feature
+  the new governance gate exists to reject (turns "pick a wallpaper" into "edit a wallpaper"; the
+  disqualifier about per-frame GPU cost for a never-changing background also applies directly, even
+  with the "bake once" mitigation discussed below). Kept here for the technical writeup, not as an
+  open item. Raised in conversation 2026-07-23. Right now
+  B&W/Blur only exist inside the Picsum "Random photo" flow (`WallpaperControlBar`), calling
+  `WallpaperService.reapplyPicsumFilters`, which re-fetches the photo from Picsum's server with
+  `?grayscale`/`?blur=N` query params — Custom and Unsplash wallpapers have no filter step at all.
+  Idea: add a "Filter" entry to the Wallpaper settings menu that loads a
+  `WallpaperFilterControlBar` (same live-over-the-home-screen pattern as the existing control bar)
+  and applies to whatever the *current* wallpaper is, regardless of which source set it. Adds
+  Contrast alongside B&W/Blur.
+  - Decouples "pick a wallpaper" from "adjust its filters" — filters become a property of the
+    current wallpaper, not a step bolted onto one specific source's picker.
+  - Technique: render client-side instead of round-tripping to a server, so it works for any
+    source. `ColorFilter.matrix()` can combine grayscale + contrast (and brightness) in a single
+    4x5 matrix multiply per pixel; `ImageFilter.blur(sigmaX:, sigmaY:)` handles blur — this app
+    already uses the latter elsewhere (`lib/flauncher.dart`'s settings-icon shadow). Applying
+    either live every frame via `ImageFiltered` would mean an ongoing per-frame GPU cost for a
+    background that never changes, which is wasteful on a TV box's modest SoC — better to bake the
+    result once: draw the base image through a `Paint` with `imageFilter`/`colorFilter` set onto a
+    `ui.PictureRecorder`/`Canvas`, rasterize via `picture.toImage()`, then `toByteData(format:
+    ui.ImageByteFormat.png)` and write those bytes to `_wallpaperFile` exactly like today — same
+    one-time-cost, flat-file-on-disk shape the app already has, just computed locally instead of
+    fetched from Picsum. Would need to keep the base (unfiltered) photo around separately from the
+    baked result so filters can be changed/reset without re-fetching/re-picking.
+  - Not a bug or regression, current approach works fine for Picsum; this is a scope expansion, not
+    a fix.
