@@ -50,8 +50,14 @@ class _AppLogDialogState extends State<AppLogDialog> {
     } else {
       return KeyEventResult.ignored;
     }
-    final target = (_scrollController.offset + direction * _scrollStep)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    final offset = _scrollController.offset;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if ((direction > 0 && offset >= maxExtent) || (direction < 0 && offset <= 0)) {
+      // Already at that end -- let normal directional focus traversal take over (e.g. reaching
+      // the Close button below) instead of eating the key with nothing left to scroll.
+      return KeyEventResult.ignored;
+    }
+    final target = (offset + direction * _scrollStep).clamp(0.0, maxExtent);
     _scrollController.animateTo(target, duration: Duration(milliseconds: 100), curve: Curves.easeOut);
     return KeyEventResult.handled;
   }
