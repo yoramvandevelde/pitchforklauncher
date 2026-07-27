@@ -17,6 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'package:flauncher/widgets/settings/app_log_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -62,7 +63,15 @@ class FLauncherAboutDialog extends StatelessWidget {
               TextSpan(text: "Default wallpaper photo by Wilhelm Gunkel on Unsplash."),
             ],
           ),
-        )
+        ),
+        SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () => showDialog<void>(context: context, builder: (_) => const AppLogDialog()),
+            child: Text("Logs"),
+          ),
+        ),
       ],
     );
   }

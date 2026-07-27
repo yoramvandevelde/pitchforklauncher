@@ -19,6 +19,7 @@
 
 import 'dart:io';
 
+import 'package:flauncher/app_log.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/gradients.dart';
@@ -137,7 +138,13 @@ class WallpaperService extends ChangeNotifier {
 
   Future<void> randomFromPicsum() async {
     final requestId = ++_picsumRequestId;
-    final photo = await _picsumService.randomPhoto();
+    final PicsumPhoto photo;
+    try {
+      photo = await _picsumService.randomPhoto();
+    } catch (e) {
+      AppLog.instance.log("Picsum", e);
+      rethrow;
+    }
     if (requestId != _picsumRequestId) {
       return;
     }
@@ -162,7 +169,13 @@ class WallpaperService extends ChangeNotifier {
       return;
     }
     final requestId = ++_picsumRequestId;
-    final bytes = await _picsumService.photoById(id, grayscale: grayscale, blur: blur);
+    final Uint8List bytes;
+    try {
+      bytes = await _picsumService.photoById(id, grayscale: grayscale, blur: blur);
+    } catch (e) {
+      AppLog.instance.log("Picsum", e);
+      rethrow;
+    }
     if (requestId != _picsumRequestId) {
       return;
     }
