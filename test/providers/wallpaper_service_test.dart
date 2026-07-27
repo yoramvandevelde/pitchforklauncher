@@ -20,6 +20,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:flauncher/app_log.dart';
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
@@ -105,6 +106,24 @@ void main() {
     expect(wallpaperService.hasCurrentPicsumPhoto, isTrue);
   });
 
+  test("randomFromPicsum logs to AppLog and rethrows on failure", () async {
+    final imagePicker = _MockImagePicker();
+    final fLauncherChannel = MockFLauncherChannel();
+    final picsumService = MockPicsumService();
+    final settingsService = _mockSettingsService();
+    when(picsumService.randomPhoto()).thenThrow(PicsumException("boom"));
+    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
+      ..settingsService = settingsService;
+    await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+
+    await expectLater(() => wallpaperService.randomFromPicsum(), throwsA(isInstanceOf<PicsumException>()));
+
+    final entries = AppLog.instance.entries;
+    expect(entries, isNotEmpty);
+    expect(entries.first.source, "Picsum");
+    expect(entries.first.message, contains("boom"));
+  });
+
   group("reapplyPicsumFilters", () {
     test("no-ops when no photo has been fetched yet", () async {
       final imagePicker = _MockImagePicker();
@@ -143,6 +162,30 @@ void main() {
       expect(wallpaperService.wallpaperBytes, [0x02]);
       expect(wallpaperService.picsumGrayscale, isTrue);
       expect(wallpaperService.picsumBlurEnabled, isTrue);
+    });
+
+    test("logs to AppLog and rethrows on failure", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final picsumService = MockPicsumService();
+      final settingsService = _mockSettingsService();
+      when(picsumService.randomPhoto())
+          .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
+      when(picsumService.photoById(42, grayscale: true, blur: anyNamed("blur"))).thenThrow(PicsumException("boom"));
+      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
+        ..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      await wallpaperService.randomFromPicsum();
+
+      await expectLater(
+        () => wallpaperService.reapplyPicsumFilters(grayscale: true),
+        throwsA(isInstanceOf<PicsumException>()),
+      );
+
+      final entries = AppLog.instance.entries;
+      expect(entries, isNotEmpty);
+      expect(entries.first.source, "Picsum");
+      expect(entries.first.message, contains("boom"));
     });
   });
 
