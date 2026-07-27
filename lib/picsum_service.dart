@@ -40,7 +40,13 @@ class PicsumException implements Exception {
 class PicsumService {
   final Client _client;
 
-  PicsumService({Client? client}) : _client = client ?? Client();
+  // The underlying TCP connect timeout (~60s on Android) is far too long to make a user wait on
+  // what's meant to be a quick "get a new wallpaper" action -- fail fast instead so an offline/
+  // unreachable network shows up in AppLog within a few seconds rather than a minute. Overridable
+  // so tests can exercise the timeout path without actually waiting on it.
+  final Duration _timeout;
+
+  PicsumService({Client? client, this._timeout = const Duration(seconds: 10)}) : _client = client ?? Client();
 
   /// Fetches a fresh, unfiltered random photo and captures its Picsum id so it can later be
   /// re-fetched with different filters via [photoById] instead of rolling a new random photo.
@@ -52,14 +58,14 @@ class PicsumService {
     final size = PlatformDispatcher.instance.implicitView!.physicalSize;
     final uri = Uri.parse("https://picsum.photos/${size.width.toInt()}/${size.height.toInt()}");
     final probeRequest = Request("GET", uri)..followRedirects = false;
-    final probeResponse = await Response.fromStream(await _client.send(probeRequest));
+    final probeResponse = await Response.fromStream(await _timed(_client.send(probeRequest), uri));
     final location = probeResponse.headers["location"];
     if (probeResponse.statusCode < 300 || probeResponse.statusCode >= 400 || location == null) {
       throw PicsumException("Expected a redirect with a Location header from $uri, got ${probeResponse.statusCode}");
     }
     final resolved = uri.resolve(location);
     final id = _idFromResolvedUri(resolved);
-    final response = await _client.get(resolved);
+    final response = await _timed(_client.get(resolved), resolved);
     return PicsumPhoto(id: id, bytes: _bodyBytesOrThrow(response, resolved));
   }
 
@@ -70,9 +76,14 @@ class PicsumService {
     final base = "https://picsum.photos/id/$id/${size.width.toInt()}/${size.height.toInt()}";
     final params = <String>[if (grayscale) "grayscale", if (blur != null) "blur=$blur"];
     final uri = Uri.parse(params.isEmpty ? base : "$base?${params.join("&")}");
-    final response = await _client.get(uri);
+    final response = await _timed(_client.get(uri), uri);
     return _bodyBytesOrThrow(response, uri);
   }
+
+  Future<T> _timed<T>(Future<T> future, Uri uri) => future.timeout(
+        _timeout,
+        onTimeout: () => throw PicsumException("Timed out after ${_timeout.inSeconds}s waiting for a response from $uri"),
+      );
 
   Uint8List _bodyBytesOrThrow(Response response, Uri uri) {
     if (response.statusCode != 200) {

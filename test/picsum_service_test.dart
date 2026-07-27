@@ -89,6 +89,16 @@ void main() {
 
       expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
     });
+
+    test("throws PicsumException instead of hanging when the request times out", () async {
+      final client = MockClient((request) async {
+        await Future.delayed(Duration(seconds: 5));
+        return Response("", 302, headers: {"location": "https://fastly.picsum.photos/id/568/300/200.jpg"});
+      });
+      final picsumService = PicsumService(client: client, timeout: Duration(milliseconds: 20));
+
+      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
+    });
   });
 
   // Width/height come from PlatformDispatcher.instance.implicitView, which isn't controllable
@@ -142,6 +152,16 @@ void main() {
     test("throws when the response isn't a 200", () async {
       final client = MockClient((request) async => Response("", 404));
       final picsumService = PicsumService(client: client);
+
+      expect(() => picsumService.photoById(568), throwsA(isA<PicsumException>()));
+    });
+
+    test("throws PicsumException instead of hanging when the request times out", () async {
+      final client = MockClient((request) async {
+        await Future.delayed(Duration(seconds: 5));
+        return Response.bytes(Uint8List.fromList([0x06]), 200);
+      });
+      final picsumService = PicsumService(client: client, timeout: Duration(milliseconds: 20));
 
       expect(() => picsumService.photoById(568), throwsA(isA<PicsumException>()));
     });
