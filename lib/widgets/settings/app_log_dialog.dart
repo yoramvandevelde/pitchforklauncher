@@ -18,15 +18,50 @@
 
 import 'package:flauncher/app_log.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class AppLogDialog extends StatelessWidget {
+class AppLogDialog extends StatefulWidget {
   const AppLogDialog({super.key});
+
+  @override
+  State<AppLogDialog> createState() => _AppLogDialogState();
+}
+
+class _AppLogDialogState extends State<AppLogDialog> {
+  static const _scrollStep = 80.0;
+
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent || !_scrollController.hasClients) {
+      return KeyEventResult.ignored;
+    }
+    final double direction;
+    if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+      direction = 1;
+    } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+      direction = -1;
+    } else {
+      return KeyEventResult.ignored;
+    }
+    final target = (_scrollController.offset + direction * _scrollStep)
+        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(target, duration: Duration(milliseconds: 100), curve: Curves.easeOut);
+    return KeyEventResult.handled;
+  }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
         title: Text("Logs"),
         content: SizedBox(
           width: double.maxFinite,
+          height: 400,
           child: ListenableBuilder(
             listenable: AppLog.instance,
             builder: (context, _) {
@@ -34,10 +69,20 @@ class AppLogDialog extends StatelessWidget {
               if (entries.isEmpty) {
                 return Text("No errors logged since the app was last started.");
               }
-              return SingleChildScrollView(
-                child: SelectableText(
-                  entries.join("\n"),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: "monospace"),
+              return Focus(
+                autofocus: true,
+                onKeyEvent: _handleKey,
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    key: const Key("app_log_scroll_view"),
+                    controller: _scrollController,
+                    child: Text(
+                      entries.join("\n\n"),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: "monospace"),
+                    ),
+                  ),
                 ),
               );
             },
@@ -45,7 +90,6 @@ class AppLogDialog extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            autofocus: true,
             onPressed: () => Navigator.of(context).pop(),
             child: Text("Close"),
           ),

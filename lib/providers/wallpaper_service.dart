@@ -141,8 +141,8 @@ class WallpaperService extends ChangeNotifier {
     final PicsumPhoto photo;
     try {
       photo = await _picsumService.randomPhoto();
-    } catch (e) {
-      AppLog.instance.log("Picsum", e);
+    } catch (e, st) {
+      AppLog.instance.log("Picsum", "$e\n$st");
       rethrow;
     }
     if (requestId != _picsumRequestId) {
@@ -172,8 +172,8 @@ class WallpaperService extends ChangeNotifier {
     final Uint8List bytes;
     try {
       bytes = await _picsumService.photoById(id, grayscale: grayscale, blur: blur);
-    } catch (e) {
-      AppLog.instance.log("Picsum", e);
+    } catch (e, st) {
+      AppLog.instance.log("Picsum", "$e\n$st");
       rethrow;
     }
     if (requestId != _picsumRequestId) {

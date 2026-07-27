@@ -118,8 +118,10 @@ void main() {
 
     await expectLater(() => wallpaperService.randomFromPicsum(), throwsA(isInstanceOf<PicsumException>()));
 
-    expect(AppLog.instance.entries.first.source, "Picsum");
-    expect(AppLog.instance.entries.first.message, contains("boom"));
+    final entries = AppLog.instance.entries;
+    expect(entries, isNotEmpty);
+    expect(entries.first.source, "Picsum");
+    expect(entries.first.message, contains("boom"));
   });
 
   group("reapplyPicsumFilters", () {
@@ -180,8 +182,10 @@ void main() {
         throwsA(isInstanceOf<PicsumException>()),
       );
 
-      expect(AppLog.instance.entries.first.source, "Picsum");
-      expect(AppLog.instance.entries.first.message, contains("boom"));
+      final entries = AppLog.instance.entries;
+      expect(entries, isNotEmpty);
+      expect(entries.first.source, "Picsum");
+      expect(entries.first.message, contains("boom"));
     });
   });
 
