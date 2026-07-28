@@ -24,6 +24,7 @@ import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/category_panel_page.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
 import 'package:flauncher/widgets/settings/settings_panel_page.dart';
+import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flutter/material.dart';
 
@@ -49,56 +50,67 @@ class _SettingsPanelState extends State<SettingsPanel> {
 
   @override
   Widget build(BuildContext context) => PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (didPop || _handlingPop) {
-            return;
-          }
-          _handlingPop = true;
-          try {
-            final navigator = _navigatorKey.currentState;
-            if (navigator == null) {
-              return;
+    canPop: false,
+    onPopInvokedWithResult: (didPop, result) async {
+      if (didPop || _handlingPop) {
+        return;
+      }
+      _handlingPop = true;
+      try {
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) {
+          return;
+        }
+        final poppedInternally = await navigator.maybePop();
+        if (!poppedInternally && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } finally {
+        _handlingPop = false;
+      }
+    },
+    child: Scaffold(
+      backgroundColor: Colors.transparent,
+      body: RightPanelDialog(
+        width: 350,
+        child: Navigator(
+          key: _navigatorKey,
+          initialRoute: widget.initialRoute ?? SettingsPanelPage.routeName,
+          onGenerateRoute: (settings) {
+            switch (settings.name) {
+              case SettingsPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => SettingsPanelPage());
+              case WallpaperPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => WallpaperPanelPage());
+              case GradientPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => GradientPanelPage());
+              case ApplicationsPanelPage.routeName:
+                return MaterialPageRoute(
+                  builder: (_) => ApplicationsPanelPage(),
+                );
+              case CategoriesPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => CategoriesPanelPage());
+              case ButtonMappingPanelPage.routeName:
+                return MaterialPageRoute(
+                  builder: (_) => ButtonMappingPanelPage(),
+                );
+              case TvInputsPanelPage.routeName:
+                return MaterialPageRoute(builder: (_) => TvInputsPanelPage());
+              case CategoryPanelPage.routeName:
+                return MaterialPageRoute(
+                  builder: (_) =>
+                      CategoryPanelPage(categoryId: settings.arguments! as int),
+                );
+              default:
+                throw ArgumentError.value(
+                  settings.name,
+                  "settings.name",
+                  "Route not supported.",
+                );
             }
-            final poppedInternally = await navigator.maybePop();
-            if (!poppedInternally && context.mounted) {
-              Navigator.of(context).pop();
-            }
-          } finally {
-            _handlingPop = false;
-          }
-        },
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: RightPanelDialog(
-            width: 350,
-            child: Navigator(
-              key: _navigatorKey,
-              initialRoute: widget.initialRoute ?? SettingsPanelPage.routeName,
-              onGenerateRoute: (settings) {
-                switch (settings.name) {
-                  case SettingsPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => SettingsPanelPage());
-                  case WallpaperPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => WallpaperPanelPage());
-                  case GradientPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => GradientPanelPage());
-                  case ApplicationsPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => ApplicationsPanelPage());
-                  case CategoriesPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => CategoriesPanelPage());
-                  case ButtonMappingPanelPage.routeName:
-                    return MaterialPageRoute(builder: (_) => ButtonMappingPanelPage());
-                  case CategoryPanelPage.routeName:
-                    return MaterialPageRoute(
-                      builder: (_) => CategoryPanelPage(categoryId: settings.arguments! as int),
-                    );
-                  default:
-                    throw ArgumentError.value(settings.name, "settings.name", "Route not supported.");
-                }
-              },
-            ),
-          ),
+          },
         ),
-      );
+      ),
+    ),
+  );
 }

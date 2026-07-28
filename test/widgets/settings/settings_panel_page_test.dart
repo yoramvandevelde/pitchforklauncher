@@ -24,6 +24,7 @@ import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/flauncher_about_dialog.dart';
 import 'package:flauncher/widgets/settings/settings_panel_page.dart';
+import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -96,6 +97,25 @@ void main() {
     expect(find.byKey(Key("WallpaperPanelPage")), findsOneWidget);
   });
 
+  testWidgets("'TV Inputs' navigates to TvInputsPanelPage", (tester) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    when(appsService.categoriesWithApps).thenReturn([]);
+    when(appsService.applications).thenReturn([]);
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+
+    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byKey(Key("TvInputsPanelPage")), findsOneWidget);
+  });
+
   testWidgets("'Android settings' calls AppsService", (tester) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
@@ -106,6 +126,7 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, appsService);
 
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -125,6 +146,7 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, appsService);
 
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -151,12 +173,15 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.byKey(Key("ButtonMappingPanelPage")), findsOneWidget);
   });
 
-  testWidgets("'Use 24-hour time format' toggle calls SettingsService", (tester) async {
+  testWidgets("'Use 24-hour time format' toggle calls SettingsService", (
+    tester,
+  ) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
@@ -166,6 +191,7 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, settingsService, appsService);
 
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -198,6 +224,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     expect(find.byType(FLauncherAboutDialog), findsOneWidget);
@@ -217,10 +244,16 @@ Future<void> _pumpWidgetWithProviders(
       ],
       builder: (_, _) => MaterialApp(
         routes: {
-          CategoriesPanelPage.routeName: (_) => Container(key: Key("CategoriesPanelPage")),
-          WallpaperPanelPage.routeName: (_) => Container(key: Key("WallpaperPanelPage")),
-          ApplicationsPanelPage.routeName: (_) => Container(key: Key("ApplicationsPanelPage")),
-          ButtonMappingPanelPage.routeName: (_) => Container(key: Key("ButtonMappingPanelPage")),
+          CategoriesPanelPage.routeName: (_) =>
+              Container(key: Key("CategoriesPanelPage")),
+          WallpaperPanelPage.routeName: (_) =>
+              Container(key: Key("WallpaperPanelPage")),
+          ApplicationsPanelPage.routeName: (_) =>
+              Container(key: Key("ApplicationsPanelPage")),
+          ButtonMappingPanelPage.routeName: (_) =>
+              Container(key: Key("ButtonMappingPanelPage")),
+          TvInputsPanelPage.routeName: (_) =>
+              Container(key: Key("TvInputsPanelPage")),
         },
         home: Material(child: SettingsPanelPage()),
       ),
@@ -229,13 +262,15 @@ Future<void> _pumpWidgetWithProviders(
   await tester.pumpAndSettle();
 }
 
-class _MockPackageInfoPlatform with MockPlatformInterfaceMixin implements PackageInfoPlatform {
+class _MockPackageInfoPlatform
+    with MockPlatformInterfaceMixin
+    implements PackageInfoPlatform {
   @override
   Future<PackageInfoData> getAll({String? baseUrl}) async => PackageInfoData(
-        appName: "PitchforkLauncher",
-        packageName: "io.sifft.pitchforklauncher",
-        version: "1.0.0",
-        buildNumber: "1",
-        buildSignature: "",
-      );
+    appName: "PitchforkLauncher",
+    packageName: "io.sifft.pitchforklauncher",
+    version: "1.0.0",
+    buildNumber: "1",
+    buildSignature: "",
+  );
 }
