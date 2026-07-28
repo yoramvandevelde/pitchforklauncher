@@ -23,6 +23,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
+import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -72,81 +73,107 @@ class FLauncherApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => SettingsService(_sharedPreferences), lazy: false),
-          ChangeNotifierProvider(create: (_) => AppsService(_fLauncherChannel, _fLauncherDatabase)),
-          ChangeNotifierProvider(create: (_) => ButtonMappingService(_fLauncherChannel)),
-          ChangeNotifierProxyProvider<SettingsService, WallpaperService>(
-              create: (_) => WallpaperService(_imagePicker, _fLauncherChannel, _picsumService, _fLauncherDatabase),
-              update: (_, settingsService, wallpaperService) => wallpaperService!..settingsService = settingsService),
-          Provider<TickerModel>(create: (context) => TickerModel(null))
-        ],
-        child: MaterialApp(
-          shortcuts: {
-            ...WidgetsApp.defaultShortcuts,
-            SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
-            SingleActivator(LogicalKeyboardKey.gameButtonB): PrioritizedIntents(orderedIntents: [
-              DismissIntent(),
-              BackIntent(),
-            ]),
-          },
-          actions: {
-            ...WidgetsApp.defaultActions,
-            DirectionalFocusIntent: SoundFeedbackDirectionalFocusAction(context),
-          },
-          title: 'PitchforkLauncher',
-          theme: ThemeData(
-            // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
-            // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a
-            // deliberate design decision to make separately, not a side effect of this bump.
-            useMaterial3: false,
-            brightness: Brightness.dark,
-            primarySwatch: _swatch,
-            colorScheme: ColorScheme.fromSwatch(primarySwatch: _swatch, brightness: Brightness.dark)
-                .copyWith(secondary: _swatch[200], surface: _swatch[400]),
-            cardColor: _swatch[300],
-            canvasColor: _swatch[300],
-            dialogTheme: DialogThemeData(backgroundColor: _swatch[400]),
-            scaffoldBackgroundColor: _swatch[400],
-            textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: Colors.white)),
-            appBarTheme: AppBarTheme(elevation: 0, backgroundColor: Colors.transparent),
-            typography: Typography.material2018(),
-            fontFamily: "Open Sans",
-            inputDecorationTheme: InputDecorationTheme(
-              focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
-              labelStyle: Typography.material2018().white.bodyMedium,
-            ),
-            textSelectionTheme: TextSelectionThemeData(
-              cursorColor: Colors.white,
-              selectionColor: _swatch[200],
-              selectionHandleColor: _swatch[200],
-            ),
+    providers: [
+      ChangeNotifierProvider(
+        create: (_) => SettingsService(_sharedPreferences),
+        lazy: false,
+      ),
+      ChangeNotifierProvider(
+        create: (_) => AppsService(_fLauncherChannel, _fLauncherDatabase),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => ButtonMappingService(_fLauncherChannel),
+      ),
+      ChangeNotifierProvider(create: (_) => TvInputService(_sharedPreferences)),
+      ChangeNotifierProxyProvider<SettingsService, WallpaperService>(
+        create: (_) => WallpaperService(
+          _imagePicker,
+          _fLauncherChannel,
+          _picsumService,
+          _fLauncherDatabase,
+        ),
+        update: (_, settingsService, wallpaperService) =>
+            wallpaperService!..settingsService = settingsService,
+      ),
+      Provider<TickerModel>(create: (context) => TickerModel(null)),
+    ],
+    child: MaterialApp(
+      shortcuts: {
+        ...WidgetsApp.defaultShortcuts,
+        SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.gameButtonB): PrioritizedIntents(
+          orderedIntents: [DismissIntent(), BackIntent()],
+        ),
+      },
+      actions: {
+        ...WidgetsApp.defaultActions,
+        DirectionalFocusIntent: SoundFeedbackDirectionalFocusAction(context),
+      },
+      title: 'PitchforkLauncher',
+      theme: ThemeData(
+        // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
+        // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a
+        // deliberate design decision to make separately, not a side effect of this bump.
+        useMaterial3: false,
+        brightness: Brightness.dark,
+        primarySwatch: _swatch,
+        colorScheme: ColorScheme.fromSwatch(
+          primarySwatch: _swatch,
+          brightness: Brightness.dark,
+        ).copyWith(secondary: _swatch[200], surface: _swatch[400]),
+        cardColor: _swatch[300],
+        canvasColor: _swatch[300],
+        dialogTheme: DialogThemeData(backgroundColor: _swatch[400]),
+        scaffoldBackgroundColor: _swatch[400],
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: Colors.white),
+        ),
+        appBarTheme: AppBarTheme(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+        typography: Typography.material2018(),
+        fontFamily: "Open Sans",
+        inputDecorationTheme: InputDecorationTheme(
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: Colors.white),
           ),
-          home: Builder(
-            builder: (context) => PopScope(
-              canPop: false,
-              onPopInvokedWithResult: (didPop, result) async {
-                if (didPop || _handlingPop) {
-                  return;
-                }
-                _handlingPop = true;
-                try {
-                  final shouldPop = await shouldPopScope(context);
-                  if (!context.mounted) {
-                    return;
-                  }
-                  if (shouldPop) {
-                    SystemNavigator.pop();
-                  } else {
-                    context.read<AppsService>().startAmbientMode();
-                  }
-                } finally {
-                  _handlingPop = false;
-                }
-              },
-              child: Actions(actions: {BackIntent: BackAction(context, systemNavigator: true)}, child: FLauncher()),
-            ),
+          labelStyle: Typography.material2018().white.bodyMedium,
+        ),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: Colors.white,
+          selectionColor: _swatch[200],
+          selectionHandleColor: _swatch[200],
+        ),
+      ),
+      home: Builder(
+        builder: (context) => PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop || _handlingPop) {
+              return;
+            }
+            _handlingPop = true;
+            try {
+              final shouldPop = await shouldPopScope(context);
+              if (!context.mounted) {
+                return;
+              }
+              if (shouldPop) {
+                SystemNavigator.pop();
+              } else {
+                context.read<AppsService>().startAmbientMode();
+              }
+            } finally {
+              _handlingPop = false;
+            }
+          },
+          child: Actions(
+            actions: {BackIntent: BackAction(context, systemNavigator: true)},
+            child: FLauncher(),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

@@ -24,6 +24,7 @@ import 'package:flauncher/widgets/settings/applications_panel_page.dart';
 import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/flauncher_about_dialog.dart';
+import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -34,111 +35,155 @@ class SettingsPanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Consumer<SettingsService>(
-        builder: (context, settingsService, _) => SingleChildScrollView(
-          child: Column(
-            children: [
-              Text("Settings", style: Theme.of(context).textTheme.titleLarge),
-              Divider(),
-              EnsureVisible(
-                alignment: 0.5,
-                child: TextButton(
-                  child: Row(
-                    children: [
-                      Icon(Icons.apps),
-                      Container(width: 8),
-                      Text("Applications", style: Theme.of(context).textTheme.bodyMedium),
-                    ],
+    builder: (context, settingsService, _) => SingleChildScrollView(
+      child: Column(
+        children: [
+          Text("Settings", style: Theme.of(context).textTheme.titleLarge),
+          Divider(),
+          EnsureVisible(
+            alignment: 0.5,
+            child: TextButton(
+              child: Row(
+                children: [
+                  Icon(Icons.apps),
+                  Container(width: 8),
+                  Text(
+                    "Applications",
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  onPressed: () => Navigator.of(context).pushNamed(ApplicationsPanelPage.routeName),
-                ),
+                ],
               ),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.category),
-                    Container(width: 8),
-                    Text("Categories", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => Navigator.of(context).pushNamed(CategoriesPanelPage.routeName),
-              ),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.wallpaper_outlined),
-                    Container(width: 8),
-                    Text("Wallpaper", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => Navigator.of(context).pushNamed(WallpaperPanelPage.routeName),
-              ),
-              Divider(),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.settings_outlined),
-                    Container(width: 8),
-                    Text("Android settings", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => context.read<AppsService>().openSettings(),
-              ),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.home_outlined),
-                    Container(width: 8),
-                    Text("Set as Home button target", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => context.read<AppsService>().openAccessibilitySettings(),
-              ),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.gamepad_outlined),
-                    Container(width: 8),
-                    Text("Remote buttons", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => Navigator.of(context).pushNamed(ButtonMappingPanelPage.routeName),
-              ),
-              Divider(),
-              SwitchListTile(
-                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                value: settingsService.use24HourTimeFormat,
-                onChanged: (value) => settingsService.setUse24HourTimeFormat(value),
-                title: Text("Use 24-hour time format"),
-                dense: true,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                value: settingsService.appHighlightAnimationEnabled,
-                onChanged: (value) => settingsService.setAppHighlightAnimationEnabled(value),
-                title: Text("App card highlight animation"),
-                dense: true,
-              ),
-              Divider(),
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline),
-                    Container(width: 8),
-                    Text("About PitchforkLauncher", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => showDialog(
-                  context: context,
-                  builder: (_) => FutureBuilder<PackageInfo>(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (context, snapshot) => snapshot.connectionState == ConnectionState.done
-                        ? FLauncherAboutDialog(packageInfo: snapshot.data!)
-                        : Container(),
-                  ),
-                ),
-              ),
-            ],
+              onPressed: () => Navigator.of(
+                context,
+              ).pushNamed(ApplicationsPanelPage.routeName),
+            ),
           ),
-        ),
-      );
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.category),
+                Container(width: 8),
+                Text(
+                  "Categories",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(CategoriesPanelPage.routeName),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.wallpaper_outlined),
+                Container(width: 8),
+                Text(
+                  "Wallpaper",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(WallpaperPanelPage.routeName),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.settings_input_hdmi),
+                Container(width: 8),
+                Text(
+                  "TV Inputs",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(TvInputsPanelPage.routeName),
+          ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.settings_outlined),
+                Container(width: 8),
+                Text(
+                  "Android settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => context.read<AppsService>().openSettings(),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.home_outlined),
+                Container(width: 8),
+                Text(
+                  "Set as Home button target",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                context.read<AppsService>().openAccessibilitySettings(),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.gamepad_outlined),
+                Container(width: 8),
+                Text(
+                  "Remote buttons",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed(ButtonMappingPanelPage.routeName),
+          ),
+          Divider(),
+          SwitchListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            value: settingsService.use24HourTimeFormat,
+            onChanged: (value) => settingsService.setUse24HourTimeFormat(value),
+            title: Text("Use 24-hour time format"),
+            dense: true,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            value: settingsService.appHighlightAnimationEnabled,
+            onChanged: (value) =>
+                settingsService.setAppHighlightAnimationEnabled(value),
+            title: Text("App card highlight animation"),
+            dense: true,
+          ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.info_outline),
+                Container(width: 8),
+                Text(
+                  "About PitchforkLauncher",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) =>
+                    snapshot.connectionState == ConnectionState.done
+                    ? FLauncherAboutDialog(packageInfo: snapshot.data!)
+                    : Container(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -23,7 +23,11 @@ class LogEntry {
   final String source;
   final String message;
 
-  const LogEntry({required this.timestamp, required this.source, required this.message});
+  const LogEntry({
+    required this.timestamp,
+    required this.source,
+    required this.message,
+  });
 
   @override
   String toString() {
@@ -47,10 +51,18 @@ class AppLog extends ChangeNotifier {
   List<LogEntry> get entries => List.unmodifiable(_entries);
 
   void log(String source, Object message) {
-    _entries.insert(0, LogEntry(timestamp: DateTime.now(), source: source, message: message.toString()));
+    final entry = LogEntry(
+      timestamp: DateTime.now(),
+      source: source,
+      message: message.toString(),
+    );
+    _entries.insert(0, entry);
     if (_entries.length > _maxEntries) {
       _entries.removeLast();
     }
+    // Also surfaced via logcat (`flutter:` prefixed lines) -- lets a log entry be read off a real
+    // TV via `adb logcat` without needing to type or photograph the in-app Logs screen by hand.
+    debugPrint(entry.toString());
     notifyListeners();
   }
 }
