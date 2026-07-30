@@ -116,6 +116,11 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
   https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
   Not started.
 
+- **`useMaterial3: false` in `flauncher_app.dart`.** Pinned since the Flutter 3.16 upgrade stop, to
+  keep the existing look exactly as-is rather than pick up Material 3 as a side effect of an SDK
+  bump. Flutter has no announced removal date for Material 2 yet, but if that ever changes this
+  will need revisiting as a deliberate design decision, not left to break silently. Not started.
+
 ~~Concept: live full-screen preview for the Picsum wallpaper picker~~ — done (2026-07-21):
 `WallpaperPanelPage`'s "Random photo" now closes the Settings panel and pushes
 `WallpaperControlBar`, a bottom bar with Random/Black & White/Blur controls, live over the actual

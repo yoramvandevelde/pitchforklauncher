@@ -1,5 +1,5 @@
 /*
- * FLauncher
+ * PitchforkLauncher
  * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
