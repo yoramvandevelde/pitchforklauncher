@@ -49,12 +49,12 @@ jobs:
         run: rm -f android/app/upload-keystore.jks
 
       - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk pitchforklauncher-${GITHUB_REF_NAME}.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk pitchforklauncher.apk
 
       - name: Publish release
         uses: softprops/action-gh-release@v3
         with:
-          files: pitchforklauncher-${{ github.ref_name }}.apk
+          files: pitchforklauncher.apk
           generate_release_notes: true
 
       # pubspec.yaml's version: field is never actually used for a real release build (the build

@@ -27,6 +27,22 @@ up as real default launcher is an accepted edge case, not worth building around.
 
 ## Other open items
 
+~~**Stable "latest" download link for the Downloader app (shortcode support).** Downloader
+  supports shortcodes that redirect to a fixed URL. GitHub provides a permanent
+  `https://github.com/<owner>/<repo>/releases/latest/download/<asset-filename>` link that always
+  resolves to the newest non-draft, non-prerelease release's asset with that exact filename — but
+  it requires the asset filename to stay identical across releases. `release.yml` currently names
+  the asset `pitchforklauncher-${GITHUB_REF_NAME}.apk` (includes the version tag), so it changes
+  every release and the `/releases/latest/download/...` link won't work as-is.
+  Decided: drop the version from the asset filename (e.g. just `pitchforklauncher.apk`) rather
+  than publishing a second, duplicate-named asset alongside the versioned one — a second asset
+  named e.g. `-latest.apk` would misleadingly show up attached to *every* past release too when
+  browsing old ones on GitHub. No need to keep versioned apk files around for old-version access
+  either: every release is a git tag, so an old build is always just `git checkout <tag>` +
+  rebuild away. Version identification instead comes from the git tag / release title / in-app
+  build-name (`--build-name` is already set from `GITHUB_REF_NAME` at build time), not the
+  filename.~~ — done: `release.yml` now names the asset `pitchforklauncher.apk` (no version tag).
+
 ~~The YouTube-button keycode in `HomeButtonAccessibilityService.kt` (190 / `KEYCODE_BUTTON_3`) was
   identified empirically on one specific Google TV Streamer 4K remote. Other Google TV
   devices/remotes may send a different code for that button, in which case it won't do anything

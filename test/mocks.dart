@@ -17,8 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:math';
-
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
@@ -60,7 +58,10 @@ App fakeApp({
       sideloaded: sideloaded,
     );
 
+int _nextFakeCategoryId = 1;
+
 Category fakeCategory({
+  int? id,
   String name = "Favorites",
   int order = 0,
   CategorySort sort = CategorySort.manual,
@@ -69,7 +70,7 @@ Category fakeCategory({
   int columnsCount = 6,
 }) =>
     Category(
-      id: Random().nextInt(1 << 32),
+      id: id ?? _nextFakeCategoryId++,
       name: name,
       sort: sort,
       type: type,

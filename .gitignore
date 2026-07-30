@@ -15,6 +15,9 @@
 *.iws
 .idea/
 
+# AI agent SDK/cache
+.claude/
+
 # other
 app.key
 
