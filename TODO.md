@@ -108,13 +108,20 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
 
 - **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
   the above: with both plugins fixed, the *only* remaining KGP warning is our own module still
-  applying `id "org.jetbrains.kotlin.android"` directly. Tried the obvious toggle (drop that plugin
-  line, flip `android.builtInKotlin=true` in `gradle.properties`) and it's not that simple: KGP then
-  needs declaring in `settings.gradle`'s plugins block instead, and the old `kotlinOptions { }` DSL
-  in `build.gradle` needs replacing with Built-in Kotlin's newer compiler-options API — a small,
-  self-contained migration, just not a one-line change. See
+  applying `id "org.jetbrains.kotlin.android"` directly. See
   https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
-  Not started.
+  **Blocked on Flutter 3.47 (2026-07-30):** tried it (drop the plugin line, flip
+  `android.builtInKotlin=true` in `gradle.properties`, declare KGP in `settings.gradle`'s plugins
+  block, replace `kotlinOptions { }` with the `kotlin { compilerOptions { } }` DSL) and it fails at
+  build time regardless of correct config: `flutter_tools/gradle`'s
+  `FlutterPluginUtils.detectApplyingKotlinGradlePlugin` (in the pinned 3.44.8 SDK) unconditionally
+  force-applies `kotlin-android` onto every AGP subproject that doesn't declare KGP itself —
+  including plain-Java plugins like `flutter_plugin_android_lifecycle` — with no gating on the
+  `android.builtInKotlin` flag. That directly conflicts with AGP 9's built-in Kotlin, which refuses
+  the old plugin ID once applied elsewhere in the same build, so `assembleDebug` fails inside AGP's
+  own `com.android.internal.library` plugin application. Confirmed via the official migration doc:
+  "Enabling built-in Kotlin requires Flutter 3.47 or later" — current stable is 3.44.8 (Jul 23,
+  2026), 3.47 isn't out yet. Not a repo-level fix; revisit once Flutter stable reaches 3.47+.
 
 ~~Concept: live full-screen preview for the Picsum wallpaper picker~~ — done (2026-07-21):
 `WallpaperPanelPage`'s "Random photo" now closes the Settings panel and pushes
