@@ -98,12 +98,12 @@ class MainActivity : FlutterActivity() {
 
                     override fun onPackageAdded(packageName: String, user: UserHandle) {
                         getApplication(packageName)
-                            ?.let { events.success(mapOf("action" to "PACKAGE_ADDED", "activitiyInfo" to it)) }
+                            ?.let { events.success(mapOf("action" to "PACKAGE_ADDED", "activityInfo" to it)) }
                     }
 
                     override fun onPackageChanged(packageName: String, user: UserHandle) {
                         getApplication(packageName)
-                            ?.let { events.success(mapOf("action" to "PACKAGE_CHANGED", "activitiyInfo" to it)) }
+                            ?.let { events.success(mapOf("action" to "PACKAGE_CHANGED", "activityInfo" to it)) }
                     }
 
                     override fun onPackagesAvailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) {
