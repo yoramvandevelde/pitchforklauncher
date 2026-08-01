@@ -111,7 +111,6 @@ class FLauncherApp extends StatelessWidget {
       },
       title: 'PitchforkLauncher',
       theme: ThemeData(
-        // EXPERIMENT branch: Material 3 preview. Normally pinned to false, see main.
         useMaterial3: true,
         brightness: Brightness.dark,
         primarySwatch: _swatch,
@@ -142,6 +141,17 @@ class FLauncherApp extends StatelessWidget {
           cursorColor: Colors.white,
           selectionColor: _swatch[200],
           selectionHandleColor: _swatch[200],
+        ),
+        switchTheme: SwitchThemeData(
+          // Material 3's default Switch fills the whole track with the primary color when
+          // on, which swallows the thumb into a solid pill. Keep the thumb visibly distinct.
+          thumbColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? Colors.white : _swatch[100],
+          ),
+          trackColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? _swatch[200] : Colors.white24,
+          ),
+          trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),
       ),
       home: Builder(
