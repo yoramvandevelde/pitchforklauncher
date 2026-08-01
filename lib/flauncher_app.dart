@@ -111,10 +111,8 @@ class FLauncherApp extends StatelessWidget {
       },
       title: 'PitchforkLauncher',
       theme: ThemeData(
-        // Material 3 became the default with Flutter 3.16. Pinned to false to keep the
-        // existing look exactly as-is during the SDK upgrade -- adopting Material 3 is a
-        // deliberate design decision to make separately, not a side effect of this bump.
-        useMaterial3: false,
+        // EXPERIMENT branch: Material 3 preview. Normally pinned to false, see main.
+        useMaterial3: true,
         brightness: Brightness.dark,
         primarySwatch: _swatch,
         colorScheme: ColorScheme.fromSwatch(
