@@ -123,10 +123,11 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
   "Enabling built-in Kotlin requires Flutter 3.47 or later" — current stable is 3.44.8 (Jul 23,
   2026), 3.47 isn't out yet. Not a repo-level fix; revisit once Flutter stable reaches 3.47+.
 
-- **`useMaterial3: false` in `flauncher_app.dart`.** Pinned since the Flutter 3.16 upgrade stop, to
-  keep the existing look exactly as-is rather than pick up Material 3 as a side effect of an SDK
-  bump. Flutter has no announced removal date for Material 2 yet, but if that ever changes this
-  will need revisiting as a deliberate design decision, not left to break silently. Not started.
+~~`useMaterial3: false` in `flauncher_app.dart`~~ — resolved (2026-08-01): tried
+`useMaterial3: true` on branch `experiment/material3-preview`. Visual diff is marginal (main
+launcher grid is custom-painted, not stock Material widgets; settings dialogs pick up the M3
+tokens but the difference is minor) and acceptable. No longer blocking; flip via PR when
+convenient.
 
 ~~Concept: live full-screen preview for the Picsum wallpaper picker~~ — done (2026-07-21):
 `WallpaperPanelPage`'s "Random photo" now closes the Settings panel and pushes
