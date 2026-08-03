@@ -1,0 +1,237 @@
+/*
+ * PitchforkLauncher
+ * Copyright (C) 2026  Yoram van de Velde
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
+import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
+import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+class PitchforkSettingsPanelPage extends StatelessWidget {
+  static const String routeName = "pitchfork_settings_panel";
+
+  @override
+  Widget build(BuildContext context) => Consumer<SettingsService>(
+    builder: (context, settingsService, _) => SingleChildScrollView(
+      child: Column(
+        children: [
+          Text(
+            "PitchFork Settings",
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.settings_input_hdmi),
+                Container(width: 8),
+                Text(
+                  "TV Inputs",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                Navigator.of(context).pushNamed(TvInputsPanelPage.routeName),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.home_outlined),
+                Container(width: 8),
+                Text(
+                  "Set as Home button target",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                context.read<AppsService>().openAccessibilitySettings(),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.gamepad_outlined),
+                Container(width: 8),
+                Text(
+                  "Remote buttons",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed(ButtonMappingPanelPage.routeName),
+          ),
+          Divider(),
+          SwitchListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            value: settingsService.use24HourTimeFormat,
+            onChanged: (value) => settingsService.setUse24HourTimeFormat(value),
+            title: Text("Use 24-hour time format"),
+            dense: true,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            value: settingsService.appHighlightAnimationEnabled,
+            onChanged: (value) =>
+                settingsService.setAppHighlightAnimationEnabled(value),
+            title: Text("App card highlight animation"),
+            dense: true,
+          ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.upload_outlined),
+                Container(width: 8),
+                Text(
+                  "Export settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _exportSettings(context),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.download_outlined),
+                Container(width: 8),
+                Text(
+                  "Import settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _importSettings(context),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Future<void> _exportSettings(BuildContext context) async {
+    final confirmed = await _showExportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    try {
+      final file = await context.read<SettingsBackupService>().exportSettings();
+      if (context.mounted) {
+        await _showResultDialog(context, "Settings exported", file.path);
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Export failed", e.toString());
+      }
+    }
+  }
+
+  Future<bool?> _showExportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Export settings?"),
+      content: Text(
+        "This will overwrite pitchfork_launcher_settings_latest.json, the file \"Import "
+        "settings\" reads. A separate timestamped copy of every export is also kept, but Import "
+        "can only read the latest one.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Export"),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _importSettings(BuildContext context) async {
+    final confirmed = await _showImportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    try {
+      await context.read<SettingsBackupService>().importSettings();
+      if (context.mounted) {
+        await _showResultDialog(
+          context,
+          "Settings imported",
+          "Your settings have been restored.",
+        );
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Import failed", e.toString());
+      }
+    }
+  }
+
+  Future<bool?> _showImportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Import settings?"),
+      content: Text(
+        "This will replace all current settings, categories, app assignments, "
+        "remote button mappings and wallpaper with the contents of "
+        "pitchfork_launcher_settings_latest.json.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Import"),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _showResultDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text("OK"),
+        ),
+      ],
+    ),
+  );
+}

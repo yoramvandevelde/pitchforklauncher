@@ -23,6 +23,7 @@ import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/category_panel_page.dart';
 import 'package:flauncher/widgets/settings/gradient_panel_page.dart';
+import 'package:flauncher/widgets/settings/pitchfork_settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
@@ -96,6 +97,10 @@ class _SettingsPanelState extends State<SettingsPanel> {
                 );
               case TvInputsPanelPage.routeName:
                 return MaterialPageRoute(builder: (_) => TvInputsPanelPage());
+              case PitchforkSettingsPanelPage.routeName:
+                return MaterialPageRoute(
+                  builder: (_) => PitchforkSettingsPanelPage(),
+                );
               case CategoryPanelPage.routeName:
                 return MaterialPageRoute(
                   builder: (_) =>

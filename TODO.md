@@ -235,9 +235,14 @@ so at least one layer is always fully opaque and the background never shows thro
   picker (e.g. `file_picker` or `saf_util`) so export/import target a location and filename the
   user actually chooses, instead of a hardcoded path.
 
-**Restructure the Settings panel menu.** `SettingsPanelPage` has grown a lot (categories,
+~~**Restructure the Settings panel menu.** `SettingsPanelPage` has grown a lot (categories,
   applications, button mappings, wallpaper, time format, animations, about, and now export/import)
   and is starting to feel like a flat, ever-growing list of buttons rather than a coherent menu.
   Keeping it clean and legible needs ongoing attention as more settings get added, rather than
   just tacking each new item onto the end -- likely candidates: grouping related entries under
-  headers/sections, or splitting some off into their own sub-pages.
+  headers/sections, or splitting some off into their own sub-pages.~~ — done (branch
+  `feature/settings-menu-restructure`): split off a new `PitchforkSettingsPanelPage` ("PitchFork
+  Settings") holding TV Inputs, Set as Home button target, Remote buttons, the 24-hour time format
+  and app card highlight animation toggles, and Export/Import settings. `SettingsPanelPage` now
+  only has Applications, Categories, Wallpaper, Android settings, PitchFork Settings and About --
+  fits on one screen again without scrolling.

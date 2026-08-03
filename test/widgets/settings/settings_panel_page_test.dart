@@ -17,17 +17,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:io';
-
 import 'package:flauncher/providers/apps_service.dart';
-import 'package:flauncher/providers/settings_backup_service.dart';
-import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
-import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/categories_panel_page.dart';
 import 'package:flauncher/widgets/settings/flauncher_about_dialog.dart';
+import 'package:flauncher/widgets/settings/pitchfork_settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/settings_panel_page.dart';
-import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -50,14 +45,11 @@ void main() {
   });
 
   testWidgets("'Applications' opens ApplicationsPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
 
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -66,14 +58,11 @@ void main() {
   });
 
   testWidgets("'Categories' opens CategoriesPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
 
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -83,14 +72,11 @@ void main() {
   });
 
   testWidgets("'Wallpaper' navigates to WallpaperPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
 
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -100,36 +86,13 @@ void main() {
     expect(find.byKey(Key("WallpaperPanelPage")), findsOneWidget);
   });
 
-  testWidgets("'TV Inputs' navigates to TvInputsPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
-    final appsService = MockAppsService();
-    when(appsService.categoriesWithApps).thenReturn([]);
-    when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(find.byKey(Key("TvInputsPanelPage")), findsOneWidget);
-  });
-
   testWidgets("'Android settings' calls AppsService", (tester) async {
-    final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
 
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -139,101 +102,15 @@ void main() {
     verify(appsService.openSettings());
   });
 
-  testWidgets("'Set as Home button target' calls AppsService", (tester) async {
-    final settingsService = MockSettingsService();
-    final appsService = MockAppsService();
-    when(appsService.categoriesWithApps).thenReturn([]);
-    when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    verify(appsService.openAccessibilitySettings());
-  });
-
-  testWidgets("'Remote buttons' opens ButtonMappingPanelPage", (tester) async {
-    final settingsService = MockSettingsService();
-    final appsService = MockAppsService();
-    when(appsService.categoriesWithApps).thenReturn([]);
-    when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(find.byKey(Key("ButtonMappingPanelPage")), findsOneWidget);
-  });
-
-  testWidgets("'Use 24-hour time format' toggle calls SettingsService", (
-    tester,
-  ) async {
-    final settingsService = MockSettingsService();
-    final appsService = MockAppsService();
-    when(appsService.categoriesWithApps).thenReturn([]);
-    when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
-
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    verify(settingsService.setUse24HourTimeFormat(true));
-  });
-
   testWidgets(
-    "'Export settings' calls SettingsBackupService after confirmation",
+    "'PitchFork Settings' opens PitchforkSettingsPanelPage",
     (tester) async {
-      final settingsService = MockSettingsService();
       final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
       when(appsService.categoriesWithApps).thenReturn([]);
       when(appsService.applications).thenReturn([]);
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.exportSettings()).thenAnswer(
-        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
-      );
 
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
+      await _pumpWidgetWithProviders(tester, appsService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -241,169 +118,18 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
-
-      expect(find.text("Export settings?"), findsOneWidget);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      verify(backupService.exportSettings());
-      expect(find.text("Settings exported"), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "'Export settings' can be cancelled from the confirmation dialog",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(appsService.categoriesWithApps).thenReturn([]);
-      when(appsService.applications).thenReturn([]);
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.exportSettings()).thenAnswer(
-        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
-      );
-
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      expect(find.text("Export settings?"), findsOneWidget);
-
-      // Cancel is already focused because of autofocus.
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      verifyNever(backupService.exportSettings());
-      expect(find.text("Export settings?"), findsNothing);
-    },
-  );
-
-  testWidgets(
-    "'Import settings' calls SettingsBackupService after confirmation",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(appsService.categoriesWithApps).thenReturn([]);
-      when(appsService.applications).thenReturn([]);
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.importSettings()).thenAnswer((_) => Future.value());
-
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      expect(find.text("Import settings?"), findsOneWidget);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      verify(backupService.importSettings());
-      expect(find.text("Settings imported"), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    "'Import settings' can be cancelled from the confirmation dialog",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(appsService.categoriesWithApps).thenReturn([]);
-      when(appsService.applications).thenReturn([]);
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.importSettings()).thenAnswer((_) => Future.value());
-
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      expect(find.text("Import settings?"), findsOneWidget);
-
-      // Cancel is already focused because of autofocus.
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-
-      verifyNever(backupService.importSettings());
-      expect(find.text("Import settings?"), findsNothing);
+      expect(find.byKey(Key("PitchforkSettingsPanelPage")), findsOneWidget);
     },
   );
 
   testWidgets("'About PitchforkLauncher' opens about dialog", (tester) async {
-    final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(appsService.categoriesWithApps).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(settingsService.use24HourTimeFormat).thenReturn(false);
-    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
     PackageInfoPlatform.instance = _MockPackageInfoPlatform();
 
-    await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
@@ -418,18 +144,12 @@ void main() {
 
 Future<void> _pumpWidgetWithProviders(
   WidgetTester tester,
-  SettingsService settingsService,
-  AppsService appsService, {
-  SettingsBackupService? settingsBackupService,
-}) async {
+  AppsService appsService,
+) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<AppsService>.value(value: appsService),
-        Provider<SettingsBackupService>.value(
-          value: settingsBackupService ?? MockSettingsBackupService(),
-        ),
       ],
       builder: (_, _) => MaterialApp(
         routes: {
@@ -439,10 +159,8 @@ Future<void> _pumpWidgetWithProviders(
               Container(key: Key("WallpaperPanelPage")),
           ApplicationsPanelPage.routeName: (_) =>
               Container(key: Key("ApplicationsPanelPage")),
-          ButtonMappingPanelPage.routeName: (_) =>
-              Container(key: Key("ButtonMappingPanelPage")),
-          TvInputsPanelPage.routeName: (_) =>
-              Container(key: Key("TvInputsPanelPage")),
+          PitchforkSettingsPanelPage.routeName: (_) =>
+              Container(key: Key("PitchforkSettingsPanelPage")),
         },
         home: Material(child: SettingsPanelPage()),
       ),
