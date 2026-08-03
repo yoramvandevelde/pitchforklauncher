@@ -17,7 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:io';
+
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
 import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
@@ -204,6 +207,85 @@ void main() {
     verify(settingsService.setUse24HourTimeFormat(true));
   });
 
+  testWidgets(
+    "'Export settings' calls SettingsBackupService and shows dialog",
+    (tester) async {
+      final settingsService = MockSettingsService();
+      final appsService = MockAppsService();
+      final backupService = MockSettingsBackupService();
+      when(appsService.categoriesWithApps).thenReturn([]);
+      when(appsService.applications).thenReturn([]);
+      when(settingsService.use24HourTimeFormat).thenReturn(false);
+      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(backupService.exportSettings()).thenAnswer(
+        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
+      );
+
+      await _pumpWidgetWithProviders(
+        tester,
+        settingsService,
+        appsService,
+        settingsBackupService: backupService,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      verify(backupService.exportSettings());
+      expect(find.text("Settings exported"), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "'Import settings' calls SettingsBackupService and shows dialog",
+    (tester) async {
+      final settingsService = MockSettingsService();
+      final appsService = MockAppsService();
+      final backupService = MockSettingsBackupService();
+      when(appsService.categoriesWithApps).thenReturn([]);
+      when(appsService.applications).thenReturn([]);
+      when(settingsService.use24HourTimeFormat).thenReturn(false);
+      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(backupService.importSettings()).thenAnswer((_) => Future.value());
+
+      await _pumpWidgetWithProviders(
+        tester,
+        settingsService,
+        appsService,
+        settingsBackupService: backupService,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      verify(backupService.importSettings());
+      expect(find.text("Settings imported"), findsOneWidget);
+    },
+  );
+
   testWidgets("'About PitchforkLauncher' opens about dialog", (tester) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
@@ -234,13 +316,17 @@ void main() {
 Future<void> _pumpWidgetWithProviders(
   WidgetTester tester,
   SettingsService settingsService,
-  AppsService appsService,
-) async {
+  AppsService appsService, {
+  SettingsBackupService? settingsBackupService,
+}) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<SettingsService>.value(value: settingsService),
         ChangeNotifierProvider<AppsService>.value(value: appsService),
+        Provider<SettingsBackupService>.value(
+          value: settingsBackupService ?? MockSettingsBackupService(),
+        ),
       ],
       builder: (_, _) => MaterialApp(
         routes: {

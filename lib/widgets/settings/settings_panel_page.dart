@@ -18,6 +18,7 @@
  */
 
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
@@ -182,8 +183,84 @@ class SettingsPanelPage extends StatelessWidget {
               ),
             ),
           ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.upload_outlined),
+                Container(width: 8),
+                Text(
+                  "Export settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _exportSettings(context),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.download_outlined),
+                Container(width: 8),
+                Text(
+                  "Import settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _importSettings(context),
+          ),
         ],
       ),
+    ),
+  );
+
+  Future<void> _exportSettings(BuildContext context) async {
+    try {
+      final file = await context.read<SettingsBackupService>().exportSettings();
+      if (context.mounted) {
+        await _showResultDialog(context, "Settings exported", file.path);
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Export failed", e.toString());
+      }
+    }
+  }
+
+  Future<void> _importSettings(BuildContext context) async {
+    try {
+      await context.read<SettingsBackupService>().importSettings();
+      if (context.mounted) {
+        await _showResultDialog(
+          context,
+          "Settings imported",
+          "Your settings have been restored.",
+        );
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Import failed", e.toString());
+      }
+    }
+  }
+
+  Future<void> _showResultDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text("OK"),
+        ),
+      ],
     ),
   );
 }

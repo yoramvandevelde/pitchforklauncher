@@ -196,3 +196,30 @@ so at least one layer is always fully opaque and the background never shows thro
     baked result so filters can be changed/reset without re-fetching/re-picking.
   - Not a bug or regression, current approach works fine for Picsum; this is a scope expansion, not
     a fix.
+
+- **Resize custom wallpapers to screen resolution before saving them.** Custom wallpapers picked
+  via `image_picker` (and photos fetched from Picsum) are currently stored as-is in
+  `_wallpaperFile` and loaded every frame via `Image.memory()` with `BoxFit.cover`. A phone/camera
+  photo can easily be 8-12MP, but the TV screen is at most 4K — the full-resolution image stays in
+  GPU memory even though only a fraction of those pixels are ever visible. This wastes VRAM on a
+  TV box with modest specs and can contribute to jank or OOM crashes. Fix: after picking or
+  downloading an image, decode it with `dart:ui`, paint it through a `Canvas`/`PictureRecorder`
+  sized to the device's logical screen resolution, rasterise via `toImage()`, then write the
+  resulting bytes to `_wallpaperFile` instead of the original. One-time cost at save time, no
+  per-frame GPU impact — the same "bake once, display flat" philosophy already used for the
+  cross-fade fix. The bundled `assets/default_wallpaper.jpg` should also be pre-sized or resized
+  during the first-run seed to follow the same rule.
+
+~~**Settings export/import (JSON).** Export all categories, app-to-category assignments,
+  wallpaper/gradient state, and remote button mappings to a JSON file, with import restoring them.
+  Minimal UI: "Export settings" and "Import settings" buttons somewhere in the Settings panel
+  (probably `SettingsPanelPage`). Use `path_provider` to write to a well-known path on the device
+  (e.g. Downloads) and let the user pick a file for import. Useful for recovery after a factory
+  reset or when moving to a new device. Pure data-layer work — no new runtime services, background
+  tasks, or network permissions. Clears ADR-001 Q1 (reconfiguring everything from scratch after a
+  reset is irritating) and Q2 (fast recovery preserves the upgrade pipeline's value).~~ — done
+  (branch `feature/settings-export-import`): implemented `SettingsBackupService` that exports to
+  `pitchfork_launcher_settings_<timestamp>.json` and keeps a `pitchfork_launcher_settings_latest.json`
+  copy in external app storage, with import replacing all categories, app assignments, hidden apps,
+  SharedPreferences settings, button mappings, and wallpaper bytes. Added "Export settings" / "Import
+  settings" buttons to `SettingsPanelPage` and a `restoreWallpaper` method to `WallpaperService`.
