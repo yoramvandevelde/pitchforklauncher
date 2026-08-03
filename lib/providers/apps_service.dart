@@ -167,6 +167,16 @@ class AppsService extends ChangeNotifier {
     }
   }
 
+  /// Re-reads categories/apps/hidden state from the database and notifies listeners, without
+  /// re-syncing against the system's installed-apps list like [_refreshState] does. For callers
+  /// that wrote to the database directly (bypassing this service's own mutators, e.g. the
+  /// settings backup/import flow), so the UI doesn't keep showing this service's stale cache.
+  Future<void> reloadFromDatabase() async {
+    _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
+    _applications = await _database.listApplications();
+    notifyListeners();
+  }
+
   Future<void> launchApp(App app) => _fLauncherChannel.launchApp(app.packageName);
 
   Future<void> openAppInfo(App app) => _fLauncherChannel.openAppInfo(app.packageName);

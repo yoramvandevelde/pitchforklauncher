@@ -20,6 +20,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flauncher/database.dart';
+import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
@@ -64,8 +65,9 @@ void main() {
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
-      final fLauncherChannel = MockFLauncherChannel();
       final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -124,15 +126,9 @@ void main() {
       when(
         wallpaperService.wallpaperBytes,
       ).thenReturn(Uint8List.fromList([0x01, 0x02, 0x03]));
-      when(fLauncherChannel.getButtonMappings()).thenAnswer(
-        (_) => Future.value([
-          {
-            'keyCode': 190,
-            'label': 'YouTube',
-            'packageName': 'com.google.android.youtube',
-          },
-        ]),
-      );
+      when(buttonMappingService.mappings).thenReturn([
+        ButtonMapping(190, 'YouTube', 'com.google.android.youtube'),
+      ]);
       when(tvInputService.inputs).thenReturn([
         const TvInputConfig(
           id: 'tv1',
@@ -146,8 +142,9 @@ void main() {
         database,
         settingsService,
         wallpaperService,
-        fLauncherChannel,
         tvInputService,
+        appsService,
+        buttonMappingService,
       );
 
       final exportedFile = await backupService.exportSettings();
@@ -176,16 +173,14 @@ void main() {
 
       final capturedMappings = <Map<String, dynamic>>[];
       final removedKeyCodes = <int>[];
-      when(fLauncherChannel.getButtonMappings()).thenAnswer(
-        (_) => Future.value([
-          {'keyCode': 999, 'label': 'Old', 'packageName': 'com.old'},
-        ]),
-      );
-      when(fLauncherChannel.removeButtonMapping(any)).thenAnswer((invocation) {
+      when(buttonMappingService.mappings).thenReturn([
+        ButtonMapping(999, 'Old', 'com.old'),
+      ]);
+      when(buttonMappingService.removeMapping(any)).thenAnswer((invocation) {
         removedKeyCodes.add(invocation.positionalArguments[0] as int);
         return Future.value();
       });
-      when(fLauncherChannel.setButtonMapping(any, any)).thenAnswer((
+      when(buttonMappingService.setMapping(any, any)).thenAnswer((
         invocation,
       ) {
         capturedMappings.add({
@@ -206,6 +201,9 @@ void main() {
             invocation.positionalArguments[0] as List<TvInputConfig>;
         return Future.value();
       });
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
 
       await backupService.importSettings();
 
@@ -247,6 +245,8 @@ void main() {
       expect(restoredTvInputs!.first.profileId, 'generic');
       expect(restoredTvInputs!.first.params, {'host': '192.168.1.50'});
 
+      verify(appsService.reloadFromDatabase());
+
       await database.close();
     },
   );
@@ -256,8 +256,9 @@ void main() {
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
-    final fLauncherChannel = MockFLauncherChannel();
     final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
 
     await database.persistApps([
       AppsCompanion.insert(
@@ -270,26 +271,28 @@ void main() {
     await settingsService.setGradientUuid('saved-gradient');
 
     when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(buttonMappingService.mappings).thenReturn([]);
     when(
-      fLauncherChannel.getButtonMappings(),
-    ).thenAnswer((_) => Future.value([]));
-    when(
-      fLauncherChannel.removeButtonMapping(any),
+      buttonMappingService.removeMapping(any),
     ).thenAnswer((_) => Future.value());
     when(
-      fLauncherChannel.setButtonMapping(any, any),
+      buttonMappingService.setMapping(any, any),
     ).thenAnswer((_) => Future.value());
     when(tvInputService.inputs).thenReturn([]);
     when(
       tvInputService.replaceAll(any),
+    ).thenAnswer((_) => Future.value());
+    when(
+      appsService.reloadFromDatabase(),
     ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
       settingsService,
       wallpaperService,
-      fLauncherChannel,
       tvInputService,
+      appsService,
+      buttonMappingService,
     );
 
     await backupService.exportSettings();
@@ -312,14 +315,14 @@ void main() {
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
-    final fLauncherChannel = MockFLauncherChannel();
 
     final backupService = SettingsBackupService(
       database,
       settingsService,
       wallpaperService,
-      fLauncherChannel,
       MockTvInputService(),
+      MockAppsService(),
+      MockButtonMappingService(),
     );
 
     expect(
@@ -342,8 +345,9 @@ void main() {
       database,
       SettingsService(sharedPreferences),
       MockWallpaperService(),
-      MockFLauncherChannel(),
       MockTvInputService(),
+      MockAppsService(),
+      MockButtonMappingService(),
     );
 
     expect(
@@ -361,8 +365,9 @@ void main() {
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
-      final fLauncherChannel = MockFLauncherChannel();
       final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -397,14 +402,12 @@ void main() {
       ]);
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
       when(
-        fLauncherChannel.getButtonMappings(),
-      ).thenAnswer((_) => Future.value([]));
-      when(
-        fLauncherChannel.removeButtonMapping(any),
+        buttonMappingService.removeMapping(any),
       ).thenAnswer((_) => Future.value());
       when(
-        fLauncherChannel.setButtonMapping(any, any),
+        buttonMappingService.setMapping(any, any),
       ).thenAnswer((_) => Future.value());
       when(
         wallpaperService.restoreWallpaper(any),
@@ -413,13 +416,17 @@ void main() {
       when(
         tvInputService.replaceAll(any),
       ).thenAnswer((_) => Future.value());
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
-        fLauncherChannel,
         tvInputService,
+        appsService,
+        buttonMappingService,
       );
 
       await backupService.exportSettings();
@@ -444,8 +451,9 @@ void main() {
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
-    final fLauncherChannel = MockFLauncherChannel();
     final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
 
     await database.persistApps([
       AppsCompanion.insert(
@@ -456,14 +464,12 @@ void main() {
     ]);
 
     when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(buttonMappingService.mappings).thenReturn([]);
     when(
-      fLauncherChannel.getButtonMappings(),
-    ).thenAnswer((_) => Future.value([]));
-    when(
-      fLauncherChannel.removeButtonMapping(any),
+      buttonMappingService.removeMapping(any),
     ).thenAnswer((_) => Future.value());
     when(
-      fLauncherChannel.setButtonMapping(any, any),
+      buttonMappingService.setMapping(any, any),
     ).thenAnswer((_) => Future.value());
     when(
       wallpaperService.restoreWallpaper(any),
@@ -472,13 +478,17 @@ void main() {
     when(
       tvInputService.replaceAll(any),
     ).thenAnswer((_) => Future.value());
+    when(
+      appsService.reloadFromDatabase(),
+    ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
       settingsService,
       wallpaperService,
-      fLauncherChannel,
       tvInputService,
+      appsService,
+      buttonMappingService,
     );
 
     await backupService.exportSettings();
@@ -506,8 +516,9 @@ void main() {
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
-      final fLauncherChannel = MockFLauncherChannel();
       final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -535,14 +546,12 @@ void main() {
       ]);
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
       when(
-        fLauncherChannel.getButtonMappings(),
-      ).thenAnswer((_) => Future.value([]));
-      when(
-        fLauncherChannel.removeButtonMapping(any),
+        buttonMappingService.removeMapping(any),
       ).thenAnswer((_) => Future.value());
       when(
-        fLauncherChannel.setButtonMapping(any, any),
+        buttonMappingService.setMapping(any, any),
       ).thenAnswer((_) => Future.value());
       when(
         wallpaperService.restoreWallpaper(any),
@@ -551,13 +560,17 @@ void main() {
       when(
         tvInputService.replaceAll(any),
       ).thenAnswer((_) => Future.value());
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
-        fLauncherChannel,
         tvInputService,
+        appsService,
+        buttonMappingService,
       );
 
       await backupService.exportSettings();
@@ -589,8 +602,9 @@ void main() {
       database,
       SettingsService(sharedPreferences),
       MockWallpaperService(),
-      MockFLauncherChannel(),
       MockTvInputService(),
+      MockAppsService(),
+      MockButtonMappingService(),
     );
 
     expect(
@@ -624,8 +638,9 @@ void main() {
         database,
         SettingsService(sharedPreferences),
         MockWallpaperService(),
-        MockFLauncherChannel(),
         MockTvInputService(),
+        MockAppsService(),
+        MockButtonMappingService(),
       );
 
       expect(
@@ -685,8 +700,9 @@ void main() {
         database,
         settingsService,
         MockWallpaperService(),
-        MockFLauncherChannel(),
         MockTvInputService(),
+        MockAppsService(),
+        MockButtonMappingService(),
       );
 
       await expectLater(
@@ -707,8 +723,9 @@ void main() {
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
-      final fLauncherChannel = MockFLauncherChannel();
       final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -719,21 +736,15 @@ void main() {
       ]);
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
-      when(fLauncherChannel.getButtonMappings()).thenAnswer(
-        (_) => Future.value([
-          {'keyCode': 1, 'label': 'One', 'packageName': 'com.app.one'},
-          {
-            'keyCode': 2,
-            'label': 'Uninstalled',
-            'packageName': 'com.not.installed',
-          },
-        ]),
-      );
+      when(buttonMappingService.mappings).thenReturn([
+        ButtonMapping(1, 'One', 'com.app.one'),
+        ButtonMapping(2, 'Uninstalled', 'com.not.installed'),
+      ]);
       when(
-        fLauncherChannel.removeButtonMapping(any),
+        buttonMappingService.removeMapping(any),
       ).thenAnswer((_) => Future.value());
       final capturedMappings = <Map<String, dynamic>>[];
-      when(fLauncherChannel.setButtonMapping(any, any)).thenAnswer((
+      when(buttonMappingService.setMapping(any, any)).thenAnswer((
         invocation,
       ) {
         capturedMappings.add({
@@ -749,13 +760,17 @@ void main() {
       when(
         tvInputService.replaceAll(any),
       ).thenAnswer((_) => Future.value());
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
-        fLauncherChannel,
         tvInputService,
+        appsService,
+        buttonMappingService,
       );
 
       await backupService.exportSettings();
@@ -771,14 +786,66 @@ void main() {
   );
 
   test(
+    "reloads AppsService from the database after a successful import",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
+      when(
+        buttonMappingService.removeMapping(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        buttonMappingService.setMapping(any, any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        tvInputService,
+        appsService,
+        buttonMappingService,
+      );
+
+      await backupService.exportSettings();
+
+      verifyNever(appsService.reloadFromDatabase());
+
+      await backupService.importSettings();
+
+      verify(appsService.reloadFromDatabase());
+
+      await database.close();
+    },
+  );
+
+  test(
     "leaves categories untouched if a step before the database restore fails",
     () async {
       final database = FLauncherDatabase.inMemory();
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
-      final fLauncherChannel = MockFLauncherChannel();
       final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -792,14 +859,12 @@ void main() {
       );
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
       when(
-        fLauncherChannel.getButtonMappings(),
-      ).thenAnswer((_) => Future.value([]));
-      when(
-        fLauncherChannel.removeButtonMapping(any),
+        buttonMappingService.removeMapping(any),
       ).thenAnswer((_) => Future.value());
       when(
-        fLauncherChannel.setButtonMapping(any, any),
+        buttonMappingService.setMapping(any, any),
       ).thenAnswer((_) => Future.value());
       when(
         wallpaperService.restoreWallpaper(any),
@@ -813,8 +878,9 @@ void main() {
         database,
         settingsService,
         wallpaperService,
-        fLauncherChannel,
         tvInputService,
+        appsService,
+        buttonMappingService,
       );
 
       await backupService.exportSettings();
@@ -832,6 +898,8 @@ void main() {
       final categories = await database.select(database.categories).get();
       expect(categories.length, 1);
       expect(categories.first.name, 'Original');
+
+      verifyNever(appsService.reloadFromDatabase());
 
       await database.close();
     },

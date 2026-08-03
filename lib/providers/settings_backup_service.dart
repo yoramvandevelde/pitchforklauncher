@@ -21,7 +21,8 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
-import 'package:flauncher/flauncher_channel.dart';
+import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
@@ -35,16 +36,18 @@ class SettingsBackupService {
   final FLauncherDatabase _database;
   final SettingsService _settingsService;
   final WallpaperService _wallpaperService;
-  final FLauncherChannel _fLauncherChannel;
   final TvInputService _tvInputService;
+  final AppsService _appsService;
+  final ButtonMappingService _buttonMappingService;
   final Future<Directory?> Function() _directoryProvider;
 
   SettingsBackupService(
     this._database,
     this._settingsService,
     this._wallpaperService,
-    this._fLauncherChannel,
-    this._tvInputService, {
+    this._tvInputService,
+    this._appsService,
+    this._buttonMappingService, {
     Future<Directory?> Function()? directoryProvider,
   }) : _directoryProvider = directoryProvider ?? getExternalStorageDirectory;
 
@@ -122,7 +125,15 @@ class SettingsBackupService {
         .where((app) => app.hidden)
         .map((app) => app.packageName)
         .toList();
-    final buttonMappings = await _fLauncherChannel.getButtonMappings();
+    final buttonMappings = _buttonMappingService.mappings
+        .map(
+          (mapping) => {
+            'keyCode': mapping.keyCode,
+            'label': mapping.label,
+            'packageName': mapping.packageName,
+          },
+        )
+        .toList();
     final wallpaperBytes = _wallpaperService.wallpaperBytes;
 
     return {
@@ -170,6 +181,14 @@ class SettingsBackupService {
   /// leaving it in its original state rather than a half-restored one. [backup] has already been
   /// fully parsed and validated by this point (see `_ParsedBackup.fromJson`), so nothing here
   /// should throw due to malformed input -- only due to an actual write failing.
+  ///
+  /// Writes categories/apps/hidden state directly to [_database] rather than going through
+  /// [AppsService]'s own mutators (it has none for a bulk replace like this), so its cache is
+  /// reloaded explicitly once the transaction commits -- otherwise the home screen, hidden-apps
+  /// list and categories panel would keep showing pre-restore data until an unrelated refresh
+  /// happened to occur. Button mappings go through [ButtonMappingService] instead of the channel
+  /// directly, for the same reason: it keeps its own cache and only that class's methods refresh
+  /// it.
   Future<void> _restoreFromBackup(_ParsedBackup backup) async {
     final installedPackages = (await _database.listApplications())
         .map((app) => app.packageName)
@@ -190,13 +209,12 @@ class SettingsBackupService {
     await _settingsService.setPicsumGrayscale(backup.picsumGrayscale);
     await _settingsService.setPicsumBlur(backup.picsumBlur);
 
-    final existingMappings = await _fLauncherChannel.getButtonMappings();
-    for (final mapping in existingMappings) {
-      await _fLauncherChannel.removeButtonMapping(mapping['keyCode'] as int);
+    for (final mapping in _buttonMappingService.mappings.toList()) {
+      await _buttonMappingService.removeMapping(mapping.keyCode);
     }
     for (final mapping in backup.buttonMappings) {
       if (installedPackages.contains(mapping.packageName)) {
-        await _fLauncherChannel.setButtonMapping(
+        await _buttonMappingService.setMapping(
           mapping.keyCode,
           mapping.packageName,
         );
@@ -259,6 +277,8 @@ class SettingsBackupService {
         }
       }
     });
+
+    await _appsService.reloadFromDatabase();
   }
 }
 

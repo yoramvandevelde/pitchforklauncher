@@ -768,6 +768,26 @@ void main() {
     verify(database.updateCategory(category.id, CategoriesCompanion(rowHeight: Value(120))));
     verify(database.listCategoriesWithVisibleApps());
   });
+
+  test("reloadFromDatabase refreshes the cache without re-syncing installed apps", () async {
+    final channel = MockFLauncherChannel();
+    final database = MockFLauncherDatabase();
+    final appsService = await _buildInitialisedAppsService(channel, database, []);
+    final application = fakeApp();
+    final category = fakeCategory(name: "Streaming");
+
+    when(database.listApplications()).thenAnswer((_) => Future.value([application]));
+    when(database.listCategoriesWithVisibleApps())
+        .thenAnswer((_) => Future.value([CategoryWithApps(category, [application])]));
+
+    await appsService.reloadFromDatabase();
+
+    expect(appsService.applications, [application]);
+    expect(appsService.categoriesWithApps.length, 1);
+    expect(appsService.categoriesWithApps.first.category, category);
+    expect(appsService.categoriesWithApps.first.applications, [application]);
+    verifyNever(channel.getApplications());
+  });
 }
 
 Future<AppsService> _buildInitialisedAppsService(

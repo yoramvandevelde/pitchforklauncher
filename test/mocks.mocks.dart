@@ -496,6 +496,15 @@ class MockAppsService extends _i1.Mock implements _i14.AppsService {
           as bool);
 
   @override
+  _i8.Future<void> reloadFromDatabase() =>
+      (super.noSuchMethod(
+            Invocation.method(#reloadFromDatabase, []),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
   _i8.Future<void> launchApp(_i6.App? app) =>
       (super.noSuchMethod(
             Invocation.method(#launchApp, [app]),
@@ -1405,6 +1414,16 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
   _i8.Future<List<_i6.CategoryWithApps>> listCategoriesWithVisibleApps() =>
       (super.noSuchMethod(
             Invocation.method(#listCategoriesWithVisibleApps, []),
+            returnValue: _i8.Future<List<_i6.CategoryWithApps>>.value(
+              <_i6.CategoryWithApps>[],
+            ),
+          )
+          as _i8.Future<List<_i6.CategoryWithApps>>);
+
+  @override
+  _i8.Future<List<_i6.CategoryWithApps>> listCategoriesWithAllApps() =>
+      (super.noSuchMethod(
+            Invocation.method(#listCategoriesWithAllApps, []),
             returnValue: _i8.Future<List<_i6.CategoryWithApps>>.value(
               <_i6.CategoryWithApps>[],
             ),
