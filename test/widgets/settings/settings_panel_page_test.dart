@@ -208,7 +208,7 @@ void main() {
   });
 
   testWidgets(
-    "'Export settings' calls SettingsBackupService and shows dialog",
+    "'Export settings' calls SettingsBackupService after confirmation",
     (tester) async {
       final settingsService = MockSettingsService();
       final appsService = MockAppsService();
@@ -242,8 +242,60 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
+      expect(find.text("Export settings?"), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
       verify(backupService.exportSettings());
       expect(find.text("Settings exported"), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "'Export settings' can be cancelled from the confirmation dialog",
+    (tester) async {
+      final settingsService = MockSettingsService();
+      final appsService = MockAppsService();
+      final backupService = MockSettingsBackupService();
+      when(appsService.categoriesWithApps).thenReturn([]);
+      when(appsService.applications).thenReturn([]);
+      when(settingsService.use24HourTimeFormat).thenReturn(false);
+      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(backupService.exportSettings()).thenAnswer(
+        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
+      );
+
+      await _pumpWidgetWithProviders(
+        tester,
+        settingsService,
+        appsService,
+        settingsBackupService: backupService,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.text("Export settings?"), findsOneWidget);
+
+      // Cancel is already focused because of autofocus.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      verifyNever(backupService.exportSettings());
+      expect(find.text("Export settings?"), findsNothing);
     },
   );
 

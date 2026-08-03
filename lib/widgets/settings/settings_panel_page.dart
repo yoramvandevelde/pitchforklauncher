@@ -216,6 +216,10 @@ class SettingsPanelPage extends StatelessWidget {
   );
 
   Future<void> _exportSettings(BuildContext context) async {
+    final confirmed = await _showExportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
     try {
       final file = await context.read<SettingsBackupService>().exportSettings();
       if (context.mounted) {
@@ -227,6 +231,30 @@ class SettingsPanelPage extends StatelessWidget {
       }
     }
   }
+
+  Future<bool?> _showExportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Export settings?"),
+      content: Text(
+        "This will overwrite the existing pitchfork_launcher_settings_latest.json file. "
+        "If you want to keep a previous backup, rename it before exporting.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Export"),
+        ),
+      ],
+    ),
+  );
 
   Future<void> _importSettings(BuildContext context) async {
     final confirmed = await _showImportConfirmationDialog(context);
