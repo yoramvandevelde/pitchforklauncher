@@ -16,6 +16,16 @@ build-install device:
     fvm flutter build apk --debug --build-name="$build_name"
     adb -s {{device}} install -r build/app/outputs/flutter-apk/app-debug.apk
 
+# Uninstall the app. Mainly for switching between debug and release builds on the same
+# device/emulator -- they're signed with different keys, so `adb install` refuses to install one
+# over the other (signature mismatch) without uninstalling first. Also guarantees the next install
+# is genuinely fresh (no leftover SharedPreferences/database/wallpaper file), unlike
+# `adb install -r`, which keeps all of that around -- useful for reliably re-testing
+# fresh-install-only behavior (e.g. the first-run seed). Tolerates the app not being installed yet.
+# `just uninstall emulator-5554 && just build-install-release emulator-5554`.
+uninstall device:
+    adb -s {{device}} uninstall io.sifft.pitchforklauncher || true
+
 # Build a signed release APK and install it on a device/emulator, for testing a release
 # build locally before cutting a tag. Same date + "-local" version stamp as build-install.
 # build_number is the current unix timestamp -- always higher than the last build, so
