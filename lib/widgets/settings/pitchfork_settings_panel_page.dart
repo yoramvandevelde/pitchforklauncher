@@ -1,5 +1,6 @@
 /*
- * PitchforkLauncher
+ * FLauncher
+ * Copyright (C) 2021  Étienne Fesser
  * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
@@ -33,7 +34,7 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "PitchFork Settings",
+            "Pitchfork Settings",
             style: Theme.of(context).textTheme.titleLarge,
           ),
           Divider(),

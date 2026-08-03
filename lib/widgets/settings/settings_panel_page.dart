@@ -103,7 +103,7 @@ class SettingsPanelPage extends StatelessWidget {
               Icon(Icons.tune),
               Container(width: 8),
               Text(
-                "PitchFork Settings",
+                "Pitchfork Settings",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],

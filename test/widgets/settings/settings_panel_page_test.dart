@@ -103,7 +103,7 @@ void main() {
   });
 
   testWidgets(
-    "'PitchFork Settings' opens PitchforkSettingsPanelPage",
+    "'Pitchfork Settings' opens PitchforkSettingsPanelPage",
     (tester) async {
       final appsService = MockAppsService();
       when(appsService.categoriesWithApps).thenReturn([]);
