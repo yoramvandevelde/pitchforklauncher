@@ -102,6 +102,7 @@ class FLauncherApp extends StatelessWidget {
           context.read<SettingsService>(),
           context.read<WallpaperService>(),
           _fLauncherChannel,
+          context.read<TvInputService>(),
         ),
       ),
       Provider<TickerModel>(create: (context) => TickerModel(null)),

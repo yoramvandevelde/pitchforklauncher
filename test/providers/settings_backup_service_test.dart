@@ -22,6 +22,7 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -64,6 +65,7 @@ void main() {
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
       final fLauncherChannel = MockFLauncherChannel();
+      final tvInputService = MockTvInputService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -131,12 +133,21 @@ void main() {
           },
         ]),
       );
+      when(tvInputService.inputs).thenReturn([
+        const TvInputConfig(
+          id: 'tv1',
+          label: 'Xbox',
+          profileId: 'generic',
+          params: {'host': '192.168.1.50'},
+        ),
+      ]);
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
         fLauncherChannel,
+        tvInputService,
       );
 
       final exportedFile = await backupService.exportSettings();
@@ -189,6 +200,12 @@ void main() {
         restoredWallpaper = invocation.positionalArguments[0] as Uint8List?;
         return Future.value();
       });
+      List<TvInputConfig>? restoredTvInputs;
+      when(tvInputService.replaceAll(any)).thenAnswer((invocation) {
+        restoredTvInputs =
+            invocation.positionalArguments[0] as List<TvInputConfig>;
+        return Future.value();
+      });
 
       await backupService.importSettings();
 
@@ -224,6 +241,12 @@ void main() {
 
       expect(restoredWallpaper, Uint8List.fromList([0x01, 0x02, 0x03]));
 
+      expect(restoredTvInputs, hasLength(1));
+      expect(restoredTvInputs!.first.id, 'tv1');
+      expect(restoredTvInputs!.first.label, 'Xbox');
+      expect(restoredTvInputs!.first.profileId, 'generic');
+      expect(restoredTvInputs!.first.params, {'host': '192.168.1.50'});
+
       await database.close();
     },
   );
@@ -234,6 +257,7 @@ void main() {
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
     final fLauncherChannel = MockFLauncherChannel();
+    final tvInputService = MockTvInputService();
 
     await database.persistApps([
       AppsCompanion.insert(
@@ -255,12 +279,17 @@ void main() {
     when(
       fLauncherChannel.setButtonMapping(any, any),
     ).thenAnswer((_) => Future.value());
+    when(tvInputService.inputs).thenReturn([]);
+    when(
+      tvInputService.replaceAll(any),
+    ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
       settingsService,
       wallpaperService,
       fLauncherChannel,
+      tvInputService,
     );
 
     await backupService.exportSettings();
@@ -290,6 +319,7 @@ void main() {
       settingsService,
       wallpaperService,
       fLauncherChannel,
+      MockTvInputService(),
     );
 
     expect(
@@ -313,6 +343,7 @@ void main() {
       SettingsService(sharedPreferences),
       MockWallpaperService(),
       MockFLauncherChannel(),
+      MockTvInputService(),
     );
 
     expect(
@@ -331,6 +362,7 @@ void main() {
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
       final fLauncherChannel = MockFLauncherChannel();
+      final tvInputService = MockTvInputService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -377,12 +409,17 @@ void main() {
       when(
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
         fLauncherChannel,
+        tvInputService,
       );
 
       await backupService.exportSettings();
@@ -408,6 +445,7 @@ void main() {
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
     final fLauncherChannel = MockFLauncherChannel();
+    final tvInputService = MockTvInputService();
 
     await database.persistApps([
       AppsCompanion.insert(
@@ -430,12 +468,17 @@ void main() {
     when(
       wallpaperService.restoreWallpaper(any),
     ).thenAnswer((_) => Future.value());
+    when(tvInputService.inputs).thenReturn([]);
+    when(
+      tvInputService.replaceAll(any),
+    ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
       settingsService,
       wallpaperService,
       fLauncherChannel,
+      tvInputService,
     );
 
     await backupService.exportSettings();
@@ -469,6 +512,7 @@ void main() {
       SettingsService(sharedPreferences),
       MockWallpaperService(),
       MockFLauncherChannel(),
+      MockTvInputService(),
     );
 
     expect(
@@ -503,6 +547,7 @@ void main() {
         SettingsService(sharedPreferences),
         MockWallpaperService(),
         MockFLauncherChannel(),
+        MockTvInputService(),
       );
 
       expect(
@@ -522,6 +567,7 @@ void main() {
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
       final fLauncherChannel = MockFLauncherChannel();
+      final tvInputService = MockTvInputService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -558,12 +604,17 @@ void main() {
       when(
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
         fLauncherChannel,
+        tvInputService,
       );
 
       await backupService.exportSettings();
@@ -586,6 +637,7 @@ void main() {
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
       final fLauncherChannel = MockFLauncherChannel();
+      final tvInputService = MockTvInputService();
 
       await database.persistApps([
         AppsCompanion.insert(
@@ -611,12 +663,17 @@ void main() {
       when(
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
         settingsService,
         wallpaperService,
         fLauncherChannel,
+        tvInputService,
       );
 
       await backupService.exportSettings();

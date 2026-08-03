@@ -112,6 +112,13 @@ class TvInputService extends ChangeNotifier {
     return _persist();
   }
 
+  /// Wholesale replaces the configured inputs, e.g. from a settings restore. Unlike [addInput]/
+  /// [removeInput], which build on the current list, this discards it entirely.
+  Future<void> replaceAll(List<TvInputConfig> inputs) {
+    _inputs = inputs;
+    return _persist();
+  }
+
   Future<void> _persist() async {
     await _sharedPreferences.setString(
       _tvInputsKey,

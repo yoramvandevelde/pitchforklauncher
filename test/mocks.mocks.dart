@@ -18,9 +18,10 @@ import 'package:flauncher/providers/apps_service.dart' as _i14;
 import 'package:flauncher/providers/button_mapping_service.dart' as _i16;
 import 'package:flauncher/providers/settings_backup_service.dart' as _i15;
 import 'package:flauncher/providers/settings_service.dart' as _i11;
+import 'package:flauncher/providers/tv_input_service.dart' as _i17;
 import 'package:flauncher/providers/wallpaper_service.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i17;
+import 'package:mockito/src/dummies.dart' as _i18;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -858,6 +859,15 @@ class MockSettingsService extends _i1.Mock implements _i11.SettingsService {
           as _i8.Future<void>);
 
   @override
+  _i8.Future<void> resetToDefaults() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetToDefaults, []),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
   void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
@@ -989,6 +999,96 @@ class MockButtonMappingService extends _i1.Mock
   _i8.Future<void> removeMapping(int? keyCode) =>
       (super.noSuchMethod(
             Invocation.method(#removeMapping, [keyCode]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+    Invocation.method(#addListener, [listener]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+    Invocation.method(#removeListener, [listener]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void notifyListeners() => super.noSuchMethod(
+    Invocation.method(#notifyListeners, []),
+    returnValueForMissingStub: null,
+  );
+}
+
+/// A class which mocks [TvInputService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockTvInputService extends _i1.Mock implements _i17.TvInputService {
+  MockTvInputService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  List<_i17.TvInputConfig> get inputs =>
+      (super.noSuchMethod(
+            Invocation.getter(#inputs),
+            returnValue: <_i17.TvInputConfig>[],
+          )
+          as List<_i17.TvInputConfig>);
+
+  @override
+  bool get hasListeners =>
+      (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
+          as bool);
+
+  @override
+  _i8.Future<void> addInput({
+    required String? label,
+    required String? profileId,
+    required Map<String, String>? params,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#addInput, [], {
+              #label: label,
+              #profileId: profileId,
+              #params: params,
+            }),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> removeInput(String? id) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeInput, [id]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> replaceAll(List<_i17.TvInputConfig>? inputs) =>
+      (super.noSuchMethod(
+            Invocation.method(#replaceAll, [inputs]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> select(_i17.TvInputConfig? config) =>
+      (super.noSuchMethod(
+            Invocation.method(#select, [config]),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
@@ -1159,7 +1259,7 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
   _i5.SqlTypes get typeMapping =>
       (super.noSuchMethod(
             Invocation.getter(#typeMapping),
-            returnValue: _i17.dummyValue<_i5.SqlTypes>(
+            returnValue: _i18.dummyValue<_i5.SqlTypes>(
               this,
               Invocation.getter(#typeMapping),
             ),
@@ -1370,8 +1470,8 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
               #connect: connect,
             }),
             returnValue:
-                _i17.ifNotNull(
-                  _i17.dummyValueOrNull<Ret>(
+                _i18.ifNotNull(
+                  _i18.dummyValueOrNull<Ret>(
                     this,
                     Invocation.method(#computeWithDatabase, [], {
                       #computation: computation,
@@ -1404,7 +1504,7 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
   T alias<T, D>(_i5.ResultSetImplementation<T, D>? table, String? alias) =>
       (super.noSuchMethod(
             Invocation.method(#alias, [table, alias]),
-            returnValue: _i17.dummyValue<T>(
+            returnValue: _i18.dummyValue<T>(
               this,
               Invocation.method(#alias, [table, alias]),
             ),
@@ -1441,8 +1541,8 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
       (super.noSuchMethod(
             Invocation.method(#doWhenOpened, [fn]),
             returnValue:
-                _i17.ifNotNull(
-                  _i17.dummyValueOrNull<T>(
+                _i18.ifNotNull(
+                  _i18.dummyValueOrNull<T>(
                     this,
                     Invocation.method(#doWhenOpened, [fn]),
                   ),
@@ -1657,8 +1757,8 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
               {#requireNew: requireNew},
             ),
             returnValue:
-                _i17.ifNotNull(
-                  _i17.dummyValueOrNull<T>(
+                _i18.ifNotNull(
+                  _i18.dummyValueOrNull<T>(
                     this,
                     Invocation.method(
                       #transaction,
@@ -1684,8 +1784,8 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
       (super.noSuchMethod(
             Invocation.method(#exclusively, [action]),
             returnValue:
-                _i17.ifNotNull(
-                  _i17.dummyValueOrNull<T>(
+                _i18.ifNotNull(
+                  _i18.dummyValueOrNull<T>(
                     this,
                     Invocation.method(#exclusively, [action]),
                   ),
@@ -1719,8 +1819,8 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
               {#interceptor: interceptor},
             ),
             returnValue:
-                _i17.ifNotNull(
-                  _i17.dummyValueOrNull<T>(
+                _i18.ifNotNull(
+                  _i18.dummyValueOrNull<T>(
                     this,
                     Invocation.method(
                       #runWithInterceptor,
@@ -1817,7 +1917,7 @@ class MockFLauncherDatabase extends _i1.Mock implements _i6.FLauncherDatabase {
   String $expandVar(int? start, int? amount) =>
       (super.noSuchMethod(
             Invocation.method(#$expandVar, [start, amount]),
-            returnValue: _i17.dummyValue<String>(
+            returnValue: _i18.dummyValue<String>(
               this,
               Invocation.method(#$expandVar, [start, amount]),
             ),

@@ -25,6 +25,7 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:mockito/annotations.dart';
 
@@ -37,6 +38,7 @@ import 'package:mockito/annotations.dart';
     SettingsBackupService,
     PicsumService,
     ButtonMappingService,
+    TvInputService,
   ],
   customMocks: [
     MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),

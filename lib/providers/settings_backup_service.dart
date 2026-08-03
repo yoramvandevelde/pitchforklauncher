@@ -23,6 +23,7 @@ import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -35,13 +36,15 @@ class SettingsBackupService {
   final SettingsService _settingsService;
   final WallpaperService _wallpaperService;
   final FLauncherChannel _fLauncherChannel;
+  final TvInputService _tvInputService;
   final Future<Directory?> Function() _directoryProvider;
 
   SettingsBackupService(
     this._database,
     this._settingsService,
     this._wallpaperService,
-    this._fLauncherChannel, {
+    this._fLauncherChannel,
+    this._tvInputService, {
     Future<Directory?> Function()? directoryProvider,
   }) : _directoryProvider = directoryProvider ?? getExternalStorageDirectory;
 
@@ -140,25 +143,30 @@ class SettingsBackupService {
           .toList(),
       'hiddenApps': hiddenApps,
       'buttonMappings': buttonMappings,
+      'tvInputs': _tvInputService.inputs.map((input) => input.toJson()).toList(),
       'wallpaperBytesBase64': wallpaperBytes != null
           ? base64Encode(wallpaperBytes)
           : null,
     };
   }
 
-  /// Restores settings, button mappings and the wallpaper first, then the categories/apps/hidden
-  /// state last via the one step that's actually transactional (see `_database.transaction`
-  /// below). None of the earlier steps (SharedPreferences, the native button-mapping channel, the
-  /// wallpaper file) can be rolled back if a later step fails, so if anything is going to fail
-  /// partway through, better it's before the database (the hardest-to-manually-recreate data:
-  /// categories and app assignments) has been touched at all, leaving it in its original state
-  /// rather than a half-restored one.
+  /// Restores settings, button mappings, TV inputs and the wallpaper first, then the
+  /// categories/apps/hidden state last via the one step that's actually transactional (see
+  /// `_database.transaction` below). None of the earlier steps (SharedPreferences, the native
+  /// button-mapping channel, the wallpaper file) can be rolled back if a later step fails, so if
+  /// anything is going to fail partway through, better it's before the database (the
+  /// hardest-to-manually-recreate data: categories and app assignments) has been touched at all,
+  /// leaving it in its original state rather than a half-restored one.
   Future<void> _restoreFromBackup(Map<String, dynamic> data) async {
     final settingsMap = data['settings'] as Map<String, dynamic>;
     final categoriesJson = data['categories'] as List<dynamic>;
     final hiddenApps = (data['hiddenApps'] as List<dynamic>).cast<String>();
     final buttonMappings = (data['buttonMappings'] as List<dynamic>)
         .cast<Map<String, dynamic>>();
+    final tvInputs = ((data['tvInputs'] as List<dynamic>?) ?? [])
+        .cast<Map<String, dynamic>>()
+        .map(TvInputConfig.fromJson)
+        .toList();
     final wallpaperBytesBase64 = data['wallpaperBytesBase64'] as String?;
 
     final installedPackages = (await _database.listApplications())
@@ -197,6 +205,8 @@ class SettingsBackupService {
         );
       }
     }
+
+    await _tvInputService.replaceAll(tvInputs);
 
     Uint8List? wallpaperBytes;
     if (wallpaperBytesBase64 != null) {
