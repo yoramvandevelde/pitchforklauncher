@@ -239,8 +239,9 @@ class SettingsPanelPage extends StatelessWidget {
     builder: (context) => AlertDialog(
       title: Text("Export settings?"),
       content: Text(
-        "This will overwrite the existing pitchfork_launcher_settings_latest.json file. "
-        "If you want to keep a previous backup, rename it before exporting.",
+        "This will overwrite pitchfork_launcher_settings_latest.json, the file \"Import "
+        "settings\" reads. A separate timestamped copy of every export is also kept, but Import "
+        "can only read the latest one.",
       ),
       actions: [
         TextButton(

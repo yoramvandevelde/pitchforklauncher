@@ -25,14 +25,12 @@ import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsBackupService {
   static const _backupVersion = 1;
   static const _latestBackupFileName =
       'pitchfork_launcher_settings_latest.json';
 
-  final SharedPreferences _sharedPreferences;
   final FLauncherDatabase _database;
   final SettingsService _settingsService;
   final WallpaperService _wallpaperService;
@@ -40,7 +38,6 @@ class SettingsBackupService {
   final Future<Directory?> Function() _directoryProvider;
 
   SettingsBackupService(
-    this._sharedPreferences,
     this._database,
     this._settingsService,
     this._wallpaperService,
@@ -71,7 +68,7 @@ class SettingsBackupService {
       return file;
     } on BackupException {
       rethrow;
-    } on Exception catch (e) {
+    } catch (e) {
       throw BackupException('Export failed: $e');
     }
   }
@@ -99,7 +96,7 @@ class SettingsBackupService {
       await _restoreFromBackup(data);
     } on BackupException {
       rethrow;
-    } on Exception catch (e) {
+    } catch (e) {
       throw BackupException('Import failed: $e');
     }
   }
@@ -149,6 +146,13 @@ class SettingsBackupService {
     };
   }
 
+  /// Restores settings, button mappings and the wallpaper first, then the categories/apps/hidden
+  /// state last via the one step that's actually transactional (see `_database.transaction`
+  /// below). None of the earlier steps (SharedPreferences, the native button-mapping channel, the
+  /// wallpaper file) can be rolled back if a later step fails, so if anything is going to fail
+  /// partway through, better it's before the database (the hardest-to-manually-recreate data:
+  /// categories and app assignments) has been touched at all, leaving it in its original state
+  /// rather than a half-restored one.
   Future<void> _restoreFromBackup(Map<String, dynamic> data) async {
     final settingsMap = data['settings'] as Map<String, dynamic>;
     final categoriesJson = data['categories'] as List<dynamic>;
@@ -157,15 +161,54 @@ class SettingsBackupService {
         .cast<Map<String, dynamic>>();
     final wallpaperBytesBase64 = data['wallpaperBytesBase64'] as String?;
 
+    final installedPackages = (await _database.listApplications())
+        .map((app) => app.packageName)
+        .toSet();
+
+    await _settingsService.resetToDefaults();
+    await _settingsService.setUse24HourTimeFormat(
+      settingsMap['use24HourTimeFormat'] as bool,
+    );
+    await _settingsService.setAppHighlightAnimationEnabled(
+      settingsMap['appHighlightAnimationEnabled'] as bool,
+    );
+    final gradientUuid = settingsMap['gradientUuid'] as String?;
+    if (gradientUuid != null) {
+      await _settingsService.setGradientUuid(gradientUuid);
+    }
+    await _settingsService.setPicsumPhotoId(
+      settingsMap['picsumPhotoId'] as int?,
+    );
+    await _settingsService.setPicsumGrayscale(
+      settingsMap['picsumGrayscale'] as bool,
+    );
+    await _settingsService.setPicsumBlur(settingsMap['picsumBlur'] as int?);
+
+    final existingMappings = await _fLauncherChannel.getButtonMappings();
+    for (final mapping in existingMappings) {
+      await _fLauncherChannel.removeButtonMapping(mapping['keyCode'] as int);
+    }
+    for (final mapping in buttonMappings) {
+      final packageName = mapping['packageName'] as String;
+      if (installedPackages.contains(packageName)) {
+        await _fLauncherChannel.setButtonMapping(
+          mapping['keyCode'] as int,
+          packageName,
+        );
+      }
+    }
+
+    Uint8List? wallpaperBytes;
+    if (wallpaperBytesBase64 != null) {
+      wallpaperBytes = base64Decode(wallpaperBytesBase64);
+    }
+    await _wallpaperService.restoreWallpaper(wallpaperBytes);
+
     await _database.transaction(() async {
       await _database.delete(_database.categories).go();
       await _database
           .update(_database.apps)
           .write(const AppsCompanion(hidden: Value(false)));
-
-      final installedPackages = (await _database.listApplications())
-          .map((app) => app.packageName)
-          .toSet();
 
       final categoryIds = <int>[];
       for (final categoryJson in categoriesJson) {
@@ -218,51 +261,6 @@ class SettingsBackupService {
         }
       }
     });
-
-    await _clearSettings();
-    await _settingsService.setUse24HourTimeFormat(
-      settingsMap['use24HourTimeFormat'] as bool,
-    );
-    await _settingsService.setAppHighlightAnimationEnabled(
-      settingsMap['appHighlightAnimationEnabled'] as bool,
-    );
-    final gradientUuid = settingsMap['gradientUuid'] as String?;
-    if (gradientUuid != null) {
-      await _settingsService.setGradientUuid(gradientUuid);
-    }
-    await _settingsService.setPicsumPhotoId(
-      settingsMap['picsumPhotoId'] as int?,
-    );
-    await _settingsService.setPicsumGrayscale(
-      settingsMap['picsumGrayscale'] as bool,
-    );
-    await _settingsService.setPicsumBlur(settingsMap['picsumBlur'] as int?);
-
-    final existingMappings = await _fLauncherChannel.getButtonMappings();
-    for (final mapping in existingMappings) {
-      await _fLauncherChannel.removeButtonMapping(mapping['keyCode'] as int);
-    }
-    for (final mapping in buttonMappings) {
-      await _fLauncherChannel.setButtonMapping(
-        mapping['keyCode'] as int,
-        mapping['packageName'] as String,
-      );
-    }
-
-    Uint8List? wallpaperBytes;
-    if (wallpaperBytesBase64 != null) {
-      wallpaperBytes = base64Decode(wallpaperBytesBase64);
-    }
-    await _wallpaperService.restoreWallpaper(wallpaperBytes);
-  }
-
-  Future<void> _clearSettings() async {
-    await _sharedPreferences.remove('use_24_hour_time_format');
-    await _sharedPreferences.remove('app_highlight_animation_enabled');
-    await _sharedPreferences.remove('gradient_uuid');
-    await _sharedPreferences.remove('picsum_photo_id');
-    await _sharedPreferences.remove('picsum_grayscale');
-    await _sharedPreferences.remove('picsum_blur');
   }
 }
 

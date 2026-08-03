@@ -98,7 +98,6 @@ class FLauncherApp extends StatelessWidget {
       ),
       Provider<SettingsBackupService>(
         create: (context) => SettingsBackupService(
-          _sharedPreferences,
           _fLauncherDatabase,
           context.read<SettingsService>(),
           context.read<WallpaperService>(),

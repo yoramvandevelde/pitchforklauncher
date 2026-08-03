@@ -81,6 +81,11 @@ void main() {
           name: 'Hidden App',
           version: '1',
         ),
+        AppsCompanion.insert(
+          packageName: 'com.google.android.youtube',
+          name: 'YouTube',
+          version: '1',
+        ),
       ]);
       await database.updateApp(
         'com.hidden.app',
@@ -128,7 +133,6 @@ void main() {
       );
 
       final backupService = SettingsBackupService(
-        sharedPreferences,
         database,
         settingsService,
         wallpaperService,
@@ -253,7 +257,6 @@ void main() {
     ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
-      sharedPreferences,
       database,
       settingsService,
       wallpaperService,
@@ -283,7 +286,6 @@ void main() {
     final fLauncherChannel = MockFLauncherChannel();
 
     final backupService = SettingsBackupService(
-      sharedPreferences,
       database,
       settingsService,
       wallpaperService,
@@ -307,7 +309,6 @@ void main() {
     await file.writeAsString(jsonEncode({'version': 99}));
 
     final backupService = SettingsBackupService(
-      sharedPreferences,
       database,
       SettingsService(sharedPreferences),
       MockWallpaperService(),
@@ -378,7 +379,6 @@ void main() {
       ).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
-        sharedPreferences,
         database,
         settingsService,
         wallpaperService,
@@ -432,7 +432,6 @@ void main() {
     ).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
-      sharedPreferences,
       database,
       settingsService,
       wallpaperService,
@@ -466,7 +465,6 @@ void main() {
     await file.writeAsString('not valid json');
 
     final backupService = SettingsBackupService(
-      sharedPreferences,
       database,
       SettingsService(sharedPreferences),
       MockWallpaperService(),
@@ -480,6 +478,166 @@ void main() {
 
     await database.close();
   });
+
+  test(
+    "throws BackupException on syntactically valid JSON with the wrong shape",
+    () async {
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final database = FLauncherDatabase.inMemory();
+      final file = File(
+        '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+      );
+      // Valid JSON, but missing the 'settings' key entirely -- casting the missing value to
+      // Map<String, dynamic> throws a TypeError, not a FormatException/Exception.
+      await file.writeAsString(
+        jsonEncode({
+          'version': 1,
+          'categories': [],
+          'hiddenApps': [],
+          'buttonMappings': [],
+        }),
+      );
+
+      final backupService = SettingsBackupService(
+        database,
+        SettingsService(sharedPreferences),
+        MockWallpaperService(),
+        MockFLauncherChannel(),
+      );
+
+      expect(
+        () => backupService.importSettings(),
+        throwsA(isA<BackupException>()),
+      );
+
+      await database.close();
+    },
+  );
+
+  test(
+    "import skips button mappings pointing at apps that are not installed",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final fLauncherChannel = MockFLauncherChannel();
+
+      await database.persistApps([
+        AppsCompanion.insert(
+          packageName: 'com.app.one',
+          name: 'App One',
+          version: '1',
+        ),
+      ]);
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(fLauncherChannel.getButtonMappings()).thenAnswer(
+        (_) => Future.value([
+          {'keyCode': 1, 'label': 'One', 'packageName': 'com.app.one'},
+          {
+            'keyCode': 2,
+            'label': 'Uninstalled',
+            'packageName': 'com.not.installed',
+          },
+        ]),
+      );
+      when(
+        fLauncherChannel.removeButtonMapping(any),
+      ).thenAnswer((_) => Future.value());
+      final capturedMappings = <Map<String, dynamic>>[];
+      when(fLauncherChannel.setButtonMapping(any, any)).thenAnswer((
+        invocation,
+      ) {
+        capturedMappings.add({
+          'keyCode': invocation.positionalArguments[0] as int,
+          'packageName': invocation.positionalArguments[1] as String,
+        });
+        return Future.value();
+      });
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        fLauncherChannel,
+      );
+
+      await backupService.exportSettings();
+
+      await backupService.importSettings();
+
+      expect(capturedMappings, [
+        {'keyCode': 1, 'packageName': 'com.app.one'},
+      ]);
+
+      await database.close();
+    },
+  );
+
+  test(
+    "leaves categories untouched if a step before the database restore fails",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final fLauncherChannel = MockFLauncherChannel();
+
+      await database.persistApps([
+        AppsCompanion.insert(
+          packageName: 'com.app.one',
+          name: 'App One',
+          version: '1',
+        ),
+      ]);
+      await database.insertCategory(
+        CategoriesCompanion.insert(name: 'Original', order: 0),
+      );
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(
+        fLauncherChannel.getButtonMappings(),
+      ).thenAnswer((_) => Future.value([]));
+      when(
+        fLauncherChannel.removeButtonMapping(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        fLauncherChannel.setButtonMapping(any, any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        fLauncherChannel,
+      );
+
+      await backupService.exportSettings();
+
+      // Make the wallpaper-restore step (which runs before the database transaction) fail.
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenThrow(Exception('disk full'));
+
+      await expectLater(
+        () => backupService.importSettings(),
+        throwsA(isA<BackupException>()),
+      );
+
+      final categories = await database.select(database.categories).get();
+      expect(categories.length, 1);
+      expect(categories.first.name, 'Original');
+
+      await database.close();
+    },
+  );
 }
 
 class _MockPathProviderPlatform extends Mock

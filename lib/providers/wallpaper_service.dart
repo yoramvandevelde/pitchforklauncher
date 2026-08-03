@@ -226,12 +226,10 @@ class WallpaperService extends ChangeNotifier {
     if (bytes != null) {
       final picsumPhotoId = _settingsService.picsumPhotoId;
       if (picsumPhotoId != null) {
-        await _wallpaperFile.writeAsBytes(bytes);
-        _wallpaper = bytes;
+        await _writeWallpaperBytes(bytes);
         _currentPicsumPhotoId = picsumPhotoId;
         _picsumGrayscale = _settingsService.picsumGrayscale;
         _picsumBlur = _settingsService.picsumBlur;
-        _wallpaperVersion++;
         notifyListeners();
       } else {
         await _applyWallpaper(bytes);
