@@ -15,7 +15,7 @@ others find it useful.
   stock launcher, so things like the remote's dedicated YouTube button keep working. Comes with a
   trade off, see "Set as default launcher" below.
 - **Remote button remapping**: map any other physical remote button to launch an app of your
-  choice (Settings > Remote buttons).
+  choice (Settings > Pitchfork Settings > Remote buttons).
 - **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos). No API key
   needed.
 - **Modern toolchain**, current as of July 2026 (Flutter, AGP, Kotlin, compileSdk).
@@ -66,7 +66,7 @@ just restore-default-launcher <device-serial>
 
 Tested on a Google TV Streamer 4K only — at your own risk on other devices. If your remote sends a
 different code for the YouTube button and it doesn't come back automatically, remap it yourself in
-Settings > Remote buttons.
+Settings > Pitchfork Settings > Remote buttons.
 
 **Option B**: enable `HomeButtonAccessibilityService` in Android's Accessibility settings.
 

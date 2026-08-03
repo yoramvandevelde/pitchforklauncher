@@ -47,8 +47,8 @@ up as real default launcher is an accepted edge case, not worth building around.
   identified empirically on one specific Google TV Streamer 4K remote. Other Google TV
   devices/remotes may send a different code for that button, in which case it won't do anything
   until re-identified.~~ — non-issue: it's just the default/example mapping, seeded once; any user
-  can remap it themselves in Settings → Remote buttons regardless of what code their own remote's
-  button actually sends.
+  can remap it themselves in Settings → Pitchfork Settings → Remote buttons regardless of what
+  code their own remote's button actually sends.
 
 ~~Test the Home-button-override approach on the real Google TV Streamer 4K, not just the
 `GoogleTV_API31` emulator~~ — done: confirmed working on real hardware, including the YouTube

@@ -61,15 +61,16 @@ launcher works, but breaks the remote's dedicated YouTube button.
 Instead, `HomeButtonAccessibilityService` (an `AccessibilityService` with
 `flagRequestFilterKeyEvents`) intercepts `KEYCODE_HOME` directly and brings FLauncher to the
 front, the same technique other third-party TV launchers (e.g. Projectivy Launcher) use. This
-keeps the stock launcher intact. A "Set as Home button target" button in Settings opens Android's
-Accessibility settings so the user can enable it.
+keeps the stock launcher intact. A "Set as Home button target" button in Settings → Pitchfork
+Settings opens Android's Accessibility settings so the user can enable it.
 
 ## Configurable remote button mappings
 
-Beyond Home, any other remote button can be mapped to launch an app — Settings → "Remote
-buttons". This replaces what was originally a single hardcoded case for the remote's dedicated
-YouTube button (which doesn't send a standard Android keycode; on this Google TV Streamer remote
-it's `KEYCODE_BUTTON_3`/190, identified by temporarily logging every key event the service saw).
+Beyond Home, any other remote button can be mapped to launch an app — Settings → Pitchfork
+Settings → "Remote buttons". This replaces what was originally a single hardcoded case for the
+remote's dedicated YouTube button (which doesn't send a standard Android keycode; on this Google
+TV Streamer remote it's `KEYCODE_BUTTON_3`/190, identified by temporarily logging every key event
+the service saw).
 That mapping is now just a pre-seeded, editable/removable entry in the same generic system rather
 than a special case.
 
