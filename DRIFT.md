@@ -61,15 +61,16 @@ launcher works, but breaks the remote's dedicated YouTube button.
 Instead, `HomeButtonAccessibilityService` (an `AccessibilityService` with
 `flagRequestFilterKeyEvents`) intercepts `KEYCODE_HOME` directly and brings FLauncher to the
 front, the same technique other third-party TV launchers (e.g. Projectivy Launcher) use. This
-keeps the stock launcher intact. A "Set as Home button target" button in Settings opens Android's
-Accessibility settings so the user can enable it.
+keeps the stock launcher intact. A "Set as Home button target" button in Settings → Pitchfork
+Settings opens Android's Accessibility settings so the user can enable it.
 
 ## Configurable remote button mappings
 
-Beyond Home, any other remote button can be mapped to launch an app — Settings → "Remote
-buttons". This replaces what was originally a single hardcoded case for the remote's dedicated
-YouTube button (which doesn't send a standard Android keycode; on this Google TV Streamer remote
-it's `KEYCODE_BUTTON_3`/190, identified by temporarily logging every key event the service saw).
+Beyond Home, any other remote button can be mapped to launch an app — Settings → Pitchfork
+Settings → "Remote buttons". This replaces what was originally a single hardcoded case for the
+remote's dedicated YouTube button (which doesn't send a standard Android keycode; on this Google
+TV Streamer remote it's `KEYCODE_BUTTON_3`/190, identified by temporarily logging every key event
+the service saw).
 That mapping is now just a pre-seeded, editable/removable entry in the same generic system rather
 than a special case.
 
@@ -203,3 +204,76 @@ insert-into-new-category and delete-from-old-category in a single `_database.tra
 one `categoriesWithApps` reload/`notifyListeners()` at the end, rather than calling `addToCategory`
 then `removeFromCategory` back to back (two full reloads, and the app would transiently show up in
 both categories at once).
+
+## Rudimentary error log
+
+`AppLog` (`lib/app_log.dart`) is an in-memory, 50-entry ring buffer of timestamped log lines,
+surfaced to the user via the About dialog's "Logs" button (`AppLogDialog`). Not persisted across
+restarts and not a crash-reporting solution — it exists to help a user explain a support issue
+("my wallpaper won't load") without needing `adb logcat` on hand, since a Google TV box is rarely
+plugged into a computer for debugging. `PicsumService`/`WallpaperService` (a failed random-photo
+fetch) and `TvInputService` (a failed TV input switch) call `AppLog.instance.log(source, message)`
+on failure; every entry also goes through `debugPrint`, so the same information is still readable
+via `adb logcat` for anyone who does have a computer handy. The log text itself is plain (not
+selectable/focusable) `Text`, which Flutter's default focus-follows-scroll behavior can't drive
+with the D-pad — so `AppLogDialog` scrolls it manually via its own `Focus`/`onKeyEvent` handler
+instead, releasing focus at the scroll bounds so Up/Down can still reach the Close button once
+fully scrolled instead of the key being swallowed with nothing left to scroll.
+
+Related: Picsum wallpaper requests now fail with an explicit timeout instead of hanging on the
+default ~60s TCP timeout, so a network hiccup shows up in the log (and to the user) promptly
+instead of leaving the wallpaper picker looking frozen.
+
+## TV input switcher
+
+Holding D-pad Up for 2 seconds on the home screen (`TvInputTrigger`) opens `TvInputBar`, letting
+the user switch the physical TV to a configured input (Xbox, cable box, etc.) directly from the
+launcher, without touching the TV's own remote or input-select menu. Every key event below the
+2-second threshold is ignored and falls through to normal `DirectionalFocusIntent` handling
+untouched, so ordinary Up presses/holds behave exactly as they did before this existed; the trigger
+also opens (to a shortcut into `TvInputsPanelPage`) even with zero inputs configured yet, so the
+gesture doubles as its own discovery path. Configured via Settings → Pitchfork Settings → TV Inputs.
+
+Each TV brand/protocol is a pluggable `TvInputProfile` (`lib/providers/tv_input/tv_input_profile.dart`
+has the extension-point doc comment) rather than one hardcoded implementation. The only one shipped,
+`SamsungTizenProfile`, talks to a Samsung Tizen TV's local WebSocket remote-control API (present on
+Tizen models since ~2016) over its secure port (8002) rather than the legacy plaintext one — newer
+Tizen firmware silently rejects plaintext pairing attempts. The first connection from a given client
+name pops an "Allow access?" prompt on the TV; the pairing token it hands back afterward is
+persisted onto that input's config and resent on every later connection, and merged onto every
+other configured input pointing at the same host, so approving once on the TV covers every button
+mapped to it instead of re-prompting per input.
+
+Configured inputs (`TvInputConfig`, a small id/label/profile-id/params record) are stored as a JSON
+blob in SharedPreferences (`TvInputService`) rather than a Drift table — the same storage choice
+`SettingsService` makes for similarly small, rarely-changing state.
+
+## Settings export/import (JSON)
+
+`SettingsBackupService` exports every category and its app assignments, hidden apps, the
+SharedPreferences-backed settings, TV Input configuration, remote button mappings and the wallpaper
+to a timestamped JSON file (plus a `pitchfork_launcher_settings_latest.json` copy), with import
+restoring all of it. Reachable via Settings → Pitchfork Settings → Export/Import settings, each
+behind a confirmation dialog. Motivation: recovering after a factory reset or moving to a new
+device without reconfiguring everything from scratch (clears ADR-001's governance gate — see
+`ADR_001_Project_Scope_and_Feature_Governance.md`).
+
+Import parses and validates the *entire* backup payload up front, into a typed `_ParsedBackup`
+model, before touching anything. Restoring spans several independent stores with no shared
+rollback — SharedPreferences, the database, the native button-mapping channel, `TvInputService`,
+the wallpaper file — so discovering a malformed field partway through (a bad category enum, say)
+would otherwise leave some stores updated and others not. The one genuinely transactional step (the
+database restore: categories, app assignments, hidden state) runs last, so a failure in any of the
+earlier, non-rollback-able steps leaves that hardest-to-manually-recreate data untouched rather than
+wiped with nothing successfully restored in its place. Categories and button mappings referencing
+an app that isn't currently installed are silently skipped instead of crashing on a foreign-key
+violation or leaving a dead mapping. The category/hidden-state writes and the button-mapping restore
+route back through `AppsService.reloadFromDatabase()`/`ButtonMappingService.setMapping()` rather
+than hitting the database/native channel directly, so those services' own in-memory caches — and
+the UI reading them — reflect the restore immediately rather than only after an unrelated refresh.
+
+Known limitation, tracked in `TODO.md`: export/import use a fixed filename in the app's own
+external-files directory rather than a user-chosen location via a file picker, which limits how
+well a backup survives an app uninstall (that directory is wiped along with it) or an actual
+factory reset (which wipes the whole device regardless of where the file lived) unless it's copied
+off-device first.
