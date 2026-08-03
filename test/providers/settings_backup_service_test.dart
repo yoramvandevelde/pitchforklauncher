@@ -560,6 +560,69 @@ void main() {
   );
 
   test(
+    "leaves settings untouched when a category later in the payload has a bad enum value",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final file = File(
+        '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+      );
+
+      await settingsService.setUse24HourTimeFormat(true);
+
+      // Everything parses fine except the category's 'sort' value, which isn't a real
+      // CategorySort name. Validating the whole payload up front (rather than only once the
+      // database step gets to this category) means the settings restore below should never run.
+      await file.writeAsString(
+        jsonEncode({
+          'version': 1,
+          'settings': {
+            'use24HourTimeFormat': false,
+            'appHighlightAnimationEnabled': false,
+            'gradientUuid': null,
+            'picsumPhotoId': null,
+            'picsumGrayscale': false,
+            'picsumBlur': null,
+          },
+          'categories': [
+            {
+              'name': 'Streaming',
+              'sort': 'not_a_real_sort_value',
+              'type': 'grid',
+              'rowHeight': 110,
+              'columnsCount': 6,
+              'order': 0,
+              'apps': [],
+            },
+          ],
+          'hiddenApps': [],
+          'buttonMappings': [],
+          'tvInputs': [],
+          'wallpaperBytesBase64': null,
+        }),
+      );
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        MockWallpaperService(),
+        MockFLauncherChannel(),
+        MockTvInputService(),
+      );
+
+      await expectLater(
+        () => backupService.importSettings(),
+        throwsA(isA<BackupException>()),
+      );
+
+      expect(settingsService.use24HourTimeFormat, isTrue);
+
+      await database.close();
+    },
+  );
+
+  test(
     "import skips button mappings pointing at apps that are not installed",
     () async {
       final database = FLauncherDatabase.inMemory();

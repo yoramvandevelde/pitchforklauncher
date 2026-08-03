@@ -96,7 +96,14 @@ class SettingsBackupService {
         throw BackupException('Unsupported backup version: $version');
       }
 
-      await _restoreFromBackup(data);
+      // Parsed and validated in full -- including enum names and the wallpaper's base64 -- before
+      // any of it is applied. Restoring is spread across several stores (SharedPreferences, the
+      // native button-mapping channel, the wallpaper file, the database) with no shared rollback,
+      // so a malformed field discovered midway through restoring would leave things part restored,
+      // part not. Fail here instead, before anything has been touched.
+      final backup = _ParsedBackup.fromJson(data);
+
+      await _restoreFromBackup(backup);
     } on BackupException {
       rethrow;
     } catch (e) {
@@ -156,63 +163,45 @@ class SettingsBackupService {
   /// button-mapping channel, the wallpaper file) can be rolled back if a later step fails, so if
   /// anything is going to fail partway through, better it's before the database (the
   /// hardest-to-manually-recreate data: categories and app assignments) has been touched at all,
-  /// leaving it in its original state rather than a half-restored one.
-  Future<void> _restoreFromBackup(Map<String, dynamic> data) async {
-    final settingsMap = data['settings'] as Map<String, dynamic>;
-    final categoriesJson = data['categories'] as List<dynamic>;
-    final hiddenApps = (data['hiddenApps'] as List<dynamic>).cast<String>();
-    final buttonMappings = (data['buttonMappings'] as List<dynamic>)
-        .cast<Map<String, dynamic>>();
-    final tvInputs = ((data['tvInputs'] as List<dynamic>?) ?? [])
-        .cast<Map<String, dynamic>>()
-        .map(TvInputConfig.fromJson)
-        .toList();
-    final wallpaperBytesBase64 = data['wallpaperBytesBase64'] as String?;
-
+  /// leaving it in its original state rather than a half-restored one. [backup] has already been
+  /// fully parsed and validated by this point (see `_ParsedBackup.fromJson`), so nothing here
+  /// should throw due to malformed input -- only due to an actual write failing.
+  Future<void> _restoreFromBackup(_ParsedBackup backup) async {
     final installedPackages = (await _database.listApplications())
         .map((app) => app.packageName)
         .toSet();
 
     await _settingsService.resetToDefaults();
     await _settingsService.setUse24HourTimeFormat(
-      settingsMap['use24HourTimeFormat'] as bool,
+      backup.use24HourTimeFormat,
     );
     await _settingsService.setAppHighlightAnimationEnabled(
-      settingsMap['appHighlightAnimationEnabled'] as bool,
+      backup.appHighlightAnimationEnabled,
     );
-    final gradientUuid = settingsMap['gradientUuid'] as String?;
+    final gradientUuid = backup.gradientUuid;
     if (gradientUuid != null) {
       await _settingsService.setGradientUuid(gradientUuid);
     }
-    await _settingsService.setPicsumPhotoId(
-      settingsMap['picsumPhotoId'] as int?,
-    );
-    await _settingsService.setPicsumGrayscale(
-      settingsMap['picsumGrayscale'] as bool,
-    );
-    await _settingsService.setPicsumBlur(settingsMap['picsumBlur'] as int?);
+    await _settingsService.setPicsumPhotoId(backup.picsumPhotoId);
+    await _settingsService.setPicsumGrayscale(backup.picsumGrayscale);
+    await _settingsService.setPicsumBlur(backup.picsumBlur);
 
     final existingMappings = await _fLauncherChannel.getButtonMappings();
     for (final mapping in existingMappings) {
       await _fLauncherChannel.removeButtonMapping(mapping['keyCode'] as int);
     }
-    for (final mapping in buttonMappings) {
-      final packageName = mapping['packageName'] as String;
-      if (installedPackages.contains(packageName)) {
+    for (final mapping in backup.buttonMappings) {
+      if (installedPackages.contains(mapping.packageName)) {
         await _fLauncherChannel.setButtonMapping(
-          mapping['keyCode'] as int,
-          packageName,
+          mapping.keyCode,
+          mapping.packageName,
         );
       }
     }
 
-    await _tvInputService.replaceAll(tvInputs);
+    await _tvInputService.replaceAll(backup.tvInputs);
 
-    Uint8List? wallpaperBytes;
-    if (wallpaperBytesBase64 != null) {
-      wallpaperBytes = base64Decode(wallpaperBytesBase64);
-    }
-    await _wallpaperService.restoreWallpaper(wallpaperBytes);
+    await _wallpaperService.restoreWallpaper(backup.wallpaperBytes);
 
     await _database.transaction(() async {
       await _database.delete(_database.categories).go();
@@ -221,30 +210,25 @@ class SettingsBackupService {
           .write(const AppsCompanion(hidden: Value(false)));
 
       final categoryIds = <int>[];
-      for (final categoryJson in categoriesJson) {
+      for (final category in backup.categories) {
         final inserted = await _database
             .into(_database.categories)
             .insertReturning(
               CategoriesCompanion.insert(
-                name: categoryJson['name'] as String,
-                sort: Value(
-                  CategorySort.values.byName(categoryJson['sort'] as String),
-                ),
-                type: Value(
-                  CategoryType.values.byName(categoryJson['type'] as String),
-                ),
-                rowHeight: Value(categoryJson['rowHeight'] as int),
-                columnsCount: Value(categoryJson['columnsCount'] as int),
-                order: categoryJson['order'] as int,
+                name: category.name,
+                sort: Value(category.sort),
+                type: Value(category.type),
+                rowHeight: Value(category.rowHeight),
+                columnsCount: Value(category.columnsCount),
+                order: category.order,
               ),
             );
         categoryIds.add(inserted.id);
       }
 
-      for (int i = 0; i < categoriesJson.length; i++) {
+      for (int i = 0; i < backup.categories.length; i++) {
         final categoryId = categoryIds[i];
-        final appPackageNames = (categoriesJson[i]['apps'] as List<dynamic>)
-            .cast<String>()
+        final appPackageNames = backup.categories[i].apps
             .where(installedPackages.contains)
             .toList();
         final assignments = <AppsCategoriesCompanion>[];
@@ -262,7 +246,7 @@ class SettingsBackupService {
         }
       }
 
-      for (final packageName in hiddenApps) {
+      for (final packageName in backup.hiddenApps) {
         if (installedPackages.contains(packageName)) {
           await _database.updateApp(
             packageName,
@@ -272,6 +256,103 @@ class SettingsBackupService {
       }
     });
   }
+}
+
+/// A backup JSON payload, fully parsed and validated (including enum names and the wallpaper's
+/// base64) up front so `_restoreFromBackup` can restore it without any further parsing that could
+/// throw partway through.
+class _ParsedBackup {
+  final bool use24HourTimeFormat;
+  final bool appHighlightAnimationEnabled;
+  final String? gradientUuid;
+  final int? picsumPhotoId;
+  final bool picsumGrayscale;
+  final int? picsumBlur;
+  final List<_ParsedCategory> categories;
+  final List<String> hiddenApps;
+  final List<({int keyCode, String packageName})> buttonMappings;
+  final List<TvInputConfig> tvInputs;
+  final Uint8List? wallpaperBytes;
+
+  _ParsedBackup({
+    required this.use24HourTimeFormat,
+    required this.appHighlightAnimationEnabled,
+    required this.gradientUuid,
+    required this.picsumPhotoId,
+    required this.picsumGrayscale,
+    required this.picsumBlur,
+    required this.categories,
+    required this.hiddenApps,
+    required this.buttonMappings,
+    required this.tvInputs,
+    required this.wallpaperBytes,
+  });
+
+  factory _ParsedBackup.fromJson(Map<String, dynamic> data) {
+    final settingsMap = data['settings'] as Map<String, dynamic>;
+    final wallpaperBytesBase64 = data['wallpaperBytesBase64'] as String?;
+
+    return _ParsedBackup(
+      use24HourTimeFormat: settingsMap['use24HourTimeFormat'] as bool,
+      appHighlightAnimationEnabled:
+          settingsMap['appHighlightAnimationEnabled'] as bool,
+      gradientUuid: settingsMap['gradientUuid'] as String?,
+      picsumPhotoId: settingsMap['picsumPhotoId'] as int?,
+      picsumGrayscale: settingsMap['picsumGrayscale'] as bool,
+      picsumBlur: settingsMap['picsumBlur'] as int?,
+      categories: (data['categories'] as List<dynamic>)
+          .map((json) => _ParsedCategory.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      hiddenApps: (data['hiddenApps'] as List<dynamic>).cast<String>(),
+      buttonMappings: (data['buttonMappings'] as List<dynamic>)
+          .cast<Map<String, dynamic>>()
+          .map(
+            (json) => (
+              keyCode: json['keyCode'] as int,
+              packageName: json['packageName'] as String,
+            ),
+          )
+          .toList(),
+      tvInputs: ((data['tvInputs'] as List<dynamic>?) ?? [])
+          .cast<Map<String, dynamic>>()
+          .map(TvInputConfig.fromJson)
+          .toList(),
+      wallpaperBytes: wallpaperBytesBase64 != null
+          ? base64Decode(wallpaperBytesBase64)
+          : null,
+    );
+  }
+}
+
+class _ParsedCategory {
+  final String name;
+  final CategorySort sort;
+  final CategoryType type;
+  final int rowHeight;
+  final int columnsCount;
+  final int order;
+  final List<String> apps;
+
+  _ParsedCategory({
+    required this.name,
+    required this.sort,
+    required this.type,
+    required this.rowHeight,
+    required this.columnsCount,
+    required this.order,
+    required this.apps,
+  });
+
+  factory _ParsedCategory.fromJson(Map<String, dynamic> json) =>
+      _ParsedCategory(
+        name: json['name'] as String,
+        sort: CategorySort.values.byName(json['sort'] as String),
+        type: CategoryType.values.byName(json['type'] as String),
+        rowHeight: json['rowHeight'] as int,
+        columnsCount: json['columnsCount'] as int,
+        order: json['order'] as int,
+        apps: (json['apps'] as List<dynamic>).cast<String>(),
+      );
 }
 
 class BackupException implements Exception {
