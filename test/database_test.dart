@@ -211,6 +211,32 @@ void main() {
     expect(categoriesWithApps[0].applications[1].name, "FLauncher");
   });
 
+  test("listCategoriesWithAllApps includes hidden apps", () async {
+    await database.customInsert("INSERT INTO apps(package_name, name, version, banner, icon)"
+        " VALUES('io.sifft.pitchforklauncher', 'FLauncher', '1.0.0', null, null);");
+    await database.customInsert("INSERT INTO apps(package_name, name, version, banner, icon)"
+        " VALUES('io.sifft.pitchforklauncher.2', 'FLauncher 2', '1.0.0', null, null);");
+    await database.customInsert("INSERT INTO apps(package_name, name, version, banner, icon, hidden)"
+        " VALUES('io.sifft.pitchforklauncher.3', 'FLauncher 3', '1.0.0', null, null, true);");
+    final categoryId = await database.customInsert("INSERT INTO categories(name, 'order') VALUES('Test', 2);");
+    await database.customInsert("INSERT INTO apps_categories(category_id, app_package_name, 'order')"
+        " VALUES($categoryId, 'io.sifft.pitchforklauncher', 1);");
+    await database.customInsert("INSERT INTO apps_categories(category_id, app_package_name, 'order')"
+        " VALUES($categoryId, 'io.sifft.pitchforklauncher.2', 0);");
+    await database.customInsert("INSERT INTO apps_categories(category_id, app_package_name, 'order')"
+        " VALUES($categoryId, 'io.sifft.pitchforklauncher.3', 2);");
+
+    final categoriesWithApps = await database.listCategoriesWithAllApps();
+
+    expect(categoriesWithApps.length, 1);
+    expect(categoriesWithApps[0].category.name, "Test");
+    expect(categoriesWithApps[0].applications.length, 3);
+    expect(categoriesWithApps[0].applications[0].packageName, "io.sifft.pitchforklauncher.2");
+    expect(categoriesWithApps[0].applications[1].packageName, "io.sifft.pitchforklauncher");
+    expect(categoriesWithApps[0].applications[2].packageName, "io.sifft.pitchforklauncher.3");
+    expect(categoriesWithApps[0].applications[2].hidden, isTrue);
+  });
+
   test("nextAppCategoryOrder", () async {
     await database.customInsert("INSERT INTO apps(package_name, name, version, banner, icon)"
         " VALUES('io.sifft.pitchforklauncher', 'FLauncher', '1.0.0', null, null);");

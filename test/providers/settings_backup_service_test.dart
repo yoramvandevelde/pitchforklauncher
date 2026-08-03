@@ -499,6 +499,84 @@ void main() {
     await database.close();
   });
 
+  test(
+    "a hidden app's category membership survives an export/import roundtrip",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final fLauncherChannel = MockFLauncherChannel();
+      final tvInputService = MockTvInputService();
+
+      await database.persistApps([
+        AppsCompanion.insert(
+          packageName: 'com.hidden.app',
+          name: 'Hidden App',
+          version: '1',
+        ),
+      ]);
+      await database.updateApp(
+        'com.hidden.app',
+        const AppsCompanion(hidden: Value(true)),
+      );
+      await database.insertCategory(
+        CategoriesCompanion.insert(name: 'Streaming', order: 0),
+      );
+      final category = await (database.select(
+        database.categories,
+      )..where((c) => c.name.equals('Streaming'))).getSingle();
+      await database.insertAppsCategories([
+        AppsCategoriesCompanion.insert(
+          categoryId: category.id,
+          appPackageName: 'com.hidden.app',
+          order: 0,
+        ),
+      ]);
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(
+        fLauncherChannel.getButtonMappings(),
+      ).thenAnswer((_) => Future.value([]));
+      when(
+        fLauncherChannel.removeButtonMapping(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        fLauncherChannel.setButtonMapping(any, any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        fLauncherChannel,
+        tvInputService,
+      );
+
+      await backupService.exportSettings();
+      await backupService.importSettings();
+
+      // Unhide it after the restore -- it should still be in its category, not orphaned.
+      await database.updateApp(
+        'com.hidden.app',
+        const AppsCompanion(hidden: Value(false)),
+      );
+
+      final assignments = await database.select(database.appsCategories).get();
+      expect(assignments.length, 1);
+      expect(assignments.first.appPackageName, 'com.hidden.app');
+
+      await database.close();
+    },
+  );
+
   test("throws BackupException on corrupt JSON", () async {
     final sharedPreferences = await SharedPreferences.getInstance();
     final database = FLauncherDatabase.inMemory();

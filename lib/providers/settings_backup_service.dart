@@ -112,7 +112,11 @@ class SettingsBackupService {
   }
 
   Future<Map<String, dynamic>> _buildBackupJson() async {
-    final categoriesWithApps = await _database.listCategoriesWithVisibleApps();
+    // Not listCategoriesWithVisibleApps(): a hidden app keeps its category membership row (hiding
+    // only flips the app's own `hidden` flag), so using the visible-only query here would silently
+    // drop that membership from the backup -- unhiding the app after a restore would then leave it
+    // uncategorized even though it never actually lost its category.
+    final categoriesWithApps = await _database.listCategoriesWithAllApps();
     final allApps = await _database.listApplications();
     final hiddenApps = allApps
         .where((app) => app.hidden)

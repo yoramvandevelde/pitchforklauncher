@@ -206,6 +206,37 @@ class FLauncherDatabase extends _$FLauncherDatabase {
     return categoriesToApps.entries.map((entry) => CategoryWithApps(entry.key, entry.value)).toList();
   }
 
+  /// Like [listCategoriesWithVisibleApps], but includes hidden apps too. Hiding an app only flips
+  /// its `hidden` flag -- its category membership row is untouched -- so anything that needs the
+  /// full picture of what's assigned to a category (e.g. the settings backup) should use this
+  /// instead, or it'll silently drop hidden apps' category membership.
+  Future<List<CategoryWithApps>> listCategoriesWithAllApps() async {
+    final query = select(categories).join([
+      leftOuterJoin(appsCategories, appsCategories.categoryId.equalsExp(categories.id)),
+      leftOuterJoin(apps, apps.packageName.equalsExp(appsCategories.appPackageName)),
+    ]);
+    query.orderBy([
+      OrderingTerm.asc(categories.order),
+      OrderingTerm.asc(
+        categories.sort.caseMatch(
+          when: {Constant(0): appsCategories.order, Constant(1): apps.name.lower()},
+        ),
+      ),
+    ]);
+
+    final result = await query.get();
+    final categoriesToApps = <Category, List<App>>{};
+    for (final row in result) {
+      final category = row.readTable(categories);
+      final app = row.readTableOrNull(apps);
+      final categoryToApps = categoriesToApps.putIfAbsent(category, () => []);
+      if (app != null) {
+        categoryToApps.add(app);
+      }
+    }
+    return categoriesToApps.entries.map((entry) => CategoryWithApps(entry.key, entry.value)).toList();
+  }
+
   /// Forces the (possibly still-unopened) connection open via a trivial no-op query, then returns
   /// whether this database file was freshly created. [AppsService] gets this for free via its own
   /// early transaction() call; [WallpaperService] needs its own forcing call since there's no
