@@ -219,9 +219,23 @@ class WallpaperService extends ChangeNotifier {
   /// Restores a wallpaper from exported [bytes]. If [bytes] is null the wallpaper file is removed
   /// and the current gradient (as resolved from [SettingsService.gradientUuid]) is applied instead.
   /// Used by the settings backup/import flow.
+  ///
+  /// When [SettingsService.picsumPhotoId] is set, the bytes are assumed to come from a Picsum photo
+  /// and the Picsum-specific state is preserved instead of being reset.
   Future<void> restoreWallpaper(Uint8List? bytes) async {
     if (bytes != null) {
-      await _applyWallpaper(bytes);
+      final picsumPhotoId = _settingsService.picsumPhotoId;
+      if (picsumPhotoId != null) {
+        await _wallpaperFile.writeAsBytes(bytes);
+        _wallpaper = bytes;
+        _currentPicsumPhotoId = picsumPhotoId;
+        _picsumGrayscale = _settingsService.picsumGrayscale;
+        _picsumBlur = _settingsService.picsumBlur;
+        _wallpaperVersion++;
+        notifyListeners();
+      } else {
+        await _applyWallpaper(bytes);
+      }
     } else {
       await setGradient(gradient);
     }

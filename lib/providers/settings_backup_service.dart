@@ -49,47 +49,59 @@ class SettingsBackupService {
   }) : _directoryProvider = directoryProvider ?? getExternalStorageDirectory;
 
   Future<File> exportSettings() async {
-    final data = await _buildBackupJson();
-    final directory = await _directoryProvider();
-    if (directory == null) {
-      throw BackupException('External storage is not available');
+    try {
+      final data = await _buildBackupJson();
+      final directory = await _directoryProvider();
+      if (directory == null) {
+        throw BackupException('External storage is not available');
+      }
+
+      final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(
+        ':',
+        '-',
+      );
+      final fileName = 'pitchfork_launcher_settings_$timestamp.json';
+      final file = File('${directory.path}/$fileName');
+      final latestFile = File('${directory.path}/$_latestBackupFileName');
+
+      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+      await file.writeAsString(jsonString);
+      await latestFile.writeAsString(jsonString);
+
+      return file;
+    } on BackupException {
+      rethrow;
+    } on Exception catch (e) {
+      throw BackupException('Export failed: $e');
     }
-
-    final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(
-      ':',
-      '-',
-    );
-    final fileName = 'pitchfork_launcher_settings_$timestamp.json';
-    final file = File('${directory.path}/$fileName');
-    final latestFile = File('${directory.path}/$_latestBackupFileName');
-
-    final jsonString = const JsonEncoder.withIndent('  ').convert(data);
-    await file.writeAsString(jsonString);
-    await latestFile.writeAsString(jsonString);
-
-    return file;
   }
 
   Future<void> importSettings() async {
-    final directory = await _directoryProvider();
-    if (directory == null) {
-      throw BackupException('External storage is not available');
+    try {
+      final directory = await _directoryProvider();
+      if (directory == null) {
+        throw BackupException('External storage is not available');
+      }
+
+      final file = File('${directory.path}/$_latestBackupFileName');
+      if (!await file.exists()) {
+        throw BackupException('Backup file not found: ${file.path}');
+      }
+
+      final jsonString = await file.readAsString();
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      final version = data['version'] as int?;
+      if (version != _backupVersion) {
+        throw BackupException('Unsupported backup version: $version');
+      }
+
+      await _restoreFromBackup(data);
+    } on BackupException {
+      rethrow;
+    } on Exception catch (e) {
+      throw BackupException('Import failed: $e');
     }
-
-    final file = File('${directory.path}/$_latestBackupFileName');
-    if (!await file.exists()) {
-      throw BackupException('Backup file not found: ${file.path}');
-    }
-
-    final jsonString = await file.readAsString();
-    final data = jsonDecode(jsonString) as Map<String, dynamic>;
-
-    final version = data['version'] as int?;
-    if (version != _backupVersion) {
-      throw BackupException('Unsupported backup version: $version');
-    }
-
-    await _restoreFromBackup(data);
   }
 
   Future<Map<String, dynamic>> _buildBackupJson() async {
@@ -147,6 +159,13 @@ class SettingsBackupService {
 
     await _database.transaction(() async {
       await _database.delete(_database.categories).go();
+      await _database
+          .update(_database.apps)
+          .write(const AppsCompanion(hidden: Value(false)));
+
+      final installedPackages = (await _database.listApplications())
+          .map((app) => app.packageName)
+          .toSet();
 
       final categoryIds = <int>[];
       for (final categoryJson in categoriesJson) {
@@ -172,7 +191,9 @@ class SettingsBackupService {
       for (int i = 0; i < categoriesJson.length; i++) {
         final categoryId = categoryIds[i];
         final appPackageNames = (categoriesJson[i]['apps'] as List<dynamic>)
-            .cast<String>();
+            .cast<String>()
+            .where(installedPackages.contains)
+            .toList();
         final assignments = <AppsCategoriesCompanion>[];
         for (int j = 0; j < appPackageNames.length; j++) {
           assignments.add(
@@ -189,10 +210,12 @@ class SettingsBackupService {
       }
 
       for (final packageName in hiddenApps) {
-        await _database.updateApp(
-          packageName,
-          const AppsCompanion(hidden: Value(true)),
-        );
+        if (installedPackages.contains(packageName)) {
+          await _database.updateApp(
+            packageName,
+            const AppsCompanion(hidden: Value(true)),
+          );
+        }
       }
     });
 

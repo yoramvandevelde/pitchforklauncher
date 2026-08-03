@@ -321,6 +321,165 @@ void main() {
 
     await database.close();
   });
+
+  test(
+    "import skips apps that are not installed instead of crashing",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final fLauncherChannel = MockFLauncherChannel();
+
+      await database.persistApps([
+        AppsCompanion.insert(
+          packageName: 'com.app.one',
+          name: 'App One',
+          version: '1',
+        ),
+        AppsCompanion.insert(
+          packageName: 'com.app.two',
+          name: 'App Two',
+          version: '1',
+        ),
+      ]);
+
+      await database.insertCategory(
+        CategoriesCompanion.insert(name: 'Streaming', order: 0),
+      );
+      final category = await (database.select(
+        database.categories,
+      )..where((c) => c.name.equals('Streaming'))).getSingle();
+      await database.insertAppsCategories([
+        AppsCategoriesCompanion.insert(
+          categoryId: category.id,
+          appPackageName: 'com.app.one',
+          order: 0,
+        ),
+        AppsCategoriesCompanion.insert(
+          categoryId: category.id,
+          appPackageName: 'com.app.two',
+          order: 1,
+        ),
+      ]);
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(
+        fLauncherChannel.getButtonMappings(),
+      ).thenAnswer((_) => Future.value([]));
+      when(
+        fLauncherChannel.removeButtonMapping(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        fLauncherChannel.setButtonMapping(any, any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+
+      final backupService = SettingsBackupService(
+        sharedPreferences,
+        database,
+        settingsService,
+        wallpaperService,
+        fLauncherChannel,
+      );
+
+      await backupService.exportSettings();
+
+      // Simulate an app being uninstalled before import.
+      await database.deleteApps(['com.app.two']);
+
+      await backupService.importSettings();
+
+      final restoredAssignments = await database
+          .select(database.appsCategories)
+          .get();
+      expect(restoredAssignments.length, 1);
+      expect(restoredAssignments.first.appPackageName, 'com.app.one');
+
+      await database.close();
+    },
+  );
+
+  test("import resets hidden apps before restoring hidden state", () async {
+    final database = FLauncherDatabase.inMemory();
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+    final wallpaperService = MockWallpaperService();
+    final fLauncherChannel = MockFLauncherChannel();
+
+    await database.persistApps([
+      AppsCompanion.insert(
+        packageName: 'com.app.one',
+        name: 'App One',
+        version: '1',
+      ),
+    ]);
+
+    when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(
+      fLauncherChannel.getButtonMappings(),
+    ).thenAnswer((_) => Future.value([]));
+    when(
+      fLauncherChannel.removeButtonMapping(any),
+    ).thenAnswer((_) => Future.value());
+    when(
+      fLauncherChannel.setButtonMapping(any, any),
+    ).thenAnswer((_) => Future.value());
+    when(
+      wallpaperService.restoreWallpaper(any),
+    ).thenAnswer((_) => Future.value());
+
+    final backupService = SettingsBackupService(
+      sharedPreferences,
+      database,
+      settingsService,
+      wallpaperService,
+      fLauncherChannel,
+    );
+
+    await backupService.exportSettings();
+
+    // Hide an app after the backup was made.
+    await database.updateApp(
+      'com.app.one',
+      const AppsCompanion(hidden: Value(true)),
+    );
+
+    await backupService.importSettings();
+
+    final restoredApp = await (database.select(
+      database.apps,
+    )..where((a) => a.packageName.equals('com.app.one'))).getSingle();
+    expect(restoredApp.hidden, isFalse);
+
+    await database.close();
+  });
+
+  test("throws BackupException on corrupt JSON", () async {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final database = FLauncherDatabase.inMemory();
+    final file = File(
+      '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+    );
+    await file.writeAsString('not valid json');
+
+    final backupService = SettingsBackupService(
+      sharedPreferences,
+      database,
+      SettingsService(sharedPreferences),
+      MockWallpaperService(),
+      MockFLauncherChannel(),
+    );
+
+    expect(
+      () => backupService.importSettings(),
+      throwsA(isA<BackupException>()),
+    );
+
+    await database.close();
+  });
 }
 
 class _MockPathProviderPlatform extends Mock
