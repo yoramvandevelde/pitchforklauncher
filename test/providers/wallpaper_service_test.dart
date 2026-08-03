@@ -329,6 +329,14 @@ void main() {
           await File("./wallpaper").readAsBytes(),
           wallpaperService.wallpaperBytes,
         );
+        // Not just non-empty: byte-for-byte identical to the actual bundled asset. A regression
+        // to `.buffer.asUint8List()` (which ignores a ByteData's offsetInBytes/lengthInBytes and
+        // can return a view into a different/larger buffer instead of the loaded asset's own
+        // bytes) would still pass the two checks above while silently seeding garbage.
+        expect(
+          wallpaperService.wallpaperBytes,
+          await File("assets/default_wallpaper.jpg").readAsBytes(),
+        );
       },
     );
 
