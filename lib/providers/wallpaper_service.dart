@@ -98,8 +98,13 @@ class WallpaperService extends ChangeNotifier {
     }
   }
 
+  // Uint8List.sublistView(), not `.buffer.asUint8List()`: a ByteData isn't guaranteed to span its
+  // whole underlying buffer from offset 0 (rootBundle.load()'s platform-channel ByteData can be a
+  // view into a larger/shared buffer, especially for a multi-MB asset like this one), and
+  // `.buffer.asUint8List()` ignores offsetInBytes/lengthInBytes and reads the raw buffer from its
+  // start -- silently returning garbage instead of the actual asset bytes.
   Future<Uint8List> _loadDefaultWallpaperBytes() async =>
-      (await rootBundle.load(_defaultWallpaperAsset)).buffer.asUint8List();
+      Uint8List.sublistView(await rootBundle.load(_defaultWallpaperAsset));
 
   Future<void> _writeWallpaperBytes(Uint8List bytes) async {
     await _wallpaperFile.writeAsBytes(bytes);
