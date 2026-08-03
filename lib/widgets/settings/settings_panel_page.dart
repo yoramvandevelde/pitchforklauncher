@@ -229,6 +229,10 @@ class SettingsPanelPage extends StatelessWidget {
   }
 
   Future<void> _importSettings(BuildContext context) async {
+    final confirmed = await _showImportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
     try {
       await context.read<SettingsBackupService>().importSettings();
       if (context.mounted) {
@@ -244,6 +248,31 @@ class SettingsPanelPage extends StatelessWidget {
       }
     }
   }
+
+  Future<bool?> _showImportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Import settings?"),
+      content: Text(
+        "This will replace all current settings, categories, app assignments, "
+        "remote button mappings and wallpaper with the contents of "
+        "pitchfork_launcher_settings_latest.json.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Import"),
+        ),
+      ],
+    ),
+  );
 
   Future<void> _showResultDialog(
     BuildContext context,
