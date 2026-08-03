@@ -223,3 +223,21 @@ so at least one layer is always fully opaque and the background never shows thro
   copy in external app storage, with import replacing all categories, app assignments, hidden apps,
   SharedPreferences settings, button mappings, and wallpaper bytes. Added "Export settings" / "Import
   settings" buttons to `SettingsPanelPage` and a `restoreWallpaper` method to `WallpaperService`.
+
+**Settings export/import: use a file picker instead of a fixed app-private path.** Current
+  implementation (`SettingsBackupService`, see above) always reads/writes a fixed filename
+  (`pitchfork_launcher_settings_latest.json`) under `getExternalStorageDirectory()` -- the app's
+  own external-files directory, not a shared/public location. That directory is deleted when the
+  app is uninstalled (same lifecycle as internal storage), which undercuts the feature's stated
+  "recovery after a factory reset or moving to a new device" purpose: the backup only survives if
+  the user manually copies it elsewhere (e.g. via adb) before uninstalling/resetting. Considered
+  good enough for this version; picked up as a follow-up: use a Storage Access Framework file
+  picker (e.g. `file_picker` or `saf_util`) so export/import target a location and filename the
+  user actually chooses, instead of a hardcoded path.
+
+**Restructure the Settings panel menu.** `SettingsPanelPage` has grown a lot (categories,
+  applications, button mappings, wallpaper, time format, animations, about, and now export/import)
+  and is starting to feel like a flat, ever-growing list of buttons rather than a coherent menu.
+  Keeping it clean and legible needs ongoing attention as more settings get added, rather than
+  just tacking each new item onto the end -- likely candidates: grouping related entries under
+  headers/sections, or splitting some off into their own sub-pages.
