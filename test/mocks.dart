@@ -23,20 +23,27 @@ import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:mockito/annotations.dart';
 
-@GenerateMocks([
-  FLauncherChannel,
-  WallpaperService,
-  AppsService,
-  SettingsService,
-  PicsumService,
-  ButtonMappingService,
-], customMocks: [
-  MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
-])
+@GenerateMocks(
+  [
+    FLauncherChannel,
+    WallpaperService,
+    AppsService,
+    SettingsService,
+    SettingsBackupService,
+    PicsumService,
+    ButtonMappingService,
+    TvInputService,
+  ],
+  customMocks: [
+    MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
+  ],
+)
 void main() {}
 
 App fakeApp({
@@ -47,16 +54,15 @@ App fakeApp({
   Uint8List? icon,
   bool hidden = false,
   bool sideloaded = false,
-}) =>
-    App(
-      packageName: packageName,
-      name: name,
-      version: version,
-      banner: banner,
-      icon: icon,
-      hidden: hidden,
-      sideloaded: sideloaded,
-    );
+}) => App(
+  packageName: packageName,
+  name: name,
+  version: version,
+  banner: banner,
+  icon: icon,
+  hidden: hidden,
+  sideloaded: sideloaded,
+);
 
 int _nextFakeCategoryId = 1;
 
@@ -68,13 +74,12 @@ Category fakeCategory({
   CategoryType type = CategoryType.grid,
   int rowHeight = 110,
   int columnsCount = 6,
-}) =>
-    Category(
-      id: id ?? _nextFakeCategoryId++,
-      name: name,
-      sort: sort,
-      type: type,
-      rowHeight: rowHeight,
-      columnsCount: columnsCount,
-      order: order,
-    );
+}) => Category(
+  id: id ?? _nextFakeCategoryId++,
+  name: name,
+  sort: sort,
+  type: type,
+  rowHeight: rowHeight,
+  columnsCount: columnsCount,
+  order: order,
+);

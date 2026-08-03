@@ -81,4 +81,17 @@ class SettingsService extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Removes every setting this service manages, reverting all getters to their defaults.
+  /// Used by the settings backup/import flow before restoring a backup, so the key names this
+  /// service owns don't need to be duplicated elsewhere.
+  Future<void> resetToDefaults() async {
+    await _sharedPreferences.remove(_use24HourTimeFormatKey);
+    await _sharedPreferences.remove(_appHighlightAnimationEnabledKey);
+    await _sharedPreferences.remove(_gradientUuidKey);
+    await _sharedPreferences.remove(_picsumPhotoIdKey);
+    await _sharedPreferences.remove(_picsumGrayscaleKey);
+    await _sharedPreferences.remove(_picsumBlurKey);
+    notifyListeners();
+  }
 }

@@ -67,11 +67,12 @@ class WallpaperService extends ChangeNotifier {
   bool get picsumBlurEnabled => _picsumBlur != null;
 
   FLauncherGradient get gradient => FLauncherGradients.all.firstWhere(
-        (gradient) => gradient.uuid == _settingsService.gradientUuid,
-        orElse: () => FLauncherGradients.greatWhale,
-      );
+    (gradient) => gradient.uuid == _settingsService.gradientUuid,
+    orElse: () => FLauncherGradients.greatWhale,
+  );
 
-  set settingsService(SettingsService settingsService) => _settingsService = settingsService;
+  set settingsService(SettingsService settingsService) =>
+      _settingsService = settingsService;
 
   WallpaperService(
     this._imagePicker,
@@ -130,7 +131,9 @@ class WallpaperService extends ChangeNotifier {
     if (!await _fLauncherChannel.checkForGetContentAvailability()) {
       throw NoFileExplorerException();
     }
-    final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       await _applyWallpaper(await pickedFile.readAsBytes());
     }
@@ -171,7 +174,11 @@ class WallpaperService extends ChangeNotifier {
     final requestId = ++_picsumRequestId;
     final Uint8List bytes;
     try {
-      bytes = await _picsumService.photoById(id, grayscale: grayscale, blur: blur);
+      bytes = await _picsumService.photoById(
+        id,
+        grayscale: grayscale,
+        blur: blur,
+      );
     } catch (e, st) {
       AppLog.instance.log("Picsum", "$e\n$st");
       rethrow;
@@ -207,6 +214,29 @@ class WallpaperService extends ChangeNotifier {
     await _settingsService.setPicsumPhotoId(null);
     await _settingsService.setPicsumGrayscale(false);
     await _settingsService.setPicsumBlur(null);
+  }
+
+  /// Restores a wallpaper from exported [bytes]. If [bytes] is null the wallpaper file is removed
+  /// and the current gradient (as resolved from [SettingsService.gradientUuid]) is applied instead.
+  /// Used by the settings backup/import flow.
+  ///
+  /// When [SettingsService.picsumPhotoId] is set, the bytes are assumed to come from a Picsum photo
+  /// and the Picsum-specific state is preserved instead of being reset.
+  Future<void> restoreWallpaper(Uint8List? bytes) async {
+    if (bytes != null) {
+      final picsumPhotoId = _settingsService.picsumPhotoId;
+      if (picsumPhotoId != null) {
+        await _writeWallpaperBytes(bytes);
+        _currentPicsumPhotoId = picsumPhotoId;
+        _picsumGrayscale = _settingsService.picsumGrayscale;
+        _picsumBlur = _settingsService.picsumBlur;
+        notifyListeners();
+      } else {
+        await _applyWallpaper(bytes);
+      }
+    } else {
+      await setGradient(gradient);
+    }
   }
 }
 

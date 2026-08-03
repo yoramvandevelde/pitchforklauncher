@@ -90,4 +90,25 @@ void main() {
       expect(use24HourTimeFormat, isFalse);
     });
   });
+
+  test("resetToDefaults removes every setting this service manages", () async {
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+
+    await settingsService.setUse24HourTimeFormat(false);
+    await settingsService.setAppHighlightAnimationEnabled(false);
+    await settingsService.setGradientUuid("4730aa2d-1a90-49a6-9942-ffe82f470e26");
+    await settingsService.setPicsumPhotoId(42);
+    await settingsService.setPicsumGrayscale(true);
+    await settingsService.setPicsumBlur(4);
+
+    await settingsService.resetToDefaults();
+
+    expect(settingsService.use24HourTimeFormat, isTrue);
+    expect(settingsService.appHighlightAnimationEnabled, isTrue);
+    expect(settingsService.gradientUuid, isNull);
+    expect(settingsService.picsumPhotoId, isNull);
+    expect(settingsService.picsumGrayscale, isFalse);
+    expect(settingsService.picsumBlur, isNull);
+  });
 }

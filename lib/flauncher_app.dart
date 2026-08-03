@@ -21,6 +21,7 @@ import 'package:flauncher/actions.dart';
 import 'package:flauncher/picsum_service.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/ticker_model.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
@@ -95,6 +96,16 @@ class FLauncherApp extends StatelessWidget {
         update: (_, settingsService, wallpaperService) =>
             wallpaperService!..settingsService = settingsService,
       ),
+      Provider<SettingsBackupService>(
+        create: (context) => SettingsBackupService(
+          _fLauncherDatabase,
+          context.read<SettingsService>(),
+          context.read<WallpaperService>(),
+          context.read<TvInputService>(),
+          context.read<AppsService>(),
+          context.read<ButtonMappingService>(),
+        ),
+      ),
       Provider<TickerModel>(create: (context) => TickerModel(null)),
     ],
     child: MaterialApp(
@@ -146,10 +157,14 @@ class FLauncherApp extends StatelessWidget {
           // Material 3's default Switch fills the whole track with the primary color when
           // on, which swallows the thumb into a solid pill. Keep the thumb visibly distinct.
           thumbColor: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected) ? Colors.white : _swatch[100],
+            (states) => states.contains(WidgetState.selected)
+                ? Colors.white
+                : _swatch[100],
           ),
           trackColor: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected) ? _swatch[200] : Colors.white24,
+            (states) => states.contains(WidgetState.selected)
+                ? _swatch[200]
+                : Colors.white24,
           ),
           trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
         ),

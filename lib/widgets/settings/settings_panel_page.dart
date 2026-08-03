@@ -18,6 +18,7 @@
  */
 
 import 'package:flauncher/providers/apps_service.dart';
+import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
 import 'package:flauncher/widgets/settings/applications_panel_page.dart';
@@ -182,8 +183,142 @@ class SettingsPanelPage extends StatelessWidget {
               ),
             ),
           ),
+          Divider(),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.upload_outlined),
+                Container(width: 8),
+                Text(
+                  "Export settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _exportSettings(context),
+          ),
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.download_outlined),
+                Container(width: 8),
+                Text(
+                  "Import settings",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () => _importSettings(context),
+          ),
         ],
       ),
+    ),
+  );
+
+  Future<void> _exportSettings(BuildContext context) async {
+    final confirmed = await _showExportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    try {
+      final file = await context.read<SettingsBackupService>().exportSettings();
+      if (context.mounted) {
+        await _showResultDialog(context, "Settings exported", file.path);
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Export failed", e.toString());
+      }
+    }
+  }
+
+  Future<bool?> _showExportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Export settings?"),
+      content: Text(
+        "This will overwrite pitchfork_launcher_settings_latest.json, the file \"Import "
+        "settings\" reads. A separate timestamped copy of every export is also kept, but Import "
+        "can only read the latest one.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Export"),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _importSettings(BuildContext context) async {
+    final confirmed = await _showImportConfirmationDialog(context);
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    try {
+      await context.read<SettingsBackupService>().importSettings();
+      if (context.mounted) {
+        await _showResultDialog(
+          context,
+          "Settings imported",
+          "Your settings have been restored.",
+        );
+      }
+    } on BackupException catch (e) {
+      if (context.mounted) {
+        await _showResultDialog(context, "Import failed", e.toString());
+      }
+    }
+  }
+
+  Future<bool?> _showImportConfirmationDialog(
+    BuildContext context,
+  ) => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Import settings?"),
+      content: Text(
+        "This will replace all current settings, categories, app assignments, "
+        "remote button mappings and wallpaper with the contents of "
+        "pitchfork_launcher_settings_latest.json.",
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text("Import"),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _showResultDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text("OK"),
+        ),
+      ],
     ),
   );
 }

@@ -39,7 +39,9 @@ void main() {
     // against the real assets/ bundle.
     TestWidgetsFlutterBinding.ensureInitialized();
     pathProviderPlatform = _MockPathProviderPlatform();
-    when(pathProviderPlatform.getApplicationDocumentsPath()).thenAnswer((_) => Future.value("."));
+    when(
+      pathProviderPlatform.getApplicationDocumentsPath(),
+    ).thenAnswer((_) => Future.value("."));
     PathProviderPlatform.instance = pathProviderPlatform;
   });
 
@@ -57,14 +59,24 @@ void main() {
   group("pickWallpaper", () {
     test("picks image", () async {
       final pickedFile = _MockXFile();
-      when(pickedFile.readAsBytes()).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
+      when(
+        pickedFile.readAsBytes(),
+      ).thenAnswer((_) => Future.value(Uint8List.fromList([0x01])));
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
-      when(imagePicker.pickImage(source: ImageSource.gallery)).thenAnswer((_) => Future.value(pickedFile));
-      when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(true));
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-        ..settingsService = settingsService;
+      when(
+        imagePicker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) => Future.value(pickedFile));
+      when(
+        fLauncherChannel.checkForGetContentAvailability(),
+      ).thenAnswer((_) => Future.value(true));
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
       await wallpaperService.pickWallpaper();
@@ -76,12 +88,21 @@ void main() {
     test("throws error when no file explorer installed", () async {
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
-      when(fLauncherChannel.checkForGetContentAvailability()).thenAnswer((_) => Future.value(false));
-      final wallpaperService = WallpaperService(_MockImagePicker(), fLauncherChannel, MockPicsumService(), _mockDatabase())
-        ..settingsService = settingsService;
+      when(
+        fLauncherChannel.checkForGetContentAvailability(),
+      ).thenAnswer((_) => Future.value(false));
+      final wallpaperService = WallpaperService(
+        _MockImagePicker(),
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
-      expect(() async => await wallpaperService.pickWallpaper(), throwsA(isInstanceOf<NoFileExplorerException>()));
+      expect(
+        () async => await wallpaperService.pickWallpaper(),
+        throwsA(isInstanceOf<NoFileExplorerException>()),
+      );
     });
   });
 
@@ -90,10 +111,16 @@ void main() {
     final fLauncherChannel = MockFLauncherChannel();
     final picsumService = MockPicsumService();
     final settingsService = _mockSettingsService();
-    when(picsumService.randomPhoto())
-        .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
-      ..settingsService = settingsService;
+    when(picsumService.randomPhoto()).thenAnswer(
+      (_) =>
+          Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))),
+    );
+    final wallpaperService = WallpaperService(
+      imagePicker,
+      fLauncherChannel,
+      picsumService,
+      _mockDatabase(),
+    )..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
     await wallpaperService.randomFromPicsum();
@@ -112,11 +139,18 @@ void main() {
     final picsumService = MockPicsumService();
     final settingsService = _mockSettingsService();
     when(picsumService.randomPhoto()).thenThrow(PicsumException("boom"));
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
-      ..settingsService = settingsService;
+    final wallpaperService = WallpaperService(
+      imagePicker,
+      fLauncherChannel,
+      picsumService,
+      _mockDatabase(),
+    )..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
-    await expectLater(() => wallpaperService.randomFromPicsum(), throwsA(isInstanceOf<PicsumException>()));
+    await expectLater(
+      () => wallpaperService.randomFromPicsum(),
+      throwsA(isInstanceOf<PicsumException>()),
+    );
 
     final entries = AppLog.instance.entries;
     expect(entries, isNotEmpty);
@@ -130,50 +164,80 @@ void main() {
       final fLauncherChannel = MockFLauncherChannel();
       final picsumService = MockPicsumService();
       final settingsService = _mockSettingsService();
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
-        ..settingsService = settingsService;
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        picsumService,
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
       await wallpaperService.reapplyPicsumFilters(grayscale: true);
 
-      verifyNever(picsumService.photoById(any, grayscale: anyNamed("grayscale"), blur: anyNamed("blur")));
+      verifyNever(
+        picsumService.photoById(
+          any,
+          grayscale: anyNamed("grayscale"),
+          blur: anyNamed("blur"),
+        ),
+      );
       expect(wallpaperService.wallpaperBytes, null);
     });
 
-    test("re-fetches the current photo with grayscale and blur combined, and persists the filters", () async {
-      final imagePicker = _MockImagePicker();
-      final fLauncherChannel = MockFLauncherChannel();
-      final picsumService = MockPicsumService();
-      final settingsService = _mockSettingsService();
-      when(picsumService.randomPhoto())
-          .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
-      when(picsumService.photoById(42, grayscale: true, blur: 4))
-          .thenAnswer((_) => Future.value(Uint8List.fromList([0x02])));
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
-        ..settingsService = settingsService;
-      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-      await wallpaperService.randomFromPicsum();
+    test(
+      "re-fetches the current photo with grayscale and blur combined, and persists the filters",
+      () async {
+        final imagePicker = _MockImagePicker();
+        final fLauncherChannel = MockFLauncherChannel();
+        final picsumService = MockPicsumService();
+        final settingsService = _mockSettingsService();
+        when(picsumService.randomPhoto()).thenAnswer(
+          (_) => Future.value(
+            PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01])),
+          ),
+        );
+        when(
+          picsumService.photoById(42, grayscale: true, blur: 4),
+        ).thenAnswer((_) => Future.value(Uint8List.fromList([0x02])));
+        final wallpaperService = WallpaperService(
+          imagePicker,
+          fLauncherChannel,
+          picsumService,
+          _mockDatabase(),
+        )..settingsService = settingsService;
+        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+        await wallpaperService.randomFromPicsum();
 
-      await wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4);
+        await wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4);
 
-      verify(picsumService.photoById(42, grayscale: true, blur: 4));
-      verify(settingsService.setPicsumGrayscale(true));
-      verify(settingsService.setPicsumBlur(4));
-      expect(wallpaperService.wallpaperBytes, [0x02]);
-      expect(wallpaperService.picsumGrayscale, isTrue);
-      expect(wallpaperService.picsumBlurEnabled, isTrue);
-    });
+        verify(picsumService.photoById(42, grayscale: true, blur: 4));
+        verify(settingsService.setPicsumGrayscale(true));
+        verify(settingsService.setPicsumBlur(4));
+        expect(wallpaperService.wallpaperBytes, [0x02]);
+        expect(wallpaperService.picsumGrayscale, isTrue);
+        expect(wallpaperService.picsumBlurEnabled, isTrue);
+      },
+    );
 
     test("logs to AppLog and rethrows on failure", () async {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final picsumService = MockPicsumService();
       final settingsService = _mockSettingsService();
-      when(picsumService.randomPhoto())
-          .thenAnswer((_) => Future.value(PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01]))));
-      when(picsumService.photoById(42, grayscale: true, blur: anyNamed("blur"))).thenThrow(PicsumException("boom"));
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, picsumService, _mockDatabase())
-        ..settingsService = settingsService;
+      when(picsumService.randomPhoto()).thenAnswer(
+        (_) => Future.value(
+          PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01])),
+        ),
+      );
+      when(
+        picsumService.photoById(42, grayscale: true, blur: anyNamed("blur")),
+      ).thenThrow(PicsumException("boom"));
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        picsumService,
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
       await wallpaperService.randomFromPicsum();
 
@@ -193,8 +257,12 @@ void main() {
     final imagePicker = _MockImagePicker();
     final fLauncherChannel = MockFLauncherChannel();
     final settingsService = _mockSettingsService();
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-      ..settingsService = settingsService;
+    final wallpaperService = WallpaperService(
+      imagePicker,
+      fLauncherChannel,
+      MockPicsumService(),
+      _mockDatabase(),
+    )..settingsService = settingsService;
     await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
     await wallpaperService.setGradient(FLauncherGradients.greatWhale);
@@ -204,55 +272,76 @@ void main() {
     expect(wallpaperService.wallpaperBytes, null);
   });
 
-  test("resetToDefaultWallpaper writes the bundled asset and clears other sources' state", () async {
-    final imagePicker = _MockImagePicker();
-    final fLauncherChannel = MockFLauncherChannel();
-    final settingsService = _mockSettingsService();
-    final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-      ..settingsService = settingsService;
-    await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-
-    await wallpaperService.resetToDefaultWallpaper();
-
-    verify(settingsService.setPicsumPhotoId(null));
-    verify(settingsService.setPicsumGrayscale(false));
-    verify(settingsService.setPicsumBlur(null));
-    expect(wallpaperService.wallpaperBytes, isNotNull);
-    expect(wallpaperService.wallpaperBytes, isNotEmpty);
-    expect(wallpaperService.hasCurrentPicsumPhoto, isFalse);
-  });
-
-  group("seeds default wallpaper", () {
-    test("writes bundled asset when fresh install and no wallpaper file exists", () async {
+  test(
+    "resetToDefaultWallpaper writes the bundled asset and clears other sources' state",
+    () async {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
-      final wallpaperService =
-          WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase(isFreshInstall: true))
-            ..settingsService = settingsService;
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-      // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
-      // includes a real (multi-MB) disk read/write, so pumpEventQueue() -- which only drains
-      // already-queued microtasks a fixed number of times rather than letting wall-clock time
-      // pass -- can exit before the write actually finishes. Poll for the real completion signal
-      // instead, bounded by a generous timeout.
-      final stopwatch = Stopwatch()..start();
-      while (wallpaperService.wallpaperBytes == null && stopwatch.elapsed < const Duration(seconds: 10)) {
-        await Future.delayed(const Duration(milliseconds: 10));
-      }
 
+      await wallpaperService.resetToDefaultWallpaper();
+
+      verify(settingsService.setPicsumPhotoId(null));
+      verify(settingsService.setPicsumGrayscale(false));
+      verify(settingsService.setPicsumBlur(null));
       expect(wallpaperService.wallpaperBytes, isNotNull);
       expect(wallpaperService.wallpaperBytes, isNotEmpty);
-      expect(await File("./wallpaper").exists(), isTrue);
-      expect(await File("./wallpaper").readAsBytes(), wallpaperService.wallpaperBytes);
-    });
+      expect(wallpaperService.hasCurrentPicsumPhoto, isFalse);
+    },
+  );
+
+  group("seeds default wallpaper", () {
+    test(
+      "writes bundled asset when fresh install and no wallpaper file exists",
+      () async {
+        final imagePicker = _MockImagePicker();
+        final fLauncherChannel = MockFLauncherChannel();
+        final settingsService = _mockSettingsService();
+        final wallpaperService = WallpaperService(
+          imagePicker,
+          fLauncherChannel,
+          MockPicsumService(),
+          _mockDatabase(isFreshInstall: true),
+        )..settingsService = settingsService;
+        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+        // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
+        // includes a real (multi-MB) disk read/write, so pumpEventQueue() -- which only drains
+        // already-queued microtasks a fixed number of times rather than letting wall-clock time
+        // pass -- can exit before the write actually finishes. Poll for the real completion signal
+        // instead, bounded by a generous timeout.
+        final stopwatch = Stopwatch()..start();
+        while (wallpaperService.wallpaperBytes == null &&
+            stopwatch.elapsed < const Duration(seconds: 10)) {
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+
+        expect(wallpaperService.wallpaperBytes, isNotNull);
+        expect(wallpaperService.wallpaperBytes, isNotEmpty);
+        expect(await File("./wallpaper").exists(), isTrue);
+        expect(
+          await File("./wallpaper").readAsBytes(),
+          wallpaperService.wallpaperBytes,
+        );
+      },
+    );
 
     test("does not seed when not a fresh install", () async {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-        ..settingsService = settingsService;
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
       await Future.delayed(Duration.zero);
 
@@ -266,8 +355,12 @@ void main() {
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
       when(settingsService.gradientUuid).thenReturn(null);
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-        ..settingsService = settingsService;
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
       final gradient = wallpaperService.gradient;
@@ -279,14 +372,54 @@ void main() {
       final imagePicker = _MockImagePicker();
       final fLauncherChannel = MockFLauncherChannel();
       final settingsService = _mockSettingsService();
-      when(settingsService.gradientUuid).thenReturn(FLauncherGradients.grassShampoo.uuid);
-      final wallpaperService = WallpaperService(imagePicker, fLauncherChannel, MockPicsumService(), _mockDatabase())
-        ..settingsService = settingsService;
+      when(
+        settingsService.gradientUuid,
+      ).thenReturn(FLauncherGradients.grassShampoo.uuid);
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+      )..settingsService = settingsService;
       await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
       final gradient = wallpaperService.gradient;
 
       expect(gradient, FLauncherGradients.grassShampoo);
+    });
+  });
+
+  group("restoreWallpaper", () {
+    test("preserves Picsum state when restoring bytes", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final picsumService = MockPicsumService();
+      final settingsService = _mockSettingsService();
+      when(picsumService.randomPhoto()).thenAnswer(
+        (_) => Future.value(
+          PicsumPhoto(id: 42, bytes: Uint8List.fromList([0x01])),
+        ),
+      );
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        picsumService,
+        _mockDatabase(),
+      )..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+
+      await wallpaperService.randomFromPicsum();
+      expect(wallpaperService.hasCurrentPicsumPhoto, isTrue);
+
+      // Simulate the settings having been restored from a backup already.
+      when(settingsService.picsumPhotoId).thenReturn(42);
+      when(settingsService.picsumGrayscale).thenReturn(true);
+      when(settingsService.picsumBlur).thenReturn(5);
+
+      await wallpaperService.restoreWallpaper(Uint8List.fromList([0x02]));
+
+      expect(wallpaperService.wallpaperBytes, [0x02]);
+      expect(wallpaperService.hasCurrentPicsumPhoto, isTrue);
     });
   });
 }
@@ -296,7 +429,9 @@ void main() {
 /// (which all assert behavior unrelated to seeding) are unaffected.
 MockFLauncherDatabase _mockDatabase({bool isFreshInstall = false}) {
   final database = MockFLauncherDatabase();
-  when(database.isFreshInstall()).thenAnswer((_) => Future.value(isFreshInstall));
+  when(
+    database.isFreshInstall(),
+  ).thenAnswer((_) => Future.value(isFreshInstall));
   return database;
 }
 
@@ -310,7 +445,9 @@ MockSettingsService _mockSettingsService() {
   when(settingsService.picsumGrayscale).thenReturn(false);
   when(settingsService.picsumBlur).thenReturn(null);
   when(settingsService.setPicsumPhotoId(any)).thenAnswer((_) => Future.value());
-  when(settingsService.setPicsumGrayscale(any)).thenAnswer((_) => Future.value());
+  when(
+    settingsService.setPicsumGrayscale(any),
+  ).thenAnswer((_) => Future.value());
   when(settingsService.setPicsumBlur(any)).thenAnswer((_) => Future.value());
   return settingsService;
 }
@@ -324,28 +461,34 @@ class _MockImagePicker extends Mock implements ImagePicker {
     int? imageQuality,
     CameraDevice preferredCameraDevice = CameraDevice.rear,
     bool requestFullMetadata = true,
-  }) =>
-      super.noSuchMethod(
-          Invocation.method(#pickImage, [], {
-            #source: source,
-            #maxWidth: maxWidth,
-            #maxHeight: maxHeight,
-            #imageQuality: imageQuality,
-            #preferredCameraDevice: preferredCameraDevice,
-            #requestFullMetadata: requestFullMetadata,
-          }),
-          returnValue: Future<XFile?>.value());
+  }) => super.noSuchMethod(
+    Invocation.method(#pickImage, [], {
+      #source: source,
+      #maxWidth: maxWidth,
+      #maxHeight: maxHeight,
+      #imageQuality: imageQuality,
+      #preferredCameraDevice: preferredCameraDevice,
+      #requestFullMetadata: requestFullMetadata,
+    }),
+    returnValue: Future<XFile?>.value(),
+  );
 }
 
 // ignore: must_be_immutable
 class _MockXFile extends Mock implements XFile {
   @override
-  Future<Uint8List> readAsBytes() => super
-      .noSuchMethod(Invocation.method(#readAsBytes, []), returnValue: Future<Uint8List>.value(Uint8List.fromList([])));
+  Future<Uint8List> readAsBytes() => super.noSuchMethod(
+    Invocation.method(#readAsBytes, []),
+    returnValue: Future<Uint8List>.value(Uint8List.fromList([])),
+  );
 }
 
-class _MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {
+class _MockPathProviderPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {
   @override
-  Future<String?> getApplicationDocumentsPath() =>
-      super.noSuchMethod(Invocation.method(#getApplicationDocumentsPath, []), returnValue: Future<String?>.value());
+  Future<String?> getApplicationDocumentsPath() => super.noSuchMethod(
+    Invocation.method(#getApplicationDocumentsPath, []),
+    returnValue: Future<String?>.value(),
+  );
 }
