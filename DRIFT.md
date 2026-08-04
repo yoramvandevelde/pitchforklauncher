@@ -36,6 +36,16 @@ here — see that file for the criteria and for examples of what's been rejected
   remains the actual floor (Gradle 9.x itself dropped support for running its daemon on JDK 16 or
   older), but there's no reason to sit at the floor once a newer LTS is confirmed to work — CI
   (`ci.yml`, `release.yml`) and the `justfile` recipes now all target JDK 25.
+- **Android review cleanup** (2026-08-04): a few small removals verified with a real
+  `flutter build apk --debug`. Dropped the redundant `package=` manifest attribute (superseded by
+  `namespace` in `build.gradle` since AGP 8) from all three manifests, the debug/profile overlays'
+  now-duplicate `INTERNET` permission (already granted unconditionally in the main manifest), the
+  empty `signingConfigs { debug {} }` block (AGP's default already covers it), and a dead
+  pre-minSdk-24 branch in `MainActivity.applicationExists()`. One claim from that same pass didn't
+  hold up, though: the `flutterEmbedding` meta-data looked like obsolete v1-embedding boilerplate,
+  but it's actually the only signal `flutter_tools` checks (`project.dart`'s
+  `computeEmbeddingVersion()`); removing it makes a v2 app look like unsupported v1 and hard-fails
+  the build. Left in place.
 
 ## Removed Firebase
 

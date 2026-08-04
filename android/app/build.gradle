@@ -42,9 +42,17 @@ if (flutterVersionName == null) {
 }
 
 def secretProperties = new Properties()
-secretProperties.setProperty("signing_keystore_password", "${System.getenv('SIGNING_KEYSTORE_PASSWORD')}")
-secretProperties.setProperty("signing_key_password", "${System.getenv('SIGNING_KEY_PASSWORD')}")
-secretProperties.setProperty("signing_key_alias", "${System.getenv('SIGNING_KEY_ALIAS')}")
+["signing_keystore_password": "SIGNING_KEYSTORE_PASSWORD",
+ "signing_key_password": "SIGNING_KEY_PASSWORD",
+ "signing_key_alias": "SIGNING_KEY_ALIAS"].each { propName, envName ->
+    def value = System.getenv(envName)
+    // Leave the property unset (rather than storing the literal string "null") when the env var
+    // is missing, so a release build fails with "signing config incomplete" instead of the far
+    // more confusing "keystore password was incorrect".
+    if (value != null) {
+        secretProperties.setProperty(propName, value)
+    }
+}
 
 android {
     namespace "io.sifft.pitchforklauncher"
@@ -72,19 +80,16 @@ android {
     }
 
     signingConfigs {
-        debug {}
         release {
             storeFile file("upload-keystore.jks")
-            storePassword "${secretProperties['signing_keystore_password']}"
-            keyAlias "${secretProperties['signing_key_alias']}"
-            keyPassword "${secretProperties['signing_key_password']}"
+            storePassword secretProperties.getProperty("signing_keystore_password")
+            keyAlias secretProperties.getProperty("signing_key_alias")
+            keyPassword secretProperties.getProperty("signing_key_password")
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig signingConfigs.debug
-        }
+        debug {}
         release {
             minifyEnabled true
             shrinkResources true

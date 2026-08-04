@@ -26,7 +26,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.UserHandle
 import android.provider.Settings
 import android.view.KeyEvent
@@ -45,7 +44,7 @@ private const val EVENT_CHANNEL = "io.sifft.pitchforklauncher/event"
 private const val BUTTON_CAPTURE_EVENT_CHANNEL = "io.sifft.pitchforklauncher/buttonCapture"
 
 class MainActivity : FlutterActivity() {
-    val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
+    private val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -140,23 +139,13 @@ class MainActivity : FlutterActivity() {
         return tvActivitiesInfo.map { buildAppMap(it, false) } + nonTvActivitiesInfo.map { buildAppMap(it, true) }
     }
 
-    private fun getApplication(packageName: String): Map<String, Serializable?>? {
-        return packageManager.getLeanbackLaunchIntentForPackage(packageName)
-            ?.resolveActivityInfo(packageManager, 0)
-            ?.let { buildAppMap(it, false) }
-            ?: return packageManager.getLaunchIntentForPackage(packageName)
-                ?.resolveActivityInfo(packageManager, 0)
-                ?.let { buildAppMap(it, true) }
-    }
+    private fun getApplication(packageName: String): Map<String, Serializable?>? =
+        packageManager.resolveLaunchIntent(packageName)?.let { (intent, sideloaded) ->
+            intent.resolveActivityInfo(packageManager, 0)?.let { buildAppMap(it, sideloaded) }
+        }
 
     private fun applicationExists(packageName: String) = try {
-        val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            PackageManager.MATCH_UNINSTALLED_PACKAGES
-        } else {
-            @Suppress("DEPRECATION")
-            PackageManager.GET_UNINSTALLED_PACKAGES
-        }
-        packageManager.getApplicationInfo(packageName, flag)
+        packageManager.getApplicationInfo(packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         true
     } catch (e: PackageManager.NameNotFoundException) {
         false
@@ -177,9 +166,7 @@ class MainActivity : FlutterActivity() {
     )
 
     private fun launchApp(packageName: String) = try {
-        val intent = packageManager.getLeanbackLaunchIntentForPackage(packageName)
-                ?: packageManager.getLaunchIntentForPackage(packageName)
-        startActivity(intent)
+        startActivity(packageManager.resolveLaunchIntent(packageName)?.intent)
         true
     } catch (e: Exception) {
         false

@@ -18,8 +18,7 @@
   -->
 
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeAllMask"
+    android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFlags="flagRequestFilterKeyEvents"
     android:canRequestFilterKeyEvents="true"
-    android:description="@string/accessibility_service_description"
-    android:notificationTimeout="100" />
+    android:description="@string/accessibility_service_description" />
