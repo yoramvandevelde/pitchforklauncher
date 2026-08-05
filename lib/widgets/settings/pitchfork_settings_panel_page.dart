@@ -101,61 +101,63 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
           TextButton(
             child: Row(
               children: [
-                Icon(Icons.upload_outlined),
+                Icon(Icons.backup_outlined),
                 Container(width: 8),
-                Text(
-                  "Export settings",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text("Backup", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () => _exportSettings(context),
+            onPressed: () => _backup(context),
           ),
           TextButton(
             child: Row(
               children: [
-                Icon(Icons.download_outlined),
+                Icon(Icons.restore_outlined),
                 Container(width: 8),
-                Text(
-                  "Import settings",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text("Restore", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () => _importSettings(context),
+            onPressed: () => _restore(context),
           ),
         ],
       ),
     ),
   );
 
-  Future<void> _exportSettings(BuildContext context) async {
-    final confirmed = await _showExportConfirmationDialog(context);
+  Future<void> _backup(BuildContext context) async {
+    final backupService = context.read<SettingsBackupService>();
+    if (!await _ensureStorageAvailable(context, backupService) ||
+        !context.mounted) {
+      return;
+    }
+    final confirmed = await _showBackupConfirmationDialog(context);
     if (confirmed != true || !context.mounted) {
       return;
     }
     try {
-      final file = await context.read<SettingsBackupService>().exportSettings();
+      await backupService.exportSettings();
       if (context.mounted) {
-        await _showResultDialog(context, "Settings exported", file.path);
+        await _showResultDialog(
+          context,
+          "Backed up",
+          "Settings saved to Downloads/${SettingsBackupService.backupFileName}.",
+        );
       }
     } on BackupException catch (e) {
       if (context.mounted) {
-        await _showResultDialog(context, "Export failed", e.toString());
+        await _showResultDialog(context, "Backup failed", e.toString());
       }
     }
   }
 
-  Future<bool?> _showExportConfirmationDialog(
+  Future<bool?> _showBackupConfirmationDialog(
     BuildContext context,
   ) => showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text("Export settings?"),
+      title: Text("Back up settings?"),
       content: Text(
-        "This will overwrite pitchfork_launcher_settings_latest.json, the file \"Import "
-        "settings\" reads. A separate timestamped copy of every export is also kept, but Import "
-        "can only read the latest one.",
+        "This will overwrite the previous backup in "
+        "Downloads/${SettingsBackupService.backupFileName}.",
       ),
       actions: [
         TextButton(
@@ -165,43 +167,123 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text("Export"),
+          child: Text("Back up"),
         ),
       ],
     ),
   );
 
-  Future<void> _importSettings(BuildContext context) async {
-    final confirmed = await _showImportConfirmationDialog(context);
+  Future<void> _restore(BuildContext context) async {
+    final backupService = context.read<SettingsBackupService>();
+    if (!await _ensureStorageAvailable(context, backupService) ||
+        !context.mounted) {
+      return;
+    }
+    final confirmed = await _showRestoreConfirmationDialog(context);
     if (confirmed != true || !context.mounted) {
       return;
     }
     try {
-      await context.read<SettingsBackupService>().importSettings();
+      await backupService.importSettings();
       if (context.mounted) {
         await _showResultDialog(
           context,
-          "Settings imported",
-          "Your settings have been restored.",
+          "Restored",
+          "Your settings have been restored from the backup.",
         );
       }
     } on BackupException catch (e) {
       if (context.mounted) {
-        await _showResultDialog(context, "Import failed", e.toString());
+        await _showResultDialog(context, "Restore failed", e.toString());
       }
     }
   }
 
-  Future<bool?> _showImportConfirmationDialog(
+  /// Checks storage access before Backup/Restore proceeds, prompting appropriately if it isn't
+  /// there yet, and returns whether it's safe to continue. Two different reasons
+  /// [SettingsBackupService.isStorageAvailable] can be false need two different responses: the
+  /// permission just isn't granted yet (fixable -- offer to open Settings) versus the OS version
+  /// is too old for the underlying API to exist at all (not fixable -- offering "Open Settings"
+  /// there would either fail to resolve or lead to a screen that can't help).
+  Future<bool> _ensureStorageAvailable(
+    BuildContext context,
+    SettingsBackupService backupService,
+  ) async {
+    if (await backupService.isStorageAvailable()) {
+      return true;
+    }
+    if (!context.mounted) {
+      return false;
+    }
+    if (!await backupService.isStorageSupported()) {
+      if (context.mounted) {
+        await _showResultDialog(
+          context,
+          "Not supported",
+          "Backup/Restore needs Android 11 or newer.",
+        );
+      }
+      return false;
+    }
+    if (context.mounted) {
+      await _showGrantAccessDialog(context, backupService);
+    }
+    return false;
+  }
+
+  /// [context] here is the page's own, long-lived context (passed down from [_backup]/[_restore]
+  /// via [_ensureStorageAvailable]) -- deliberately not shadowed by the dialog builder's own
+  /// context below. The "Open Settings" button pops the dialog and then awaits a platform call
+  /// before deciding whether to show a follow-up dialog; by that point the dialog route's own
+  /// context is unmounted, so that follow-up needs the page's context to still work, not the
+  /// (by-then-gone) dialog's.
+  Future<void> _showGrantAccessDialog(
+    BuildContext context,
+    SettingsBackupService backupService,
+  ) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('Needs "All files access"'),
+      content: Text(
+        "Backup/Restore read and write "
+        "Downloads/${SettingsBackupService.backupFileName}, which needs the "
+        '"All files access" permission. Grant it in Settings, then try again.',
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text("Cancel"),
+        ),
+        TextButton(
+          onPressed: () async {
+            Navigator.of(dialogContext).pop();
+            final opened = await backupService.openStoragePermissionSettings();
+            if (!opened && context.mounted) {
+              await _showResultDialog(
+                context,
+                "Couldn't open Settings",
+                "Grant \"All files access\" manually in Android Settings > Apps > "
+                    "PitchforkLauncher, then try again.",
+              );
+            }
+          },
+          child: Text("Open Settings"),
+        ),
+      ],
+    ),
+  );
+
+  Future<bool?> _showRestoreConfirmationDialog(
     BuildContext context,
   ) => showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text("Import settings?"),
+      title: Text("Restore settings?"),
       content: Text(
         "This will replace all current settings, categories, app assignments, "
-        "remote button mappings and wallpaper with the contents of "
-        "pitchfork_launcher_settings_latest.json.",
+        "remote button mappings and wallpaper with the backup from "
+        "Downloads/${SettingsBackupService.backupFileName}.",
       ),
       actions: [
         TextButton(
@@ -211,7 +293,7 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: Text("Import"),
+          child: Text("Restore"),
         ),
       ],
     ),

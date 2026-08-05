@@ -258,15 +258,56 @@ Configured inputs (`TvInputConfig`, a small id/label/profile-id/params record) a
 blob in SharedPreferences (`TvInputService`) rather than a Drift table — the same storage choice
 `SettingsService` makes for similarly small, rarely-changing state.
 
-## Settings export/import (JSON)
+## Settings backup/restore (JSON)
 
 `SettingsBackupService` exports every category and its app assignments, hidden apps, the
 SharedPreferences-backed settings, TV Input configuration, remote button mappings and the wallpaper
-to a timestamped JSON file (plus a `pitchfork_launcher_settings_latest.json` copy), with import
-restoring all of it. Reachable via Settings → Pitchfork Settings → Export/Import settings, each
-behind a confirmation dialog. Motivation: recovering after a factory reset or moving to a new
-device without reconfiguring everything from scratch (clears ADR-001's governance gate — see
-`ADR_001_Project_Scope_and_Feature_Governance.md`).
+to a single fixed-name JSON file, with import restoring all of it. Reachable via Settings →
+Pitchfork Settings → Backup/Restore, each behind a confirmation dialog. Motivation: recovering
+without reconfiguring everything from scratch after an app uninstall/reinstall (clears ADR-001's
+governance gate — see `ADR_001_Project_Scope_and_Feature_Governance.md`).
+
+**Scope of what this actually protects against, precisely:** an app uninstall/reinstall — verified
+on-device — not a factory reset or moving to a new device. The backup file survives in the real
+Downloads folder because that folder isn't part of the app's own storage, but a factory reset wipes
+the whole device's storage including Downloads, and a new device obviously doesn't inherit anything
+from the old one's disk either. Recovering from either of those still needs the file copied
+off-device first (`adb pull`, USB, cloud upload, etc.) before the reset/migration happens — this
+feature doesn't do that copy step itself, it only solves "the app's own storage getting wiped from
+under it," which an uninstall/reinstall triggers even without any of the above.
+
+The backup file lives in the real, shared Downloads folder (`SettingsBackupStorage.kt`, reached
+through `FLauncherChannel.writeSettingsBackup`/`readSettingsBackup`), not the app's own
+external-files directory — that directory is wiped on uninstall, which would have defeated the
+whole point above. `SettingsBackupService` always targets one recognisable name
+(`pitchfork_launcher_settings.json`), so "Backup"/"Restore" stay two plain buttons — no picker, no
+"which file" choice. Writes go to a temp file first, then an atomic rename over the target
+(`File.renameTo` within the same directory), so a crash or failed write partway through leaves the
+previous good backup in place instead of a half-written replacement Restore would then choke on.
+
+First cut of this used `MediaStore.Downloads` instead, which lets an app write/read its own rows
+with no permission at all — but confirmed on a real device (and independently documented as
+general Android behavior, not an OEM quirk): `MediaProvider` does not preserve that per-app
+ownership across an uninstall/reinstall, which broke the "survive uninstall" requirement this
+feature exists for. Now uses the `MANAGE_EXTERNAL_STORAGE` ("All files access") permission plus a
+plain `File` against `Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)` instead
+— sidesteps the ownership question entirely, at the cost of a one-time manual grant via a system
+Settings screen (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`, opened via
+`SettingsBackupService.openStoragePermissionSettings()`), which — like any permission — needs
+re-granting after a fresh install. `SettingsBackupService.isStorageAvailable()` lets the UI check
+this up front and prompt with an "Open Settings" action instead of a bare failure. Reasonable only
+because PitchforkLauncher isn't on the Play Store, where this permission needs a declared
+justification most apps don't have. Requires Android 11+ (API 30, where
+`Environment.isExternalStorageManager()` and `ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION` were
+introduced) — `SettingsBackupService.isStorageSupported()` lets the UI tell "not granted yet"
+(fixable) apart from "OS too old" (not fixable) instead of offering a settings screen that can't
+resolve on this app's minSdk-24 floor; the native side no-ops (write returns false, read returns
+null) below API 30 either way.
+
+`writeSettingsBackup`/`readSettingsBackup`'s native handlers hop onto a background thread for the
+actual file I/O (the payload includes the base64-encoded wallpaper, easily several hundred KB) and
+post the result back to the platform thread — `MethodChannel` handlers run on the UI thread by
+default, and blocking it on synchronous storage I/O risks jank or an ANR.
 
 Import parses and validates the *entire* backup payload up front, into a typed `_ParsedBackup`
 model, before touching anything. Restoring spans several independent stores with no shared
@@ -281,9 +322,3 @@ violation or leaving a dead mapping. The category/hidden-state writes and the bu
 route back through `AppsService.reloadFromDatabase()`/`ButtonMappingService.setMapping()` rather
 than hitting the database/native channel directly, so those services' own in-memory caches — and
 the UI reading them — reflect the restore immediately rather than only after an unrelated refresh.
-
-Known limitation, tracked in `TODO.md`: export/import use a fixed filename in the app's own
-external-files directory rather than a user-chosen location via a file picker, which limits how
-well a backup survives an app uninstall (that directory is wiped along with it) or an actual
-factory reset (which wipes the whole device regardless of where the file lived) unless it's copied
-off-device first.

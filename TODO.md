@@ -224,7 +224,7 @@ so at least one layer is always fully opaque and the background never shows thro
   SharedPreferences settings, button mappings, and wallpaper bytes. Added "Export settings" / "Import
   settings" buttons to `SettingsPanelPage` and a `restoreWallpaper` method to `WallpaperService`.
 
-**Settings export/import: use a file picker instead of a fixed app-private path.** Current
+~~**Settings export/import: use a file picker instead of a fixed app-private path.** Current
   implementation (`SettingsBackupService`, see above) always reads/writes a fixed filename
   (`pitchfork_launcher_settings_latest.json`) under `getExternalStorageDirectory()` -- the app's
   own external-files directory, not a shared/public location. That directory is deleted when the
@@ -233,7 +233,45 @@ so at least one layer is always fully opaque and the background never shows thro
   the user manually copies it elsewhere (e.g. via adb) before uninstalling/resetting. Considered
   good enough for this version; picked up as a follow-up: use a Storage Access Framework file
   picker (e.g. `file_picker` or `saf_util`) so export/import target a location and filename the
-  user actually chooses, instead of a hardcoded path.
+  user actually chooses, instead of a hardcoded path.~~ — done differently (2026-08-05): a file
+  picker was reconsidered and rejected -- its `DocumentsUI` picker screen is touch-first and not
+  guaranteed to be comfortably D-pad-navigable on a TV, and pulling in a whole picker package
+  (`file_picker`/`saf_util`) for one button felt heavier than the project's usual dependency
+  budget (see the Firebase/Unsplash-SDK removals). Also explicitly not wanted: any "pick which
+  backup" UI at all -- the ask was to keep it exactly two buttons, Backup and Restore, no file
+  choice.
+
+  First landed on `MediaStore.Downloads` (an app can write/read its own rows there with zero
+  permission), but testing on the Google TV emulator (Android 14, API 34) falsified that:
+  `owner_package_name` came back `NULL` on the row our own app had just inserted, and after an
+  actual uninstall/reinstall the app could no longer find or read the file back at all -- confirmed
+  via web search as a general, documented Android limitation (`MediaProvider` does not preserve
+  per-app ownership of `MediaStore` rows across an uninstall/reinstall), not an emulator quirk. That
+  broke the one thing this feature exists for.
+
+  Replaced with `MANAGE_EXTERNAL_STORAGE` ("All files access") plus a plain `File` against
+  `Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)` (`SettingsBackupStorage.kt`,
+  wired through `FLauncherChannel.writeSettingsBackup`/`readSettingsBackup`/
+  `isSettingsBackupStorageAvailable`/`openSettingsBackupStoragePermission`). This sidesteps
+  MediaStore's ownership model entirely -- once granted, the fixed-name file
+  (`pitchfork_launcher_settings.json`) in the real Downloads folder is reachable regardless of which
+  install of the app wrote it. Trade-off: needs a one-time manual grant via a system Settings screen
+  (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`), which -- like any permission -- resets
+  on uninstall and needs re-granting after a fresh install, similar in spirit to the existing "Set as
+  Home button target" one-time setup step; `PitchforkSettingsPanelPage` checks
+  `SettingsBackupService.isStorageAvailable()` before Backup/Restore and offers an "Open Settings"
+  button instead of a bare failure when it isn't granted yet. Reasonable only because
+  PitchforkLauncher isn't on the Play Store, where this permission needs a declared justification
+  most apps don't have. Requires Android 11+ (API 30); no-ops below that, and
+  `isStorageSupported()` lets the UI tell "not granted yet" apart from "OS too old" instead of
+  offering a settings screen that can't resolve on this app's minSdk-24 floor. Writes go through a
+  temp file + atomic rename rather than truncating the target in place, so a failed write can't
+  destroy the previous good backup; the native read/write handlers also moved off the UI thread
+  (`MethodChannel` callbacks run there by default) to avoid janking rendering on a large wallpaper
+  payload. Still no new Flutter dependency, still the same two-button UI. **Scope, precisely:**
+  this survives an app uninstall/reinstall (verified), not a factory reset or a move to a new
+  device by itself — those wipe/don't-carry-over the Downloads folder too, so recovering from
+  either still needs the file copied off-device first. See `DRIFT.md`.
 
 ~~**Restructure the Settings panel menu.** `SettingsPanelPage` has grown a lot (categories,
   applications, button mappings, wallpaper, time format, animations, about, and now export/import)

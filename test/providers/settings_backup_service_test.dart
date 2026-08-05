@@ -16,9 +16,8 @@
  */
 
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
@@ -26,42 +25,39 @@ import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks.mocks.dart';
 
 void main() {
-  late Directory backupDirectory;
-  late _MockPathProviderPlatform pathProviderPlatform;
+  // Stands in for the shared Downloads collection that SettingsBackupStorage.kt reads/writes on
+  // the Android side (see FLauncherChannel.writeSettingsBackup/readSettingsBackup) -- a plain Map
+  // keyed by file name is enough to fake "the file that was last written" for these tests.
+  late Map<String, Uint8List> fakeDownloads;
+  late MockFLauncherChannel fLauncherChannel;
 
-  setUpAll(() {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    pathProviderPlatform = _MockPathProviderPlatform();
-    PathProviderPlatform.instance = pathProviderPlatform;
-  });
-
-  setUp(() async {
-    backupDirectory = await Directory.systemTemp.createTemp(
-      'pitchfork_backup_test',
-    );
-    SharedPreferences.setMockInitialValues({});
+  setUp(() {
+    fakeDownloads = {};
+    fLauncherChannel = MockFLauncherChannel();
     when(
-      pathProviderPlatform.getExternalStoragePath(),
-    ).thenAnswer((_) => Future.value(backupDirectory.path));
-  });
-
-  tearDown(() async {
-    if (await backupDirectory.exists()) {
-      await backupDirectory.delete(recursive: true);
-    }
+      fLauncherChannel.writeSettingsBackup(any, any),
+    ).thenAnswer((invocation) {
+      fakeDownloads[invocation.positionalArguments[0] as String] =
+          invocation.positionalArguments[1] as Uint8List;
+      return Future.value(true);
+    });
+    when(fLauncherChannel.readSettingsBackup(any)).thenAnswer(
+      (invocation) => Future.value(
+        fakeDownloads[invocation.positionalArguments[0] as String],
+      ),
+    );
   });
 
   test(
     "export and import roundtrip restores settings, categories, mappings and wallpaper",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -145,15 +141,15 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
-      final exportedFile = await backupService.exportSettings();
+      await backupService.exportSettings();
 
-      expect(await exportedFile.exists(), isTrue);
-      final latestFile = File(
-        '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+      expect(
+        fakeDownloads[SettingsBackupService.backupFileName],
+        isNotNull,
       );
-      expect(await latestFile.exists(), isTrue);
 
       // Mutate everything before importing.
       await database.delete(database.categories).go();
@@ -253,6 +249,7 @@ void main() {
 
   test("import without wallpaper restores gradient wallpaper", () async {
     final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
@@ -293,6 +290,7 @@ void main() {
       tvInputService,
       appsService,
       buttonMappingService,
+      fLauncherChannel,
     );
 
     await backupService.exportSettings();
@@ -312,6 +310,7 @@ void main() {
 
   test("throws when backup file is missing", () async {
     final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
@@ -323,6 +322,7 @@ void main() {
       MockTvInputService(),
       MockAppsService(),
       MockButtonMappingService(),
+      fLauncherChannel,
     );
 
     expect(
@@ -334,12 +334,12 @@ void main() {
   });
 
   test("throws on unsupported backup version", () async {
+    SharedPreferences.setMockInitialValues({});
     final sharedPreferences = await SharedPreferences.getInstance();
     final database = FLauncherDatabase.inMemory();
-    final file = File(
-      '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+    fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+      utf8.encode(jsonEncode({'version': 99})),
     );
-    await file.writeAsString(jsonEncode({'version': 99}));
 
     final backupService = SettingsBackupService(
       database,
@@ -348,6 +348,7 @@ void main() {
       MockTvInputService(),
       MockAppsService(),
       MockButtonMappingService(),
+      fLauncherChannel,
     );
 
     expect(
@@ -362,6 +363,7 @@ void main() {
     "import skips apps that are not installed instead of crashing",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -427,6 +429,7 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
       await backupService.exportSettings();
@@ -448,6 +451,7 @@ void main() {
 
   test("import resets hidden apps before restoring hidden state", () async {
     final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
     final wallpaperService = MockWallpaperService();
@@ -489,6 +493,7 @@ void main() {
       tvInputService,
       appsService,
       buttonMappingService,
+      fLauncherChannel,
     );
 
     await backupService.exportSettings();
@@ -513,6 +518,7 @@ void main() {
     "a hidden app's category membership survives an export/import roundtrip",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -571,6 +577,7 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
       await backupService.exportSettings();
@@ -591,12 +598,12 @@ void main() {
   );
 
   test("throws BackupException on corrupt JSON", () async {
+    SharedPreferences.setMockInitialValues({});
     final sharedPreferences = await SharedPreferences.getInstance();
     final database = FLauncherDatabase.inMemory();
-    final file = File(
-      '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
+    fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+      utf8.encode('not valid json'),
     );
-    await file.writeAsString('not valid json');
 
     final backupService = SettingsBackupService(
       database,
@@ -605,6 +612,7 @@ void main() {
       MockTvInputService(),
       MockAppsService(),
       MockButtonMappingService(),
+      fLauncherChannel,
     );
 
     expect(
@@ -618,20 +626,20 @@ void main() {
   test(
     "throws BackupException on syntactically valid JSON with the wrong shape",
     () async {
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final database = FLauncherDatabase.inMemory();
-      final file = File(
-        '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
-      );
       // Valid JSON, but missing the 'settings' key entirely -- casting the missing value to
       // Map<String, dynamic> throws a TypeError, not a FormatException/Exception.
-      await file.writeAsString(
-        jsonEncode({
-          'version': 1,
-          'categories': [],
-          'hiddenApps': [],
-          'buttonMappings': [],
-        }),
+      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+        utf8.encode(
+          jsonEncode({
+            'version': 1,
+            'categories': [],
+            'hiddenApps': [],
+            'buttonMappings': [],
+          }),
+        ),
       );
 
       final backupService = SettingsBackupService(
@@ -641,6 +649,7 @@ void main() {
         MockTvInputService(),
         MockAppsService(),
         MockButtonMappingService(),
+        fLauncherChannel,
       );
 
       expect(
@@ -656,44 +665,44 @@ void main() {
     "leaves settings untouched when a category later in the payload has a bad enum value",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
-      final file = File(
-        '${backupDirectory.path}/pitchfork_launcher_settings_latest.json',
-      );
 
       await settingsService.setUse24HourTimeFormat(true);
 
       // Everything parses fine except the category's 'sort' value, which isn't a real
       // CategorySort name. Validating the whole payload up front (rather than only once the
       // database step gets to this category) means the settings restore below should never run.
-      await file.writeAsString(
-        jsonEncode({
-          'version': 1,
-          'settings': {
-            'use24HourTimeFormat': false,
-            'appHighlightAnimationEnabled': false,
-            'gradientUuid': null,
-            'picsumPhotoId': null,
-            'picsumGrayscale': false,
-            'picsumBlur': null,
-          },
-          'categories': [
-            {
-              'name': 'Streaming',
-              'sort': 'not_a_real_sort_value',
-              'type': 'grid',
-              'rowHeight': 110,
-              'columnsCount': 6,
-              'order': 0,
-              'apps': [],
+      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+        utf8.encode(
+          jsonEncode({
+            'version': 1,
+            'settings': {
+              'use24HourTimeFormat': false,
+              'appHighlightAnimationEnabled': false,
+              'gradientUuid': null,
+              'picsumPhotoId': null,
+              'picsumGrayscale': false,
+              'picsumBlur': null,
             },
-          ],
-          'hiddenApps': [],
-          'buttonMappings': [],
-          'tvInputs': [],
-          'wallpaperBytesBase64': null,
-        }),
+            'categories': [
+              {
+                'name': 'Streaming',
+                'sort': 'not_a_real_sort_value',
+                'type': 'grid',
+                'rowHeight': 110,
+                'columnsCount': 6,
+                'order': 0,
+                'apps': [],
+              },
+            ],
+            'hiddenApps': [],
+            'buttonMappings': [],
+            'tvInputs': [],
+            'wallpaperBytesBase64': null,
+          }),
+        ),
       );
 
       final backupService = SettingsBackupService(
@@ -703,6 +712,7 @@ void main() {
         MockTvInputService(),
         MockAppsService(),
         MockButtonMappingService(),
+        fLauncherChannel,
       );
 
       await expectLater(
@@ -720,6 +730,7 @@ void main() {
     "import skips button mappings pointing at apps that are not installed",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -771,6 +782,7 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
       await backupService.exportSettings();
@@ -789,6 +801,7 @@ void main() {
     "reloads AppsService from the database after a successful import",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -822,6 +835,7 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
       await backupService.exportSettings();
@@ -840,6 +854,7 @@ void main() {
     "leaves categories untouched if a step before the database restore fails",
     () async {
       final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
       final sharedPreferences = await SharedPreferences.getInstance();
       final settingsService = SettingsService(sharedPreferences);
       final wallpaperService = MockWallpaperService();
@@ -881,6 +896,7 @@ void main() {
         tvInputService,
         appsService,
         buttonMappingService,
+        fLauncherChannel,
       );
 
       await backupService.exportSettings();
@@ -904,14 +920,43 @@ void main() {
       await database.close();
     },
   );
-}
 
-class _MockPathProviderPlatform extends Mock
-    with MockPlatformInterfaceMixin
-    implements PathProviderPlatform {
-  @override
-  Future<String?> getExternalStoragePath() => super.noSuchMethod(
-    Invocation.method(#getExternalStoragePath, []),
-    returnValue: Future<String?>.value(),
+  test(
+    "throws BackupException when the native side reports the write failed "
+    "(e.g. \"All files access\" not granted)",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        fLauncherChannel.writeSettingsBackup(any, any),
+      ).thenAnswer((_) => Future.value(false));
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        tvInputService,
+        appsService,
+        buttonMappingService,
+        fLauncherChannel,
+      );
+
+      await expectLater(
+        () => backupService.exportSettings(),
+        throwsA(isA<BackupException>()),
+      );
+
+      await database.close();
+    },
   );
 }

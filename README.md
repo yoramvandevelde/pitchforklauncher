@@ -23,8 +23,10 @@ others find it useful.
 - **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos), with a live
   full-screen preview and Black & White/Blur filters. No API key needed.
 - **Settings backup/restore**: back up categories, app assignments, wallpaper, remote button
-  mappings and TV inputs to a file in Downloads, and restore them later — survives a factory reset
-  or moving to a new device (Settings > Pitchfork Settings > Backup/Restore).
+  mappings and TV inputs to a file in Downloads, and restore them later — survives an app
+  uninstall/reinstall (Settings > Pitchfork Settings > Backup/Restore). Doesn't survive a factory
+  reset or moving to a new device by itself; copy the file off the device first (e.g. `adb pull`)
+  if that's what you're doing.
 - **Smart first-run setup**: apps are automatically sorted into topical categories (Streaming,
   Media, etc.) instead of a bare TV/Non-TV split, with a bundled default wallpaper, on first
   launch.
