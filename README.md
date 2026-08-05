@@ -16,9 +16,19 @@ others find it useful.
   trade off, see "Set as default launcher" below.
 - **Remote button remapping**: map any other physical remote button to launch an app of your
   choice (Settings > Pitchfork Settings > Remote buttons).
-- **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos). No API key
-  needed.
-- **Modern toolchain**, current as of July 2026 (Flutter, AGP, Kotlin, compileSdk).
+- **TV input switching**: hold D-pad Up for 2 seconds to switch the physical TV to a configured
+  input (game console, cable box, etc.) straight from the launcher — no CEC dongle, no root.
+  Ships with a Samsung Tizen profile, pluggable for other brands (Settings > Pitchfork Settings >
+  TV Inputs).
+- **Key-less random wallpaper**, backed by [picsum.photos](https://picsum.photos), with a live
+  full-screen preview and Black & White/Blur filters. No API key needed.
+- **Settings backup/restore**: back up categories, app assignments, wallpaper, remote button
+  mappings and TV inputs to a file in Downloads, and restore them later — survives a factory reset
+  or moving to a new device (Settings > Pitchfork Settings > Backup/Restore).
+- **Smart first-run setup**: apps are automatically sorted into topical categories (Streaming,
+  Media, etc.) instead of a bare TV/Non-TV split, with a bundled default wallpaper, on first
+  launch.
+- **Modern toolchain**, current as of August 2026 (Flutter, AGP, Kotlin, compileSdk).
 - Customizable categories, manually reorderable
 
 ## Installation
