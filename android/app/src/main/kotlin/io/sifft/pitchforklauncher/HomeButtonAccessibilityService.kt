@@ -27,14 +27,15 @@ import android.view.accessibility.AccessibilityEvent
  * KEYCODE_HOME is normally reserved by the system and can't be intercepted by a regular
  * Activity. An AccessibilityService with the FILTER_KEY_EVENTS capability is one of the few
  * ways to see it before the system's own launcher-switch handling consumes it, which lets
- * FLauncher act as the effective home screen without being registered as the default launcher
- * (and without disabling the stock one, which breaks the remote's YouTube button on Google TV).
+ * PitchforkLauncher act as the effective home screen without being registered as the default
+ * launcher (and without disabling the stock one, which breaks the remote's YouTube button on
+ * Google TV).
  *
  * Other remote buttons (e.g. the dedicated YouTube button, which doesn't send a standard
  * Android keycode) can be freely remapped to launch any app — see `ButtonMappings` and the
  * "Remote buttons" settings panel. Handling them here, rather than relying on whatever normally
  * reacts to them, means they keep working even if the stock launcher gets disabled (README
- * "Method 2").
+ * "Option B").
  */
 class HomeButtonAccessibilityService : AccessibilityService() {
 
@@ -86,11 +87,7 @@ class HomeButtonAccessibilityService : AccessibilityService() {
         }
 
         ButtonMappings.get(this, event.keyCode)?.let { packageName ->
-            // Android TV apps commonly only declare LEANBACK_LAUNCHER, not the regular LAUNCHER
-            // category; getLaunchIntentForPackage() alone looks for LAUNCHER -- matches
-            // MainActivity's own launchApp(), which needs the same fallback for the same reason.
-            val launchIntent = packageManager.getLeanbackLaunchIntentForPackage(packageName)
-                ?: packageManager.getLaunchIntentForPackage(packageName)
+            val launchIntent = packageManager.resolveLaunchIntent(packageName)?.intent
                 ?: return super.onKeyEvent(event)
             startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
             return true

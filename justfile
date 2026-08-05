@@ -54,10 +54,15 @@ commits-since-release:
 disable-default-launcher device:
     adb -s {{device}} shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
     adb -s {{device}} shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
-    @echo "Stock launcher disabled on {{device}}. Press Home on the remote and choose FLauncher when prompted."
+    @echo "Stock launcher disabled on {{device}}. Press Home on the remote and choose PitchforkLauncher when prompted."
 
 # Undo: re-enable the stock launcher and setup wizard.
 restore-default-launcher device:
     adb -s {{device}} shell pm enable com.google.android.apps.tv.launcherx
     adb -s {{device}} shell pm enable com.google.android.tungsten.setupwraith
     @echo "Stock launcher restored on {{device}}."
+
+screengrab device:
+    adb -s {{device}} shell screencap -p /sdcard/screencap.png 
+    mkdir -p tmp
+    adb -s {{device}} pull /sdcard/screencap.png tmp/screencap.png
