@@ -72,6 +72,22 @@ class MainActivity : FlutterActivity() {
                     ButtonMappings.remove(this, call.arguments as Int)
                     result.success(null)
                 }
+                "writeSettingsBackup" -> {
+                    @Suppress("UNCHECKED_CAST") val args = call.arguments as Map<String, Any>
+                    val success = SettingsBackupStorage.write(
+                        args["fileName"] as String,
+                        args["bytes"] as ByteArray,
+                    )
+                    result.success(success)
+                }
+                "readSettingsBackup" -> result.success(
+                    SettingsBackupStorage.read(call.arguments as String)
+                )
+                "isSettingsBackupStorageAvailable" -> result.success(SettingsBackupStorage.isAvailable())
+                "openSettingsBackupStoragePermission" -> {
+                    startActivity(SettingsBackupStorage.requestAccessIntent(this))
+                    result.success(null)
+                }
                 else -> throw IllegalArgumentException()
             }
         }

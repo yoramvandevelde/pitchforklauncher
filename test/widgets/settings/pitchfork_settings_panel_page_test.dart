@@ -17,8 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'dart:io';
-
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
@@ -132,16 +130,19 @@ void main() {
   );
 
   testWidgets(
-    "'Export settings' calls SettingsBackupService after confirmation",
+    "'Backup' calls SettingsBackupService after confirmation",
     (tester) async {
       final settingsService = MockSettingsService();
       final appsService = MockAppsService();
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.exportSettings()).thenAnswer(
-        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
-      );
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(true));
+      when(
+        backupService.exportSettings(),
+      ).thenAnswer((_) => Future.value());
 
       await _pumpWidgetWithProviders(
         tester,
@@ -159,28 +160,31 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
-      expect(find.text("Export settings?"), findsOneWidget);
+      expect(find.text("Back up settings?"), findsOneWidget);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       verify(backupService.exportSettings());
-      expect(find.text("Settings exported"), findsOneWidget);
+      expect(find.text("Backed up"), findsOneWidget);
     },
   );
 
   testWidgets(
-    "'Export settings' can be cancelled from the confirmation dialog",
+    "'Backup' can be cancelled from the confirmation dialog",
     (tester) async {
       final settingsService = MockSettingsService();
       final appsService = MockAppsService();
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(backupService.exportSettings()).thenAnswer(
-        (_) => Future.value(File('/storage/emulated/0/Android/data/test.json')),
-      );
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(true));
+      when(
+        backupService.exportSettings(),
+      ).thenAnswer((_) => Future.value());
 
       await _pumpWidgetWithProviders(
         tester,
@@ -198,25 +202,28 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
-      expect(find.text("Export settings?"), findsOneWidget);
+      expect(find.text("Back up settings?"), findsOneWidget);
 
       // Cancel is already focused because of autofocus.
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       verifyNever(backupService.exportSettings());
-      expect(find.text("Export settings?"), findsNothing);
+      expect(find.text("Back up settings?"), findsNothing);
     },
   );
 
   testWidgets(
-    "'Import settings' calls SettingsBackupService after confirmation",
+    "'Restore' calls SettingsBackupService after confirmation",
     (tester) async {
       final settingsService = MockSettingsService();
       final appsService = MockAppsService();
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(true));
       when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
       await _pumpWidgetWithProviders(
@@ -236,25 +243,28 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
-      expect(find.text("Import settings?"), findsOneWidget);
+      expect(find.text("Restore settings?"), findsOneWidget);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       verify(backupService.importSettings());
-      expect(find.text("Settings imported"), findsOneWidget);
+      expect(find.text("Restored"), findsOneWidget);
     },
   );
 
   testWidgets(
-    "'Import settings' can be cancelled from the confirmation dialog",
+    "'Restore' can be cancelled from the confirmation dialog",
     (tester) async {
       final settingsService = MockSettingsService();
       final appsService = MockAppsService();
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(true));
       when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
       await _pumpWidgetWithProviders(
@@ -274,14 +284,58 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
-      expect(find.text("Import settings?"), findsOneWidget);
+      expect(find.text("Restore settings?"), findsOneWidget);
 
       // Cancel is already focused because of autofocus.
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
       verifyNever(backupService.importSettings());
-      expect(find.text("Import settings?"), findsNothing);
+      expect(find.text("Restore settings?"), findsNothing);
+    },
+  );
+
+  testWidgets(
+    "'Backup' prompts to grant access instead of the confirmation dialog "
+    "when storage isn't available",
+    (tester) async {
+      final settingsService = MockSettingsService();
+      final appsService = MockAppsService();
+      final backupService = MockSettingsBackupService();
+      when(settingsService.use24HourTimeFormat).thenReturn(false);
+      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(false));
+      when(
+        backupService.openStoragePermissionSettings(),
+      ).thenAnswer((_) => Future.value());
+
+      await _pumpWidgetWithProviders(
+        tester,
+        settingsService,
+        appsService,
+        settingsBackupService: backupService,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.text("Back up settings?"), findsNothing);
+      expect(find.text('Needs "All files access"'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      verify(backupService.openStoragePermissionSettings());
+      verifyNever(backupService.exportSettings());
     },
   );
 }

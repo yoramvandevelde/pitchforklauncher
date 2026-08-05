@@ -17,21 +17,23 @@
  */
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
+import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 class SettingsBackupService {
   static const _backupVersion = 1;
-  static const _latestBackupFileName =
-      'pitchfork_launcher_settings_latest.json';
+
+  /// Fixed, recognisable file name in the real, shared Downloads folder -- see
+  /// [FLauncherChannel.writeSettingsBackup]/[FLauncherChannel.readSettingsBackup] for why this
+  /// isn't a path_provider app-private path: it needs to survive an uninstall.
+  static const backupFileName = 'pitchfork_launcher_settings.json';
 
   final FLauncherDatabase _database;
   final SettingsService _settingsService;
@@ -39,7 +41,7 @@ class SettingsBackupService {
   final TvInputService _tvInputService;
   final AppsService _appsService;
   final ButtonMappingService _buttonMappingService;
-  final Future<Directory?> Function() _directoryProvider;
+  final FLauncherChannel _fLauncherChannel;
 
   SettingsBackupService(
     this._database,
@@ -47,31 +49,36 @@ class SettingsBackupService {
     this._wallpaperService,
     this._tvInputService,
     this._appsService,
-    this._buttonMappingService, {
-    Future<Directory?> Function()? directoryProvider,
-  }) : _directoryProvider = directoryProvider ?? getExternalStorageDirectory;
+    this._buttonMappingService,
+    this._fLauncherChannel,
+  );
 
-  Future<File> exportSettings() async {
+  /// Whether the "All files access" permission that reading/writing the backup file relies on is
+  /// currently granted. UI checks this up front to offer a "grant it" action instead of a generic
+  /// failure message.
+  Future<bool> isStorageAvailable() =>
+      _fLauncherChannel.isSettingsBackupStorageAvailable();
+
+  /// Opens the system Settings screen where the user grants "All files access".
+  Future<void> openStoragePermissionSettings() =>
+      _fLauncherChannel.openSettingsBackupStoragePermission();
+
+  Future<void> exportSettings() async {
     try {
       final data = await _buildBackupJson();
-      final directory = await _directoryProvider();
-      if (directory == null) {
-        throw BackupException('External storage is not available');
-      }
-
-      final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(
-        ':',
-        '-',
+      final jsonBytes = Uint8List.fromList(
+        utf8.encode(const JsonEncoder.withIndent('  ').convert(data)),
       );
-      final fileName = 'pitchfork_launcher_settings_$timestamp.json';
-      final file = File('${directory.path}/$fileName');
-      final latestFile = File('${directory.path}/$_latestBackupFileName');
-
-      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
-      await file.writeAsString(jsonString);
-      await latestFile.writeAsString(jsonString);
-
-      return file;
+      final success = await _fLauncherChannel.writeSettingsBackup(
+        backupFileName,
+        jsonBytes,
+      );
+      if (!success) {
+        throw BackupException(
+          'Could not write $backupFileName to Downloads. Grant "All files access" in '
+          'Settings and try again.',
+        );
+      }
     } on BackupException {
       rethrow;
     } catch (e) {
@@ -81,17 +88,16 @@ class SettingsBackupService {
 
   Future<void> importSettings() async {
     try {
-      final directory = await _directoryProvider();
-      if (directory == null) {
-        throw BackupException('External storage is not available');
+      final bytes = await _fLauncherChannel.readSettingsBackup(
+        backupFileName,
+      );
+      if (bytes == null) {
+        throw BackupException(
+          'Backup file not found in Downloads, or "All files access" isn\'t granted.',
+        );
       }
 
-      final file = File('${directory.path}/$_latestBackupFileName');
-      if (!await file.exists()) {
-        throw BackupException('Backup file not found: ${file.path}');
-      }
-
-      final jsonString = await file.readAsString();
+      final jsonString = utf8.decode(bytes);
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
 
       final version = data['version'] as int?;

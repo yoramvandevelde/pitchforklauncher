@@ -258,15 +258,37 @@ Configured inputs (`TvInputConfig`, a small id/label/profile-id/params record) a
 blob in SharedPreferences (`TvInputService`) rather than a Drift table — the same storage choice
 `SettingsService` makes for similarly small, rarely-changing state.
 
-## Settings export/import (JSON)
+## Settings backup/restore (JSON)
 
 `SettingsBackupService` exports every category and its app assignments, hidden apps, the
 SharedPreferences-backed settings, TV Input configuration, remote button mappings and the wallpaper
-to a timestamped JSON file (plus a `pitchfork_launcher_settings_latest.json` copy), with import
-restoring all of it. Reachable via Settings → Pitchfork Settings → Export/Import settings, each
-behind a confirmation dialog. Motivation: recovering after a factory reset or moving to a new
-device without reconfiguring everything from scratch (clears ADR-001's governance gate — see
-`ADR_001_Project_Scope_and_Feature_Governance.md`).
+to a single fixed-name JSON file, with import restoring all of it. Reachable via Settings →
+Pitchfork Settings → Backup/Restore, each behind a confirmation dialog. Motivation: recovering after
+a factory reset or moving to a new device without reconfiguring everything from scratch (clears
+ADR-001's governance gate — see `ADR_001_Project_Scope_and_Feature_Governance.md`).
+
+The backup file lives in the real, shared Downloads folder (`SettingsBackupStorage.kt`, reached
+through `FLauncherChannel.writeSettingsBackup`/`readSettingsBackup`), not the app's own
+external-files directory — that directory is wiped on uninstall, which would have defeated the
+whole "recover after a reset" point. `SettingsBackupService` always targets one recognisable name
+(`pitchfork_launcher_settings.json`), so "Backup"/"Restore" stay two plain buttons — no picker, no
+"which file" choice.
+
+First cut of this used `MediaStore.Downloads` instead, which lets an app write/read its own rows
+with no permission at all — but confirmed on a real device (and independently documented as
+general Android behavior, not an OEM quirk): `MediaProvider` does not preserve that per-app
+ownership across an uninstall/reinstall, which broke the "survive uninstall" requirement this
+feature exists for. Now uses the `MANAGE_EXTERNAL_STORAGE` ("All files access") permission plus a
+plain `File` against `Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)` instead
+— sidesteps the ownership question entirely, at the cost of a one-time manual grant via a system
+Settings screen (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`, opened via
+`SettingsBackupService.openStoragePermissionSettings()`), which — like any permission — needs
+re-granting after a fresh install. `SettingsBackupService.isStorageAvailable()` lets the UI check
+this up front and prompt with a "Open Settings" action instead of a bare failure. Reasonable only
+because PitchforkLauncher isn't on the Play Store, where this permission needs a declared
+justification most apps don't have. Requires Android 11+ (API 30, where
+`Environment.isExternalStorageManager()` was introduced); the native side simply no-ops (write
+returns false, read returns null) below that.
 
 Import parses and validates the *entire* backup payload up front, into a typed `_ParsedBackup`
 model, before touching anything. Restoring spans several independent stores with no shared
@@ -281,9 +303,3 @@ violation or leaving a dead mapping. The category/hidden-state writes and the bu
 route back through `AppsService.reloadFromDatabase()`/`ButtonMappingService.setMapping()` rather
 than hitting the database/native channel directly, so those services' own in-memory caches — and
 the UI reading them — reflect the restore immediately rather than only after an unrelated refresh.
-
-Known limitation, tracked in `TODO.md`: export/import use a fixed filename in the app's own
-external-files directory rather than a user-chosen location via a file picker, which limits how
-well a backup survives an app uninstall (that directory is wiped along with it) or an actual
-factory reset (which wipes the whole device regardless of where the file lived) unless it's copied
-off-device first.
