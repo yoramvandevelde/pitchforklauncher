@@ -64,5 +64,5 @@ restore-default-launcher device:
 
 screengrab device:
     adb -s {{device}} shell screencap -p /sdcard/screencap.png 
-    adb -s {{device}} pull /sdcard/screencap.png
-    mv screencap.png tmp/
+    mkdir -p tmp
+    adb -s {{device}} pull /sdcard/screencap.png tmp/screencap.png
