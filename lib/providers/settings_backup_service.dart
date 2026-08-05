@@ -59,8 +59,15 @@ class SettingsBackupService {
   Future<bool> isStorageAvailable() =>
       _fLauncherChannel.isSettingsBackupStorageAvailable();
 
-  /// Opens the system Settings screen where the user grants "All files access".
-  Future<void> openStoragePermissionSettings() =>
+  /// Whether backup/restore can work on this OS version at all (needs Android 11+). UI checks
+  /// this when [isStorageAvailable] is false, to tell "not granted yet" (fixable, offer a "grant
+  /// it" action) apart from "device too old" (not fixable, no point offering that action).
+  Future<bool> isStorageSupported() =>
+      _fLauncherChannel.isSettingsBackupStorageSupported();
+
+  /// Opens the system Settings screen where the user grants "All files access". Returns false if
+  /// it couldn't be opened.
+  Future<bool> openStoragePermissionSettings() =>
       _fLauncherChannel.openSettingsBackupStoragePermission();
 
   Future<void> exportSettings() async {

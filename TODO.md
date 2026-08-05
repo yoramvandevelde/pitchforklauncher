@@ -262,8 +262,16 @@ so at least one layer is always fully opaque and the background never shows thro
   `SettingsBackupService.isStorageAvailable()` before Backup/Restore and offers an "Open Settings"
   button instead of a bare failure when it isn't granted yet. Reasonable only because
   PitchforkLauncher isn't on the Play Store, where this permission needs a declared justification
-  most apps don't have. Requires Android 11+ (API 30); no-ops below that. Still no new Flutter
-  dependency, still the same two-button UI. See `DRIFT.md`.
+  most apps don't have. Requires Android 11+ (API 30); no-ops below that, and
+  `isStorageSupported()` lets the UI tell "not granted yet" apart from "OS too old" instead of
+  offering a settings screen that can't resolve on this app's minSdk-24 floor. Writes go through a
+  temp file + atomic rename rather than truncating the target in place, so a failed write can't
+  destroy the previous good backup; the native read/write handlers also moved off the UI thread
+  (`MethodChannel` callbacks run there by default) to avoid janking rendering on a large wallpaper
+  payload. Still no new Flutter dependency, still the same two-button UI. **Scope, precisely:**
+  this survives an app uninstall/reinstall (verified), not a factory reset or a move to a new
+  device by itself — those wipe/don't-carry-over the Downloads folder too, so recovering from
+  either still needs the file copied off-device first. See `DRIFT.md`.
 
 ~~**Restructure the Settings panel menu.** `SettingsPanelPage` has grown a lot (categories,
   applications, button mappings, wallpaper, time format, animations, about, and now export/import)

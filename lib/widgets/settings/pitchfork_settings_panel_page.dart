@@ -125,13 +125,8 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
 
   Future<void> _backup(BuildContext context) async {
     final backupService = context.read<SettingsBackupService>();
-    if (!await backupService.isStorageAvailable()) {
-      if (context.mounted) {
-        await _showGrantAccessDialog(context, backupService);
-      }
-      return;
-    }
-    if (!context.mounted) {
+    if (!await _ensureStorageAvailable(context, backupService) ||
+        !context.mounted) {
       return;
     }
     final confirmed = await _showBackupConfirmationDialog(context);
@@ -180,13 +175,8 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
 
   Future<void> _restore(BuildContext context) async {
     final backupService = context.read<SettingsBackupService>();
-    if (!await backupService.isStorageAvailable()) {
-      if (context.mounted) {
-        await _showGrantAccessDialog(context, backupService);
-      }
-      return;
-    }
-    if (!context.mounted) {
+    if (!await _ensureStorageAvailable(context, backupService) ||
+        !context.mounted) {
       return;
     }
     final confirmed = await _showRestoreConfirmationDialog(context);
@@ -209,6 +199,38 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
     }
   }
 
+  /// Checks storage access before Backup/Restore proceeds, prompting appropriately if it isn't
+  /// there yet, and returns whether it's safe to continue. Two different reasons
+  /// [SettingsBackupService.isStorageAvailable] can be false need two different responses: the
+  /// permission just isn't granted yet (fixable -- offer to open Settings) versus the OS version
+  /// is too old for the underlying API to exist at all (not fixable -- offering "Open Settings"
+  /// there would either fail to resolve or lead to a screen that can't help).
+  Future<bool> _ensureStorageAvailable(
+    BuildContext context,
+    SettingsBackupService backupService,
+  ) async {
+    if (await backupService.isStorageAvailable()) {
+      return true;
+    }
+    if (!context.mounted) {
+      return false;
+    }
+    if (!await backupService.isStorageSupported()) {
+      if (context.mounted) {
+        await _showResultDialog(
+          context,
+          "Not supported",
+          "Backup/Restore needs Android 11 or newer.",
+        );
+      }
+      return false;
+    }
+    if (context.mounted) {
+      await _showGrantAccessDialog(context, backupService);
+    }
+    return false;
+  }
+
   Future<void> _showGrantAccessDialog(
     BuildContext context,
     SettingsBackupService backupService,
@@ -228,9 +250,17 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
           child: Text("Cancel"),
         ),
         TextButton(
-          onPressed: () {
+          onPressed: () async {
             Navigator.of(context).pop();
-            backupService.openStoragePermissionSettings();
+            final opened = await backupService.openStoragePermissionSettings();
+            if (!opened && context.mounted) {
+              await _showResultDialog(
+                context,
+                "Couldn't open Settings",
+                "Grant \"All files access\" manually in Android Settings > Apps > "
+                    "PitchforkLauncher, then try again.",
+              );
+            }
           },
           child: Text("Open Settings"),
         ),

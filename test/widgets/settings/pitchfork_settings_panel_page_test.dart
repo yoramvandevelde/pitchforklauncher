@@ -308,8 +308,11 @@ void main() {
         backupService.isStorageAvailable(),
       ).thenAnswer((_) => Future.value(false));
       when(
+        backupService.isStorageSupported(),
+      ).thenAnswer((_) => Future.value(true));
+      when(
         backupService.openStoragePermissionSettings(),
-      ).thenAnswer((_) => Future.value());
+      ).thenAnswer((_) => Future.value(true));
 
       await _pumpWidgetWithProviders(
         tester,
@@ -335,6 +338,47 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(backupService.openStoragePermissionSettings());
+      verifyNever(backupService.exportSettings());
+    },
+  );
+
+  testWidgets(
+    "'Backup' shows an unsupported message instead of the grant-access "
+    "dialog when the OS is too old",
+    (tester) async {
+      final settingsService = MockSettingsService();
+      final appsService = MockAppsService();
+      final backupService = MockSettingsBackupService();
+      when(settingsService.use24HourTimeFormat).thenReturn(false);
+      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+      when(
+        backupService.isStorageAvailable(),
+      ).thenAnswer((_) => Future.value(false));
+      when(
+        backupService.isStorageSupported(),
+      ).thenAnswer((_) => Future.value(false));
+
+      await _pumpWidgetWithProviders(
+        tester,
+        settingsService,
+        appsService,
+        settingsBackupService: backupService,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(find.text("Back up settings?"), findsNothing);
+      expect(find.text('Needs "All files access"'), findsNothing);
+      expect(find.text("Not supported"), findsOneWidget);
+
+      verifyNever(backupService.openStoragePermissionSettings());
       verifyNever(backupService.exportSettings());
     },
   );

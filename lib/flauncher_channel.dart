@@ -88,8 +88,23 @@ class FLauncherChannel {
       ) ??
       false;
 
+  /// Whether backup/restore can work on this OS version at all -- the underlying API needs
+  /// Android 11 (API 30), but this app's minSdk is 24. Distinct from
+  /// [isSettingsBackupStorageAvailable]: that can be false either because the permission just
+  /// isn't granted yet (fixable by the user) or because the device is too old (not fixable), and
+  /// the UI needs to tell those two apart to avoid offering a "grant it" action that can't work.
+  Future<bool> isSettingsBackupStorageSupported() async =>
+      await _methodChannel.invokeMethod<bool>(
+        'isSettingsBackupStorageSupported',
+      ) ??
+      false;
+
   /// Opens the system Settings screen where the user grants/revokes "All files access" for this
-  /// app.
-  Future<void> openSettingsBackupStoragePermission() async =>
-      await _methodChannel.invokeMethod('openSettingsBackupStoragePermission');
+  /// app. Returns false if the screen couldn't be opened (below Android 11, or no matching
+  /// Settings activity on this OEM build) instead of throwing.
+  Future<bool> openSettingsBackupStoragePermission() async =>
+      await _methodChannel.invokeMethod<bool>(
+        'openSettingsBackupStoragePermission',
+      ) ??
+      false;
 }

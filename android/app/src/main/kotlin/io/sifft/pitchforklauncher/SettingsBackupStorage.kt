@@ -51,16 +51,28 @@ object SettingsBackupStorage {
     private val downloadsDirectory: File
         get() = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
-    /** `Environment.isExternalStorageManager()` doesn't exist before API 30 (R). */
-    fun isAvailable(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
+    /** Whether the underlying API (`Environment.isExternalStorageManager()`,
+     * `ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`) exists on this OS version at all -- both
+     * were introduced in API 30 (R). Distinct from [isAvailable]: this app's minSdk is 24, so a
+     * device below R can reach this code with no way to ever grant the permission, which
+     * [requestAccessIntent] needs to know before trying to resolve an intent action that doesn't
+     * exist yet. */
+    fun isSupported(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+
+    fun isAvailable(): Boolean = isSupported() && Environment.isExternalStorageManager()
 
     fun write(fileName: String, bytes: ByteArray): Boolean {
         if (!isAvailable()) return false
         return try {
             downloadsDirectory.mkdirs()
-            File(downloadsDirectory, fileName).writeBytes(bytes)
-            true
+            // Write to a temp file and rename over the target rather than truncating it directly:
+            // a rename within the same directory is atomic, so a crash, full disk, or failed write
+            // partway through leaves the previous good backup in place instead of a half-written
+            // replacement that Restore would then choke on.
+            val target = File(downloadsDirectory, fileName)
+            val tempFile = File(downloadsDirectory, "$fileName.tmp")
+            tempFile.writeBytes(bytes)
+            tempFile.renameTo(target)
         } catch (e: Exception) {
             false
         }

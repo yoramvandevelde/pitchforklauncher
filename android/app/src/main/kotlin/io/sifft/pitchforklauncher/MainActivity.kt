@@ -19,6 +19,7 @@
 
 package io.sifft.pitchforklauncher
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.Intent.*
 import android.content.pm.*
@@ -26,6 +27,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.os.UserHandle
 import android.provider.Settings
 import android.view.KeyEvent
@@ -38,6 +41,7 @@ import io.flutter.plugin.common.EventChannel.StreamHandler
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.Serializable
+import java.util.concurrent.Executors
 
 private const val METHOD_CHANNEL = "io.sifft.pitchforklauncher/method"
 private const val EVENT_CHANNEL = "io.sifft.pitchforklauncher/event"
@@ -45,6 +49,14 @@ private const val BUTTON_CAPTURE_EVENT_CHANNEL = "io.sifft.pitchforklauncher/but
 
 class MainActivity : FlutterActivity() {
     private val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
+
+    // MethodChannel handlers run on the platform (UI) thread by default -- reading/writing the
+    // settings backup file synchronously there (it includes the base64-encoded wallpaper, which
+    // can be several hundred KB) risks janking rendering or an ANR on slow storage. Both handlers
+    // below hop onto this single background thread for the actual file I/O and post the result
+    // back via mainHandler, same shape `AsyncTask` used to hide before it was deprecated.
+    private val backgroundExecutor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -74,19 +86,38 @@ class MainActivity : FlutterActivity() {
                 }
                 "writeSettingsBackup" -> {
                     @Suppress("UNCHECKED_CAST") val args = call.arguments as Map<String, Any>
-                    val success = SettingsBackupStorage.write(
-                        args["fileName"] as String,
-                        args["bytes"] as ByteArray,
-                    )
-                    result.success(success)
+                    val fileName = args["fileName"] as String
+                    val bytes = args["bytes"] as ByteArray
+                    backgroundExecutor.execute {
+                        val success = SettingsBackupStorage.write(fileName, bytes)
+                        mainHandler.post { result.success(success) }
+                    }
                 }
-                "readSettingsBackup" -> result.success(
-                    SettingsBackupStorage.read(call.arguments as String)
-                )
+                "readSettingsBackup" -> {
+                    val fileName = call.arguments as String
+                    backgroundExecutor.execute {
+                        val bytes = SettingsBackupStorage.read(fileName)
+                        mainHandler.post { result.success(bytes) }
+                    }
+                }
                 "isSettingsBackupStorageAvailable" -> result.success(SettingsBackupStorage.isAvailable())
+                "isSettingsBackupStorageSupported" -> result.success(SettingsBackupStorage.isSupported())
                 "openSettingsBackupStoragePermission" -> {
-                    startActivity(SettingsBackupStorage.requestAccessIntent(this))
-                    result.success(null)
+                    // The action this builds (and Environment.isExternalStorageManager() behind
+                    // isAvailable()) doesn't exist below API 30 -- this app's minSdk is 24, so
+                    // guard against resolving an intent action the OS doesn't have yet, with an
+                    // ActivityNotFoundException fallback in case some OEM build still surprises us.
+                    val opened = if (SettingsBackupStorage.isSupported()) {
+                        try {
+                            startActivity(SettingsBackupStorage.requestAccessIntent(this))
+                            true
+                        } catch (e: ActivityNotFoundException) {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                    result.success(opened)
                 }
                 else -> throw IllegalArgumentException()
             }
@@ -145,6 +176,7 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         val launcherApps = getSystemService(LAUNCHER_APPS_SERVICE) as LauncherApps
         launcherAppsCallbacks.forEach(launcherApps::unregisterCallback)
+        backgroundExecutor.shutdown()
         super.onDestroy()
     }
 

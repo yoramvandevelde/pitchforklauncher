@@ -340,13 +340,20 @@ class MockFLauncherChannel extends _i1.Mock implements _i8.FLauncherChannel {
           as _i7.Future<bool>);
 
   @override
-  _i7.Future<void> openSettingsBackupStoragePermission() =>
+  _i7.Future<bool> isSettingsBackupStorageSupported() =>
+      (super.noSuchMethod(
+            Invocation.method(#isSettingsBackupStorageSupported, []),
+            returnValue: _i7.Future<bool>.value(false),
+          )
+          as _i7.Future<bool>);
+
+  @override
+  _i7.Future<bool> openSettingsBackupStoragePermission() =>
       (super.noSuchMethod(
             Invocation.method(#openSettingsBackupStoragePermission, []),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
+            returnValue: _i7.Future<bool>.value(false),
           )
-          as _i7.Future<void>);
+          as _i7.Future<bool>);
 }
 
 /// A class which mocks [WallpaperService].
@@ -949,13 +956,20 @@ class MockSettingsBackupService extends _i1.Mock
           as _i7.Future<bool>);
 
   @override
-  _i7.Future<void> openStoragePermissionSettings() =>
+  _i7.Future<bool> isStorageSupported() =>
+      (super.noSuchMethod(
+            Invocation.method(#isStorageSupported, []),
+            returnValue: _i7.Future<bool>.value(false),
+          )
+          as _i7.Future<bool>);
+
+  @override
+  _i7.Future<bool> openStoragePermissionSettings() =>
       (super.noSuchMethod(
             Invocation.method(#openStoragePermissionSettings, []),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
+            returnValue: _i7.Future<bool>.value(false),
           )
-          as _i7.Future<void>);
+          as _i7.Future<bool>);
 
   @override
   _i7.Future<void> exportSettings() =>
