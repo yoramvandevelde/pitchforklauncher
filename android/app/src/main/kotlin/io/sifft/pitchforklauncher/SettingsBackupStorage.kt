@@ -34,8 +34,9 @@ import java.io.File
  * instead, which needs no permission at all for rows an app inserted itself -- but confirmed
  * on-device (and independently documented as a general Android limitation, not an OEM quirk),
  * `MediaProvider` does not preserve that ownership across an uninstall/reinstall. Since surviving
- * exactly that (recovering settings after a reset or on a new device) is the whole point of this
- * feature, `MediaStore` couldn't actually deliver it. `MANAGE_EXTERNAL_STORAGE` sidesteps the
+ * exactly that (recovering settings after an uninstall/reinstall, not a factory reset or a new
+ * device -- both wipe/don't carry over shared Downloads too) is the whole point of this feature,
+ * `MediaStore` couldn't actually deliver it. `MANAGE_EXTERNAL_STORAGE` sidesteps the
  * ownership question entirely: once granted, plain file paths under the real Downloads folder
  * work regardless of which app (or install of this app) wrote them. This is the same trade-off
  * file-manager-style apps make, and reasonable here since PitchforkLauncher isn't on the Play

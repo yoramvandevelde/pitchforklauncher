@@ -231,12 +231,18 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
     return false;
   }
 
+  /// [context] here is the page's own, long-lived context (passed down from [_backup]/[_restore]
+  /// via [_ensureStorageAvailable]) -- deliberately not shadowed by the dialog builder's own
+  /// context below. The "Open Settings" button pops the dialog and then awaits a platform call
+  /// before deciding whether to show a follow-up dialog; by that point the dialog route's own
+  /// context is unmounted, so that follow-up needs the page's context to still work, not the
+  /// (by-then-gone) dialog's.
   Future<void> _showGrantAccessDialog(
     BuildContext context,
     SettingsBackupService backupService,
   ) => showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: Text('Needs "All files access"'),
       content: Text(
         "Backup/Restore read and write "
@@ -246,12 +252,12 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
       actions: [
         TextButton(
           autofocus: true,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text("Cancel"),
         ),
         TextButton(
           onPressed: () async {
-            Navigator.of(context).pop();
+            Navigator.of(dialogContext).pop();
             final opened = await backupService.openStoragePermissionSettings();
             if (!opened && context.mounted) {
               await _showResultDialog(

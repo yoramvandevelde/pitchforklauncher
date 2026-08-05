@@ -81,9 +81,13 @@ class SettingsBackupService {
         jsonBytes,
       );
       if (!success) {
+        // The UI already checks SettingsBackupService.isStorageAvailable() before ever calling
+        // this, so a failure here is almost never a missing permission -- it's the native write
+        // itself failing (storage full, the atomic rename failing, etc.), or -- rarely -- the
+        // permission having been revoked in the moment between that check and this call.
         throw BackupException(
-          'Could not write $backupFileName to Downloads. Grant "All files access" in '
-          'Settings and try again.',
+          'Could not write $backupFileName to Downloads. Check available storage, or that '
+          '"All files access" is still granted, and try again.',
         );
       }
     } on BackupException {
@@ -99,8 +103,14 @@ class SettingsBackupService {
         backupFileName,
       );
       if (bytes == null) {
+        // Null covers three different native-side outcomes (no backup exists yet, a read
+        // failure, or -- rarely, since the UI already checks isStorageAvailable() first -- the
+        // permission having been revoked in the moment between that check and this call), none
+        // of which are distinguishable from here. Phrased to cover all three instead of pointing
+        // only at the permission.
         throw BackupException(
-          'Backup file not found in Downloads, or "All files access" isn\'t granted.',
+          'Could not read $backupFileName from Downloads. Back up first if you haven\'t yet, '
+          'or check that "All files access" is still granted.',
         );
       }
 

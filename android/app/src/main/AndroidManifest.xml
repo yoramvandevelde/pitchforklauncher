@@ -32,9 +32,10 @@
     <!-- Only used for the settings backup/restore file in the shared Downloads folder (see
          SettingsBackupStorage.kt): MediaStore's own-app-ownership model doesn't survive an
          uninstall/reinstall (confirmed on-device, and a documented general Android limitation),
-         which is exactly the "recover after a reset" case the backup feature exists for. Not
-         published on the Play Store, where this permission would otherwise need a declared
-         justification. -->
+         which is exactly the "recover after an uninstall/reinstall" case the backup feature
+         exists for, not a factory reset or a new device (both of which wipe/don't carry over
+         shared Downloads too). Not published on the Play Store, where this permission would
+         otherwise need a declared justification. -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />

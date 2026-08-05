@@ -295,7 +295,7 @@ plain `File` against `Environment.getExternalStoragePublicDirectory(DIRECTORY_DO
 Settings screen (`Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`, opened via
 `SettingsBackupService.openStoragePermissionSettings()`), which — like any permission — needs
 re-granting after a fresh install. `SettingsBackupService.isStorageAvailable()` lets the UI check
-this up front and prompt with a "Open Settings" action instead of a bare failure. Reasonable only
+this up front and prompt with an "Open Settings" action instead of a bare failure. Reasonable only
 because PitchforkLauncher isn't on the Play Store, where this permission needs a declared
 justification most apps don't have. Requires Android 11+ (API 30, where
 `Environment.isExternalStorageManager()` and `ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION` were
