@@ -119,6 +119,7 @@ class ButtonMappingPanelPage extends StatelessWidget {
     if (captured == null) {
       return;
     }
+    if (!context.mounted) return;
 
     final keyCode = captured!["keyCode"] as int;
     final label = captured!["label"] as String;
