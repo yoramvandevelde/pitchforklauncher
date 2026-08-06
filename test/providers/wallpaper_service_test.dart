@@ -18,6 +18,7 @@
  */
 
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flauncher/app_log.dart';
@@ -82,7 +83,71 @@ void main() {
       await wallpaperService.pickWallpaper();
 
       verify(imagePicker.pickImage(source: ImageSource.gallery));
+      // [0x01] isn't valid image data, so this also exercises _resizeToScreen's decode-failure
+      // fallback: the bytes are stored as-is instead of the pick blowing up.
       expect(wallpaperService.wallpaperBytes, [0x01]);
+    });
+
+    test("resizes a picked image bigger than the screen", () async {
+      final pickedBytes = await _solidColorImageBytes(400, 300);
+      final pickedFile = _MockXFile();
+      when(
+        pickedFile.readAsBytes(),
+      ).thenAnswer((_) => Future.value(pickedBytes));
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final settingsService = _mockSettingsService();
+      when(
+        imagePicker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) => Future.value(pickedFile));
+      when(
+        fLauncherChannel.checkForGetContentAvailability(),
+      ).thenAnswer((_) => Future.value(true));
+      const targetSize = Size(100, 50);
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+        targetWallpaperSize: () => targetSize,
+      )..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+
+      await wallpaperService.pickWallpaper();
+
+      final codec = await instantiateImageCodec(wallpaperService.wallpaperBytes!);
+      final image = (await codec.getNextFrame()).image;
+      expect(image.width, targetSize.width.round());
+      expect(image.height, targetSize.height.round());
+    });
+
+    test("leaves a picked image unchanged when it already fits the screen", () async {
+      final pickedBytes = await _solidColorImageBytes(50, 25);
+      final pickedFile = _MockXFile();
+      when(
+        pickedFile.readAsBytes(),
+      ).thenAnswer((_) => Future.value(pickedBytes));
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final settingsService = _mockSettingsService();
+      when(
+        imagePicker.pickImage(source: ImageSource.gallery),
+      ).thenAnswer((_) => Future.value(pickedFile));
+      when(
+        fLauncherChannel.checkForGetContentAvailability(),
+      ).thenAnswer((_) => Future.value(true));
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(),
+        targetWallpaperSize: () => const Size(200, 100),
+      )..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+
+      await wallpaperService.pickWallpaper();
+
+      expect(wallpaperService.wallpaperBytes, pickedBytes);
     });
 
     test("throws error when no file explorer installed", () async {
@@ -309,6 +374,9 @@ void main() {
           fLauncherChannel,
           MockPicsumService(),
           _mockDatabase(isFreshInstall: true),
+          // Disabled so this test can assert byte-for-byte fidelity below -- resizing is covered
+          // separately in "resizes the seeded default wallpaper to the target screen size".
+          targetWallpaperSize: () => null,
         )..settingsService = settingsService;
         await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
         // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
@@ -337,6 +405,41 @@ void main() {
           wallpaperService.wallpaperBytes,
           await File("assets/default_wallpaper.jpg").readAsBytes(),
         );
+      },
+    );
+
+    test(
+      "resizes the seeded default wallpaper to the target screen size",
+      () async {
+        final imagePicker = _MockImagePicker();
+        final fLauncherChannel = MockFLauncherChannel();
+        final settingsService = _mockSettingsService();
+        // assets/default_wallpaper.jpg is 4000x2491 -- comfortably bigger than this target on
+        // both axes, so a resize is guaranteed to actually trigger.
+        const targetSize = Size(200, 100);
+        final wallpaperService = WallpaperService(
+          imagePicker,
+          fLauncherChannel,
+          MockPicsumService(),
+          _mockDatabase(isFreshInstall: true),
+          targetWallpaperSize: () => targetSize,
+        )..settingsService = settingsService;
+        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+        final stopwatch = Stopwatch()..start();
+        while (wallpaperService.wallpaperBytes == null &&
+            stopwatch.elapsed < const Duration(seconds: 10)) {
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+
+        final bytes = wallpaperService.wallpaperBytes!;
+        // Resized output is re-encoded (PNG), so it's a different byte sequence from the
+        // original JPEG asset -- proves the bytes on disk were actually transformed, not just
+        // passed through unchanged.
+        expect(bytes, isNot(await File("assets/default_wallpaper.jpg").readAsBytes()));
+        final codec = await instantiateImageCodec(bytes);
+        final image = (await codec.getNextFrame()).image;
+        expect(image.width, targetSize.width.round());
+        expect(image.height, targetSize.height.round());
       },
     );
 
@@ -430,6 +533,19 @@ void main() {
       expect(wallpaperService.hasCurrentPicsumPhoto, isTrue);
     });
   });
+}
+
+/// A tiny solid-color image, real enough to decode via [instantiateImageCodec] -- used to exercise
+/// [WallpaperService]'s resize path without a binary fixture file on disk.
+Future<Uint8List> _solidColorImageBytes(int width, int height) async {
+  final recorder = PictureRecorder();
+  Canvas(recorder).drawRect(
+    Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    Paint()..color = const Color(0xFFFF0000),
+  );
+  final image = await recorder.endRecording().toImage(width, height);
+  final byteData = await image.toByteData(format: ImageByteFormat.png);
+  return Uint8List.sublistView(byteData!);
 }
 
 /// A [MockFLauncherDatabase] stubbed to report whether this is a fresh install -- gates whether
