@@ -1,6 +1,79 @@
 # TODO
 
-## Known issue: Back button leaves FLauncher when opened via the Home-button override
+## Open
+
+- **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
+  the KGP fix below: with both plugins fixed, the *only* remaining KGP warning is our own module
+  still applying `id "org.jetbrains.kotlin.android"` directly. See
+  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
+  **Blocked on Flutter 3.47 (2026-07-30):** tried it (drop the plugin line, flip
+  `android.builtInKotlin=true` in `gradle.properties`, declare KGP in `settings.gradle`'s plugins
+  block, replace `kotlinOptions { }` with the `kotlin { compilerOptions { } }` DSL) and it fails at
+  build time regardless of correct config: `flutter_tools/gradle`'s
+  `FlutterPluginUtils.detectApplyingKotlinGradlePlugin` (in the pinned 3.44.8 SDK) unconditionally
+  force-applies `kotlin-android` onto every AGP subproject that doesn't declare KGP itself —
+  including plain-Java plugins like `flutter_plugin_android_lifecycle` — with no gating on the
+  `android.builtInKotlin` flag. That directly conflicts with AGP 9's built-in Kotlin, which refuses
+  the old plugin ID once applied elsewhere in the same build, so `assembleDebug` fails inside AGP's
+  own `com.android.internal.library` plugin application. Confirmed via the official migration doc:
+  "Enabling built-in Kotlin requires Flutter 3.47 or later". As of 2026-08-06, 3.47 is in active
+  beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
+  schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
+
+- **Icon/banner encoding blocks the platform thread on every app sync.**
+  `MainActivity.getApplications()`/`buildAppMap()`/`drawableToByteArray()`
+  (`MainActivity.kt:183-214,286-303`) run synchronously on the platform thread whenever apps are
+  queried — cold start and every `PACKAGE_ADDED`/`PACKAGE_CHANGED`. Per app: `loadBanner`/
+  `loadIcon`, rasterize to a `Bitmap`, `Bitmap.compress(PNG, 100)`. On a TV with 50-100 apps that's
+  easily hundreds of ms of UI-thread block, visible as the "Loading..." state
+  (`apps_service.dart:143-168`). `backgroundExecutor` already exists in this file (used for
+  `writeSettingsBackup`/`readSettingsBackup`) — dispatching `getApplications()` through it would be
+  the same pattern already established, no new dependency. Found via a review pass (2026-08-06),
+  verified against the code.
+
+- **`TimeWidget` ticks every second, permanently.** `lib/widgets/time_widget.dart:41` —
+  `Timer.periodic(Duration(seconds: 1))` + `setState` runs for as long as the launcher is on
+  screen (which for a TV launcher is essentially always), even though the displayed text only
+  changes once a minute. Could reschedule to the next minute boundary instead, or skip `setState`
+  when the formatted string hasn't actually changed. Found via the same review pass.
+
+- **App-card focus-pulse animation runs continuously for every card, not just the focused one.**
+  `lib/widgets/app_card.dart:57-85,162-189` — the `AnimationController`'s status listener flips
+  forward/reverse unconditionally once started; the `Selector` in `build()` only gates on the
+  `appHighlightAnimationEnabled` setting, not on `Focus.of(context).hasFocus`, so every `AppCard`'s
+  `AnimatedBuilder` subtree repaints at 60fps whenever the setting is on — including cards that
+  aren't focused. There's already a Settings toggle to turn the whole thing off, but the
+  always-on-when-enabled cost affects every card, not just the one actually showing the pulse.
+  Consider only animating while genuinely focused. Found via the same review pass.
+
+- **`network_image_mock` dev dependency is unused.** `pubspec.yaml:33` — zero imports anywhere in
+  `lib/` or `test/`. Leftover from before this app had any `Image.network` widgets. Remove +
+  `flutter pub get`. Found via the same review pass, confirmed dead by grep.
+
+- **`TickerModel` is effectively dead code in production.** `flauncher_app.dart:110` always
+  registers `TickerModel(null)`, so `app_card.dart:61`'s `tickerProvider ?? this` never actually
+  uses the injected ticker — `_AppCardState` already has its own `SingleTickerProviderStateMixin`
+  to fall back to. Only `test/flauncher_test.dart:705` supplies a real one. Removing it needs a
+  small test refactor (that test currently relies on the injection to control animation timing).
+  Found via the same review pass.
+
+- **Tizen pairing token is stored in plaintext in the settings backup file.**
+  `settings_backup_service.dart:191` includes the full `tvInputs` list (via
+  `TvInputConfig.toJson()`) in the exported JSON, which for a `SamsungTizenProfile` input includes
+  the pairing `token` once paired (see `samsung_tizen_profile.dart`). That token has replay value —
+  whoever can read `pitchfork_launcher_settings.json` from Downloads can reconnect to the TV as
+  "Pitchfork" without re-pairing. The backup's plaintext-JSON-in-shared-storage trade-off is
+  already accepted/documented (`DRIFT.md`), but the token specifically wasn't called out before.
+  Worth deciding: strip tokens from the export (re-pairing on restore just costs one "Allow
+  access?" prompt), or leave as-is and document the risk explicitly. Found via a review pass
+  (2026-08-06), verified against the code — a related claim from the same pass (that
+  `SettingsBackupStorage.write` ignores `renameTo`'s return value) turned out to be wrong: Kotlin's
+  `return try { ...; tempFile.renameTo(target) } catch { false }` does return it, and the failure
+  correctly propagates up to `settings_backup_service.dart`'s `BackupException`. Not added here.
+
+## Done
+
+### Known issue: Back button leaves FLauncher when opened via the Home-button override
 
 Since the Home-button-override introduced in `HomeButtonAccessibilityService.kt`, FLauncher is
 launched as a regular Activity on top of the existing task stack rather than being registered as
@@ -24,8 +97,6 @@ launcher") rather than relying on the Home-button-override for that specific cas
 no code changes needed. This project
 isn't published on the Play Store; anyone sideloading it who hits this and doesn't set themselves
 up as real default launcher is an accepted edge case, not worth building around.
-
-## Other open items
 
 ~~**Stable "latest" download link for the Downloader app (shortcode support).** Downloader
   supports shortcodes that redirect to a fixed URL. GitHub provides a permanent
@@ -105,23 +176,6 @@ Delete) before calling `deleteCategory`, with focus defaulting to Cancel rather 
   so Renovate periodically opens a PR refreshing the lockfile to the latest versions still allowed
   by existing constraints — this exact class of "the umbrella package's declared range already
   permits it, so nothing ever prompts an upgrade" gap shouldn't recur silently again.
-
-- **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
-  the above: with both plugins fixed, the *only* remaining KGP warning is our own module still
-  applying `id "org.jetbrains.kotlin.android"` directly. See
-  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
-  **Blocked on Flutter 3.47 (2026-07-30):** tried it (drop the plugin line, flip
-  `android.builtInKotlin=true` in `gradle.properties`, declare KGP in `settings.gradle`'s plugins
-  block, replace `kotlinOptions { }` with the `kotlin { compilerOptions { } }` DSL) and it fails at
-  build time regardless of correct config: `flutter_tools/gradle`'s
-  `FlutterPluginUtils.detectApplyingKotlinGradlePlugin` (in the pinned 3.44.8 SDK) unconditionally
-  force-applies `kotlin-android` onto every AGP subproject that doesn't declare KGP itself —
-  including plain-Java plugins like `flutter_plugin_android_lifecycle` — with no gating on the
-  `android.builtInKotlin` flag. That directly conflicts with AGP 9's built-in Kotlin, which refuses
-  the old plugin ID once applied elsewhere in the same build, so `assembleDebug` fails inside AGP's
-  own `com.android.internal.library` plugin application. Confirmed via the official migration doc:
-  "Enabling built-in Kotlin requires Flutter 3.47 or later" — current stable is 3.44.8 (Jul 23,
-  2026), 3.47 isn't out yet. Not a repo-level fix; revisit once Flutter stable reaches 3.47+.
 
 ~~`useMaterial3: false` in `flauncher_app.dart`~~ — resolved (2026-08-01): tried
 `useMaterial3: true` on branch `experiment/material3-preview`. Visual diff is marginal (main
