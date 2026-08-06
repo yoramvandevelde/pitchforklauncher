@@ -120,7 +120,7 @@ Widget _appCard(BuildContext context, App application) => Card(
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        leading: Image.memory(application.icon!, height: 48),
+        leading: application.icon != null ? Image.memory(application.icon!, height: 48) : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

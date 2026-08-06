@@ -47,6 +47,10 @@ import java.io.File
  * install. That's an acceptable one-time step in the same vein as this app's existing "Set as Home
  * button target" setup, and still needs no file-picker UI: "Backup"/"Restore" stay two fixed
  * buttons, no "which file" choice.
+ *
+ * The file itself is plain, unencrypted JSON -- anything with access to the shared Downloads
+ * folder can read it (TV Input IPs, category/app layout, wallpaper included). No UI warning for
+ * this; see DRIFT.md.
  */
 object SettingsBackupStorage {
     private val downloadsDirectory: File
