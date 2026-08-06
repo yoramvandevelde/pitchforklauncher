@@ -322,3 +322,9 @@ violation or leaving a dead mapping. The category/hidden-state writes and the bu
 route back through `AppsService.reloadFromDatabase()`/`ButtonMappingService.setMapping()` rather
 than hitting the database/native channel directly, so those services' own in-memory caches — and
 the UI reading them — reflect the restore immediately rather than only after an unrelated refresh.
+
+The backup file is plain, unencrypted JSON in the real Downloads folder, readable by anything with
+file access to that folder (another app with storage permissions, a USB/file-manager connection,
+etc.) — it includes TV Input hostnames/IPs, category/app layout and the wallpaper. No UI warning for
+this; acceptable for a single-user device, but worth knowing before treating that file as
+disposable or sharing it.

@@ -153,7 +153,7 @@ class MainActivity : FlutterActivity() {
                     }
 
                     override fun onPackagesAvailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) {
-                        val applications = packageNames.map(::getApplication)
+                        val applications = packageNames.mapNotNull(::getApplication)
                         if (applications.isNotEmpty()) {
                             events.success(mapOf("action" to "PACKAGES_AVAILABLE", "activitiesInfo" to applications))
                         }
