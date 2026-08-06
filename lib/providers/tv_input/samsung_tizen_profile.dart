@@ -41,6 +41,16 @@ class SamsungTizenProfile implements TvInputProfile {
   static const _port = 8002;
   static const _connectTimeout = Duration(seconds: 5);
 
+  /// The socket connector to dispatch [selectInput] through. Defaults to the real
+  /// [WebSocket.connect] (production), but overridable in tests so the pairing/token logic can
+  /// be verified against a fake [WebSocket] instead of a real TLS connection -- same pattern as
+  /// [TvInputService]'s injectable `profiles`.
+  final Future<WebSocket> Function(String url, {HttpClient? customClient}) _connect;
+
+  SamsungTizenProfile({
+    Future<WebSocket> Function(String url, {HttpClient? customClient})? connect,
+  }) : _connect = connect ?? WebSocket.connect;
+
   // Separate, much longer timeout for the TV's response to the connection attempt: the first
   // message only arrives once the "Allow access?" prompt has been resolved on the TV, which
   // depends on a human physically reacting to it -- 5s (fine for the raw TCP/WS handshake) isn't
@@ -79,7 +89,7 @@ class SamsungTizenProfile implements TvInputProfile {
     // since this is a LAN-only device control channel, not a connection to an untrusted host.
     final httpClient = HttpClient()
       ..badCertificateCallback = (cert, host, port) => true;
-    final socket = await WebSocket.connect(
+    final socket = await _connect(
       uri,
       customClient: httpClient,
     ).timeout(_connectTimeout);
