@@ -197,18 +197,15 @@ so at least one layer is always fully opaque and the background never shows thro
   - Not a bug or regression, current approach works fine for Picsum; this is a scope expansion, not
     a fix.
 
-- **Resize custom wallpapers to screen resolution before saving them.** Custom wallpapers picked
-  via `image_picker` (and photos fetched from Picsum) are currently stored as-is in
-  `_wallpaperFile` and loaded every frame via `Image.memory()` with `BoxFit.cover`. A phone/camera
-  photo can easily be 8-12MP, but the TV screen is at most 4K — the full-resolution image stays in
-  GPU memory even though only a fraction of those pixels are ever visible. This wastes VRAM on a
-  TV box with modest specs and can contribute to jank or OOM crashes. Fix: after picking or
-  downloading an image, decode it with `dart:ui`, paint it through a `Canvas`/`PictureRecorder`
-  sized to the device's logical screen resolution, rasterise via `toImage()`, then write the
-  resulting bytes to `_wallpaperFile` instead of the original. One-time cost at save time, no
-  per-frame GPU impact — the same "bake once, display flat" philosophy already used for the
-  cross-fade fix. The bundled `assets/default_wallpaper.jpg` should also be pre-sized or resized
-  during the first-run seed to follow the same rule.
+~~**Resize custom wallpapers to screen resolution before saving them.**~~ — done (2026-08-06,
+  PR #52): `WallpaperService._resizeToScreen` now downscales `pickWallpaper()` picks and the
+  bundled default asset to the screen's physical resolution before writing to disk. Picsum turned
+  out not to need it after all — it already requests photos pre-sized server-side. See `DRIFT.md`.
+
+~~**Project health audit follow-up (2026-08-06).**~~ — done, PRs #49-#51: enabled
+  `use_build_context_synchronously` (11 real missing `mounted` guards fixed, see `0a117bb` for the
+  bug class), added CI `--fatal-infos`, and covered `SamsungTizenProfile`/`tv_input_profiles` with
+  tests (0% -> 93%/100%).
 
 ~~**Settings export/import (JSON).** Export all categories, app-to-category assignments,
   wallpaper/gradient state, and remote button mappings to a JSON file, with import restoring them.

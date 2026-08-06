@@ -162,6 +162,12 @@ Wallpaper changes also cross-fade (200ms) instead of cutting instantly — a `wa
 counter on `WallpaperService` keys an `AnimatedSwitcher` around the background in `FLauncher`.
 This applies to every wallpaper source, not just Picsum.
 
+Custom wallpapers (`pickWallpaper()`) and the bundled default asset are downscaled to the screen's
+physical resolution before being written to disk (`WallpaperService._resizeToScreen`, 2026-08-06)
+— a phone/camera photo can be 8-12MP, which otherwise sits fully decoded in GPU memory for no
+visible benefit on a TV screen. Picsum photos don't need this: `PicsumService` already requests
+them pre-sized to the screen's resolution server-side.
+
 ## Smart first-run seed
 
 On a genuine fresh install / wiped data (`FLauncherDatabase.wasCreated`, or the new
