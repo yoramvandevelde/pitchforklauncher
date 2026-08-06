@@ -55,6 +55,7 @@ class AddToCategoryDialog extends StatelessWidget {
                       } else {
                         await appsService.addToCategory(application, category);
                       }
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                     },
                     title: Text(category.name),

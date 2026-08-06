@@ -68,6 +68,7 @@ class WallpaperPanelPage extends StatelessWidget {
               try {
                 await context.read<WallpaperService>().pickWallpaper();
               } on NoFileExplorerException {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     duration: Duration(seconds: 8),

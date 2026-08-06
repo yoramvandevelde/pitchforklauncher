@@ -72,6 +72,7 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
             onPressed: () async {
               final categoryName = await showDialog<String>(context: context, builder: (_) => AddCategoryDialog());
               if (categoryName != null) {
+                if (!context.mounted) return;
                 await context.read<AppsService>().addCategory(categoryName);
               }
             },

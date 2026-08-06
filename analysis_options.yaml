@@ -5,3 +5,11 @@ analyzer:
     - lib/database.drift.dart
     - test/mocks.mocks.dart
     - test/generated_migrations
+
+linter:
+  rules:
+    # lints/recommended is Dart-generic and doesn't include this Flutter-specific rule, but this
+    # codebase has hit the bug class it catches before (see 0a117bb) -- worth the extra dependency
+    # scope. Full flutter_lints.yaml pulls in a lot of unrelated style rules (const-constructors,
+    # key-in-constructor, ...) not worth the churn just for this one rule.
+    - use_build_context_synchronously

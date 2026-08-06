@@ -1,6 +1,7 @@
 /*
  * FLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,8 +42,14 @@ class BackAction extends Action<BackIntent> {
 
   @override
   Future<void> invoke(BackIntent intent) async {
-    if (systemNavigator && await shouldPopScope(context)) {
-      SystemNavigator.pop();
+    if (systemNavigator) {
+      final shouldPop = await shouldPopScope(context);
+      if (!context.mounted) return;
+      if (shouldPop) {
+        SystemNavigator.pop();
+      } else {
+        Navigator.of(context).maybePop();
+      }
     } else {
       Navigator.of(context).maybePop();
     }

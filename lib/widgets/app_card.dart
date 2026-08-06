@@ -267,6 +267,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
         application: widget.application,
       ),
     );
+    if (!context.mounted) return;
     if (result == ApplicationInfoPanelResult.reorderApp) {
       setState(() => _moving = true);
     } else if (result == ApplicationInfoPanelResult.moveApp) {

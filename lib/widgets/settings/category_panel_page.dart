@@ -185,6 +185,7 @@ class CategoryPanelPage extends StatelessWidget {
     final categoryName =
         await showDialog<String>(context: context, builder: (_) => AddCategoryDialog(initialValue: category.name));
     if (categoryName != null) {
+      if (!context.mounted) return;
       await context.read<AppsService>().renameCategory(category, categoryName);
     }
   }

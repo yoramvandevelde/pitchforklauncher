@@ -73,6 +73,7 @@ class ApplicationInfoPanel extends StatelessWidget {
               ),
               onPressed: () async {
                 await context.read<AppsService>().launchApp(application);
+                if (!context.mounted) return;
                 Navigator.of(context).pop(ApplicationInfoPanelResult.none);
               },
             ),
@@ -101,6 +102,7 @@ class ApplicationInfoPanel extends StatelessWidget {
                 } else {
                   await context.read<AppsService>().hideApplication(application);
                 }
+                if (!context.mounted) return;
                 Navigator.of(context).pop(ApplicationInfoPanelResult.none);
               },
             ),
@@ -133,6 +135,7 @@ class ApplicationInfoPanel extends StatelessWidget {
                 ),
                 onPressed: () async {
                   await context.read<AppsService>().removeFromCategory(application, category!);
+                  if (!context.mounted) return;
                   Navigator.of(context).pop(ApplicationInfoPanelResult.none);
                 },
               ),
@@ -157,6 +160,7 @@ class ApplicationInfoPanel extends StatelessWidget {
               ),
               onPressed: () async {
                 await context.read<AppsService>().uninstallApp(application);
+                if (!context.mounted) return;
                 Navigator.of(context).pop(ApplicationInfoPanelResult.none);
               },
             ),
