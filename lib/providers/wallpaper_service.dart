@@ -18,6 +18,8 @@
  */
 
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flauncher/app_log.dart';
 import 'package:flauncher/database.dart';
@@ -38,6 +40,14 @@ class WallpaperService extends ChangeNotifier {
   final PicsumService _picsumService;
   final FLauncherDatabase _database;
   late SettingsService _settingsService;
+
+  /// The size wallpapers are downscaled to before being written to disk -- see
+  /// [_resizeToScreen]. Defaults to the real screen's physical size (production), overridable in
+  /// tests: [PlatformDispatcher.instance.implicitView] is a different object than the
+  /// test-bound dispatcher outside of an active `testWidgets()` pump cycle (see
+  /// `PicsumService.randomPhoto`'s tests for the same caveat), so reading it directly isn't
+  /// reliably testable from these plain unit tests.
+  final Size? Function() _targetWallpaperSize;
 
   late final File _wallpaperFile;
   Uint8List? _wallpaper;
@@ -78,8 +88,10 @@ class WallpaperService extends ChangeNotifier {
     this._imagePicker,
     this._fLauncherChannel,
     this._picsumService,
-    this._database,
-  ) {
+    this._database, {
+    Size? Function()? targetWallpaperSize,
+  }) : _targetWallpaperSize =
+           targetWallpaperSize ?? (() => PlatformDispatcher.instance.implicitView?.physicalSize) {
     _init();
   }
 
@@ -107,9 +119,62 @@ class WallpaperService extends ChangeNotifier {
       Uint8List.sublistView(await rootBundle.load(_defaultWallpaperAsset));
 
   Future<void> _writeWallpaperBytes(Uint8List bytes) async {
-    await _wallpaperFile.writeAsBytes(bytes);
-    _wallpaper = bytes;
+    final resized = await _resizeToScreen(bytes);
+    await _wallpaperFile.writeAsBytes(resized);
+    _wallpaper = resized;
     _wallpaperVersion++;
+  }
+
+  /// Downscales [bytes] to fit the current screen before it's ever written to [_wallpaperFile],
+  /// cropping the same way it's later displayed (`Image.memory()` with `BoxFit.cover`, e.g.
+  /// `FLauncher`'s background). A phone/camera photo picked via [pickWallpaper] can easily be
+  /// 8-12MP; the TV screen is at most 4K, so storing (and decoding into GPU memory every frame)
+  /// the full-resolution original wastes VRAM for pixels that are never visible -- bake the crop
+  /// once here instead, same "bake once, display flat" approach as the cross-fade fix
+  /// (`AnimatedSwitcher` in `flauncher.dart`). Picsum photos never actually hit this: `PicsumService`
+  /// already requests them pre-sized to the screen's physical resolution server-side, so the
+  /// early-return below is a no-op for them.
+  ///
+  /// Also a no-op (returns [bytes] unchanged) if the target size isn't known yet, [bytes] doesn't
+  /// decode as an image (defensive -- a corrupt/unsupported file should still get stored rather
+  /// than crash the whole pick/restore flow), or the image already fits within the target size.
+  Future<Uint8List> _resizeToScreen(Uint8List bytes) async {
+    final targetSize = _targetWallpaperSize();
+    if (targetSize == null || targetSize.isEmpty) {
+      return bytes;
+    }
+    final targetWidth = targetSize.width.round();
+    final targetHeight = targetSize.height.round();
+    final Image image;
+    try {
+      final codec = await instantiateImageCodec(bytes);
+      image = (await codec.getNextFrame()).image;
+    } catch (e, st) {
+      AppLog.instance.log("Wallpaper", "Could not decode image to resize it, storing as-is: $e\n$st");
+      return bytes;
+    }
+    if (image.width <= targetWidth && image.height <= targetHeight) {
+      return bytes;
+    }
+    // Replicates BoxFit.cover's crop math: scale so the image's shorter (relative) dimension
+    // exactly fills the target, then crop the overflow on the other axis, centered.
+    final scale = math.max(targetWidth / image.width, targetHeight / image.height);
+    final srcWidth = targetWidth / scale;
+    final srcHeight = targetHeight / scale;
+    final srcRect = Rect.fromLTWH(
+      (image.width - srcWidth) / 2,
+      (image.height - srcHeight) / 2,
+      srcWidth,
+      srcHeight,
+    );
+    final dstRect = Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble());
+    final recorder = PictureRecorder();
+    Canvas(recorder, dstRect).drawImageRect(image, srcRect, dstRect, Paint());
+    final resizedImage = await recorder.endRecording().toImage(targetWidth, targetHeight);
+    // Uint8List.sublistView(), not `.buffer.asUint8List()` -- see _loadDefaultWallpaperBytes's
+    // comment above for why the latter can silently return the wrong bytes.
+    final byteData = await resizedImage.toByteData(format: ImageByteFormat.png);
+    return Uint8List.sublistView(byteData!);
   }
 
   /// Shared by every "replace the wallpaper wholesale" path (picked file, the bundled default):
