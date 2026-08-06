@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/flauncher_channel.dart';
@@ -39,6 +41,7 @@ import 'package:mockito/annotations.dart';
     PicsumService,
     ButtonMappingService,
     TvInputService,
+    WebSocket,
   ],
   customMocks: [
     MockSpec<FLauncherDatabase>(unsupportedMembers: {#alias}),
