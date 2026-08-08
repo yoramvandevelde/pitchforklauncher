@@ -124,7 +124,7 @@ class MainActivity : FlutterActivity() {
                     }
                     result.success(opened)
                 }
-                else -> throw IllegalArgumentException()
+                else -> result.notImplemented()
             }
         }
 
