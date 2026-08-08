@@ -2,6 +2,15 @@ name: CI
 
 on:
   pull_request:
+  # A merge is just a push to main under the hood (merge commit, squash, or rebase all land as a
+  # new commit on main), so this also fires on every PR merge. Needed because GitHub Actions'
+  # cache (and Gradle's enhanced cache) only writes to the default-branch scope on runs where
+  # `ref` is actually `refs/heads/main` -- pull_request runs never satisfy that, so without this,
+  # every new PR branch would restore nothing and start cold regardless of how many prior PRs had
+  # already warmed the cache.
+  push:
+    branches:
+      - main
 
 jobs:
   build:
@@ -19,11 +28,22 @@ jobs:
         with:
           flutter-version: ${{ steps.flutter_version.outputs.version }}
           channel: stable
+          cache: true
 
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "25"
+
+      # Caches Gradle User Home (downloaded dependencies, wrapper distribution, compiled build
+      # scripts, local build cache) across runs, so a PR with unchanged dependencies doesn't
+      # re-download AGP/Kotlin/every Maven artifact and re-resolve them from scratch on every
+      # push -- that's most of what makes "Build debug APK" below the slowest step by far. Applies
+      # to any Gradle invocation on the runner regardless of working directory, so it covers
+      # `flutter build apk`'s `android/gradlew` call with no extra config. Defaults (the free,
+      # public-repo "enhanced" cache provider; automatic stale-entry cleanup) are already what we
+      # want here.
+      - uses: gradle/actions/setup-gradle@v6
 
       - run: flutter pub get
 
