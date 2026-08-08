@@ -61,8 +61,17 @@ class _TimeWidgetState extends State<TimeWidget> {
       );
 
   void _refreshTime() {
+    final now = DateTime.now();
+    // Both display formats (Hm/jm, above) show hour:minute only, never seconds -- so a tick that
+    // lands in the same minute as the last one wouldn't change what's on screen. Comparing hour
+    // and minute (rather than the full DateTime) is also correct across a midnight rollover: the
+    // displayed text never shows the date either, so e.g. 00:05 today and 00:05 yesterday really
+    // do render identically.
+    if (now.hour == _now.hour && now.minute == _now.minute) {
+      return;
+    }
     setState(() {
-      _now = DateTime.now();
+      _now = now;
     });
   }
 }
