@@ -97,6 +97,7 @@ void main() {
           name: 'Streaming',
           type: Value(CategoryType.grid),
           order: 0,
+          showName: Value(false),
         ),
       );
       final category = await (database.select(
@@ -209,6 +210,7 @@ void main() {
       expect(restoredCategories.length, 1);
       expect(restoredCategories.first.name, 'Streaming');
       expect(restoredCategories.first.type, CategoryType.grid);
+      expect(restoredCategories.first.showName, false);
 
       final restoredAssignments = await database
           .select(database.appsCategories)
@@ -1010,6 +1012,89 @@ void main() {
           (exported['tvInputs'] as List)[0]['params'] as Map<String, dynamic>;
       expect(exportedParams, {'host': '192.168.1.50', 'key': 'KEY_HDMI'});
       expect(exportedParams.containsKey('token'), isFalse);
+
+      await database.close();
+    },
+  );
+
+  test(
+    "import defaults a category's showName to true when absent (backup predates the field)",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
+      when(
+        buttonMappingService.removeMapping(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        buttonMappingService.setMapping(any, any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        wallpaperService.restoreWallpaper(any),
+      ).thenAnswer((_) => Future.value());
+      when(tvInputService.inputs).thenReturn([]);
+      when(
+        tvInputService.replaceAll(any),
+      ).thenAnswer((_) => Future.value());
+      when(
+        appsService.reloadFromDatabase(),
+      ).thenAnswer((_) => Future.value());
+
+      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+        utf8.encode(
+          jsonEncode({
+            'version': 1,
+            'settings': {
+              'use24HourTimeFormat': false,
+              'appHighlightAnimationEnabled': false,
+              'gradientUuid': null,
+              'picsumPhotoId': null,
+              'picsumGrayscale': false,
+              'picsumBlur': null,
+            },
+            'categories': [
+              {
+                'name': 'Streaming',
+                'sort': 'manual',
+                'type': 'grid',
+                'rowHeight': 110,
+                'columnsCount': 6,
+                'order': 0,
+                'apps': [],
+                // No 'showName' key -- this is what every backup written before that field
+                // existed looks like.
+              },
+            ],
+            'hiddenApps': [],
+            'buttonMappings': [],
+            'tvInputs': [],
+            'wallpaperBytesBase64': null,
+          }),
+        ),
+      );
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        tvInputService,
+        appsService,
+        buttonMappingService,
+        fLauncherChannel,
+      );
+
+      await backupService.importSettings();
+
+      final restoredCategory = await database.select(database.categories).getSingle();
+      expect(restoredCategory.showName, true);
 
       await database.close();
     },
