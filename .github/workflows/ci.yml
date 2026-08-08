@@ -2,6 +2,15 @@ name: CI
 
 on:
   pull_request:
+  # A merge is just a push to main under the hood (merge commit, squash, or rebase all land as a
+  # new commit on main), so this also fires on every PR merge. Needed because GitHub Actions'
+  # cache (and Gradle's enhanced cache) only writes to the default-branch scope on runs where
+  # `ref` is actually `refs/heads/main` -- pull_request runs never satisfy that, so without this,
+  # every new PR branch would restore nothing and start cold regardless of how many prior PRs had
+  # already warmed the cache.
+  push:
+    branches:
+      - main
 
 jobs:
   build:
