@@ -161,8 +161,18 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                   Selector<SettingsService, bool>(
                     selector: (_, settingsService) => settingsService.appHighlightAnimationEnabled,
                     builder: (context, appHighlightAnimationEnabled, _) {
-                      if (appHighlightAnimationEnabled) {
+                      final hasFocus = Focus.of(context).hasFocus;
+                      // Only the genuinely focused card needs to actually tick -- every other
+                      // card's border is always null below, so ticking it too would just repaint
+                      // an unchanging result at 60fps for no visible difference. Stopping (not
+                      // resetting) here means a card that loses and regains focus resumes the
+                      // color cycle from wherever it left off, same as it always has.
+                      if (appHighlightAnimationEnabled && hasFocus) {
                         _animation.forward();
+                      } else {
+                        _animation.stop();
+                      }
+                      if (appHighlightAnimationEnabled) {
                         return AnimatedBuilder(
                           animation: _animation,
                           builder: (context, child) => IgnorePointer(
@@ -170,7 +180,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                               duration: Duration(milliseconds: 200),
                               curve: Curves.easeInOut,
                               decoration: BoxDecoration(
-                                border: Focus.of(context).hasFocus
+                                border: hasFocus
                                     ? Border.all(
                                         color: _lastBorderColor =
                                             computeBorderColor(_animation.value, _lastBorderColor),
@@ -182,7 +192,6 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                           ),
                         );
                       }
-                      _animation.stop();
                       return SizedBox();
                     },
                   ),
