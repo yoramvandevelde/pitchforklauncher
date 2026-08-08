@@ -30,7 +30,6 @@ dev_dependencies:
   lints: ^6.0.0
   mockito: ^5.4.4
   drift_dev: ^2.34.0
-  network_image_mock: ^2.1.1
   transparent_image: ^2.0.1
   package_info_plus_platform_interface: ^4.1.0
   path_provider_platform_interface: ^2.1.1
