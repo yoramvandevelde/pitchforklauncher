@@ -26,7 +26,15 @@ class FLauncherChannel {
   static const _eventChannel = EventChannel('io.sifft.pitchforklauncher/event');
   static const _buttonCaptureEventChannel = EventChannel('io.sifft.pitchforklauncher/buttonCapture');
 
-  Future<List<dynamic>> getApplications() async => (await _methodChannel.invokeListMethod('getApplications'))!;
+  /// [visiblePackageNames] gates which apps get a banner computed natively -- see
+  /// MainActivity.kt's getApplications for why (icon is always included regardless).
+  Future<List<dynamic>> getApplications(List<String> visiblePackageNames) async =>
+      (await _methodChannel.invokeListMethod('getApplications', visiblePackageNames))!;
+
+  /// Fetches just the banner for one app on demand, for when it newly enters a visible category
+  /// after a sync already decided it didn't need one (see AppsService.addToCategory).
+  Future<Uint8List?> getAppBanner(String packageName) async =>
+      await _methodChannel.invokeMethod<Uint8List>('getAppBanner', packageName);
 
   Future<bool> applicationExists(String packageName) async =>
       await _methodChannel.invokeMethod('applicationExists', packageName);

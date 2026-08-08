@@ -66,9 +66,19 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                "getApplications" -> backgroundExecutor.execute {
-                    val apps = getApplications()
-                    mainHandler.post { result.success(apps) }
+                "getApplications" -> {
+                    @Suppress("UNCHECKED_CAST") val visiblePackageNames = (call.arguments as List<String>).toSet()
+                    backgroundExecutor.execute {
+                        val apps = getApplications(visiblePackageNames)
+                        mainHandler.post { result.success(apps) }
+                    }
+                }
+                "getAppBanner" -> {
+                    val packageName = call.arguments as String
+                    backgroundExecutor.execute {
+                        val banner = getAppBanner(packageName)
+                        mainHandler.post { result.success(banner) }
+                    }
                 }
                 "applicationExists" -> result.success(applicationExists(call.arguments as String))
                 "launchApp" -> result.success(launchApp(call.arguments as String))
@@ -193,16 +203,34 @@ class MainActivity : FlutterActivity() {
         super.onDestroy()
     }
 
-    private fun getApplications(): List<Map<String, Serializable?>> {
+    // Only [visiblePackageNames] get a banner computed -- that's the set Dart already knows sit in
+    // a visible category, i.e. the only apps that will ever actually render one (see
+    // buildAppMap's includeBanner param). icon is still computed for everyone regardless, since
+    // that's needed even for hidden apps (the Applications panel's Hidden tab shows it).
+    private fun getApplications(visiblePackageNames: Set<String>): List<Map<String, Serializable?>> {
         val tvActivitiesInfo = queryIntentActivities(false)
         val nonTvActivitiesInfo = queryIntentActivities(true)
                 .filter { nonTvActivityInfo -> !tvActivitiesInfo.any { tvActivityInfo -> tvActivityInfo.packageName == nonTvActivityInfo.packageName } }
-        return tvActivitiesInfo.map { buildAppMap(it, false) } + nonTvActivitiesInfo.map { buildAppMap(it, true) }
+        return tvActivitiesInfo.map { buildAppMap(it, false, visiblePackageNames.contains(it.packageName)) } +
+                nonTvActivitiesInfo.map { buildAppMap(it, true, visiblePackageNames.contains(it.packageName)) }
     }
 
+    // Always includes the banner -- unlike the bulk getApplications() above, this only fires on
+    // PACKAGE_ADDED/PACKAGE_CHANGED/PACKAGES_AVAILABLE (an app being installed/updated), not on
+    // every cold start, so it's not worth threading visibility state into this native-initiated
+    // path just to skip banner computation for a rare event.
     private fun getApplication(packageName: String): Map<String, Serializable?>? =
         packageManager.resolveLaunchIntent(packageName)?.let { (intent, sideloaded) ->
-            intent.resolveActivityInfo(packageManager, 0)?.let { buildAppMap(it, sideloaded) }
+            intent.resolveActivityInfo(packageManager, 0)?.let { buildAppMap(it, sideloaded, includeBanner = true) }
+        }
+
+    // Lean, banner-only counterpart to getApplication() -- used when an app newly enters a
+    // visible category and needs its banner fetched on demand (see AppsService.addToCategory on
+    // the Dart side). Doesn't also recompute icon like getApplication()/buildAppMap() would;
+    // that's already in the database from the last sync and doesn't need refetching here.
+    private fun getAppBanner(packageName: String): ByteArray? =
+        packageManager.resolveLaunchIntent(packageName)?.let { (intent, _) ->
+            intent.resolveActivityInfo(packageManager, 0)?.loadBanner(packageManager)?.let(::drawableToByteArray)
         }
 
     private fun applicationExists(packageName: String) = try {
@@ -217,10 +245,10 @@ class MainActivity : FlutterActivity() {
                     .addCategory(if (sideloaded) CATEGORY_LAUNCHER else CATEGORY_LEANBACK_LAUNCHER), 0)
             .map(ResolveInfo::activityInfo)
 
-    private fun buildAppMap(activityInfo: ActivityInfo, sideloaded: Boolean) = mapOf(
+    private fun buildAppMap(activityInfo: ActivityInfo, sideloaded: Boolean, includeBanner: Boolean) = mapOf(
             "name" to activityInfo.loadLabel(packageManager).toString(),
             "packageName" to activityInfo.packageName,
-            "banner" to activityInfo.loadBanner(packageManager)?.let(::drawableToByteArray),
+            "banner" to if (includeBanner) activityInfo.loadBanner(packageManager)?.let(::drawableToByteArray) else null,
             "icon" to activityInfo.loadIcon(packageManager)?.let(::drawableToByteArray),
             "version" to packageManager.getPackageInfo(activityInfo.packageName, 0).versionName,
             "sideloaded" to sideloaded,
