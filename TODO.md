@@ -20,28 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **Tizen pairing token is stored in plaintext in the settings backup file.**
-  `settings_backup_service.dart:191` includes the full `tvInputs` list (via
-  `TvInputConfig.toJson()`) in the exported JSON, which for a `SamsungTizenProfile` input includes
-  the pairing `token` once paired (see `samsung_tizen_profile.dart`). That token has replay value —
-  whoever can read `pitchfork_launcher_settings.json` from Downloads can reconnect to the TV as
-  "Pitchfork" without re-pairing. The backup's plaintext-JSON-in-shared-storage trade-off is
-  already accepted/documented (`DRIFT.md`), but the token specifically wasn't called out before.
-  Worth deciding: strip tokens from the export (re-pairing on restore just costs one "Allow
-  access?" prompt), or leave as-is and document the risk explicitly. Found via a review pass
-  (2026-08-06), verified against the code — a related claim from the same pass (that
-  `SettingsBackupStorage.write` ignores `renameTo`'s return value) turned out to be wrong: Kotlin's
-  `return try { ...; tempFile.renameTo(target) } catch { false }` does return it, and the failure
-  correctly propagates up to `settings_backup_service.dart`'s `BackupException`. Not added here.
-  **Update (2026-08-07, Grok pass, verified):** the same token also has a second, passive exposure
-  path — `AndroidManifest.xml:53,55` sets `android:allowBackup="true"` with
-  `android:fullBackupContent="true"` as a literal boolean (not a `@xml/backup_rules` file scoping
-  what's included), so the token rides along in Android's own Auto Backup to the user's Google
-  account on every backup cycle, with no explicit export action needed — broader and less visible
-  than the Downloads-file case. Same open decision (strip the token vs. accept and document) should
-  cover both; a `fullBackupContent`/`dataExtractionRules` rules file excluding the relevant prefs
-  key would close the passive path specifically without touching the deliberate Downloads export.
-
 - **`buildAppMap()` encodes `banner` for every app, including ones that never render through an
   `AppCard`.** `MainActivity.kt:207-214` builds `banner` unconditionally for every installed app,
   but `banner` has exactly one consumer in the whole codebase — `app_card.dart:124-125` — which
@@ -68,6 +46,30 @@
   Noted, not yet decided.
 
 ## Done
+
+~~**Tizen pairing token is stored in plaintext in the settings backup file.**~~ — fixed
+(2026-08-08), decided: strip it, both paths. **Deliberate Downloads export:**
+`TvInputProfile` gained a `secretParamKeys` getter (empty by default; `SamsungTizenProfile`
+overrides it to `{"token"}`), and `TvInputConfig.toJson()` takes an `excludeParamKeys` param;
+`SettingsBackupService._buildBackupJson()` looks up each input's profile in `tvInputProfiles` and
+passes its `secretParamKeys` through, so the token never makes it into the exported JSON while
+`host`/`key` still do. Generic and extensible: a future profile with its own secret just overrides
+the same getter, no other file needs to change. **Passive Auto Backup export:** Android's backup
+rules only work at *file* granularity, not per-key within a file, and every `shared_preferences`
+setting (not just `tv_inputs`) lives in one shared `FlutterSharedPreferences.xml` -- so closing
+this path means excluding that whole file from Auto Backup, not just the token. Added
+`res/xml/backup_rules.xml` (pre-API 31) and `res/xml/data_extraction_rules.xml` (API 31+, takes
+precedence where both exist) both excluding `domain="sharedpref" path="FlutterSharedPreferences.xml"`,
+wired via `AndroidManifest.xml`'s `android:fullBackupContent`/`android:dataExtractionRules`
+(previously the manifest set `fullBackupContent="true"` as a literal boolean, i.e. no rules file
+at all). Trade-off, accepted: the few other `shared_preferences`-backed settings (time format,
+animation toggle, button mappings, wallpaper source id) no longer survive a factory-reset/new-device
+restore via Google's Auto Backup either -- only via this app's own Backup/Restore feature, which
+already covers that scenario deliberately and already strips secrets from its own export. Verified:
+`flutter analyze`/`flutter test` (added a `settings_backup_service_test.dart` case exercising the
+strip end-to-end, plus a unit test on `SamsungTizenProfile.secretParamKeys`), a debug build (the
+new XML files parse correctly -- first attempt used `--` inside an XML comment, which AAPT
+rejects), and a clean emulator install with no crashes.
 
 ~~**`TimeWidget` ticks every second, permanently.**~~ — fixed (2026-08-08): `_refreshTime()` now
 skips `setState` when the tick lands in the same hour+minute as the last one — both display
