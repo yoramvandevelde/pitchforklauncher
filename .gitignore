@@ -19,6 +19,7 @@
 .claude/
 
 # other
+_REVIEWS/
 tmp/
 app.key
 REVIEW.md
