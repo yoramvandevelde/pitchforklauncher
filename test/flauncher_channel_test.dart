@@ -28,8 +28,10 @@ void main() {
 
   test("getApplications", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
+    List<dynamic>? receivedVisiblePackageNames;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
       if (call.method == "getApplications") {
+        receivedVisiblePackageNames = call.arguments as List<dynamic>;
         return [
           {'packageName': 'io.sifft.pitchforklauncher'}
         ];
@@ -38,11 +40,12 @@ void main() {
     });
     final fLauncherChannel = FLauncherChannel();
 
-    final apps = await fLauncherChannel.getApplications();
+    final apps = await fLauncherChannel.getApplications(['io.sifft.pitchforklauncher']);
 
     expect(apps, [
       {'packageName': 'io.sifft.pitchforklauncher'}
     ]);
+    expect(receivedVisiblePackageNames, ['io.sifft.pitchforklauncher']);
   });
 
   test("launchApp", () async {

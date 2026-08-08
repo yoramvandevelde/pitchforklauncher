@@ -141,8 +141,17 @@ class AppsService extends ChangeNotifier {
   }
 
   Future<void> _refreshState({bool shouldNotifyListeners = true}) async {
+    // Read before the transaction below writes anything, so this reflects categorization as it
+    // stands right now -- used to tell native which apps actually need a banner computed (see
+    // FLauncherChannel.getApplications).
+    final visiblePackageNames = (await _database.listCategoriesWithVisibleApps())
+        .expand((categoryWithApps) => categoryWithApps.applications)
+        .map((app) => app.packageName)
+        .toSet()
+        .toList();
     await _database.transaction(() async {
-      final appsFromSystem = (await _fLauncherChannel.getApplications()).map(_buildAppCompanion).toList();
+      final appsFromSystem =
+          (await _fLauncherChannel.getApplications(visiblePackageNames)).map(_buildAppCompanion).toList();
 
       final appsRemovedFromSystem = (await _database.listApplications())
           .where((app) => !appsFromSystem.any((systemApp) => systemApp.packageName.value == app.packageName))
@@ -200,9 +209,25 @@ class AppsService extends ChangeNotifier {
         order: index,
       )
     ]);
+    await _ensureBanner(app);
     _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
     if (shouldNotifyListeners) {
       notifyListeners();
+    }
+  }
+
+  /// Fetches and persists [app]'s banner if it doesn't have one yet -- the bulk sync in
+  /// [_refreshState] only computes a banner for apps already in a visible category (see
+  /// [FLauncherChannel.getApplications]), so an app newly becoming visible (added to a category,
+  /// or unhidden while still in one -- hiding never removes the category membership row) needs
+  /// this one-off fetch instead of waiting for the next cold-start sync to notice.
+  Future<void> _ensureBanner(App app) async {
+    if (app.banner != null) {
+      return;
+    }
+    final banner = await _fLauncherChannel.getAppBanner(app.packageName);
+    if (banner != null) {
+      await _database.updateApp(app.packageName, AppsCompanion(banner: Value(banner)));
     }
   }
 
@@ -299,6 +324,9 @@ class AppsService extends ChangeNotifier {
 
   Future<void> unHideApplication(App application) async {
     await _database.updateApp(application.packageName, AppsCompanion(hidden: Value(false)));
+    // Hiding never removed the category membership row, so unhiding can make an app visible
+    // again without ever going through addToCategory -- needs the same on-demand banner check.
+    await _ensureBanner(application);
     _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
     _applications = await _database.listApplications();
     notifyListeners();

@@ -20,21 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **`buildAppMap()` encodes `banner` for every app, including ones that never render through an
-  `AppCard`.** `MainActivity.kt:207-214` builds `banner` unconditionally for every installed app,
-  but `banner` has exactly one consumer in the whole codebase — `app_card.dart:124-125` — which
-  only draws for apps sitting in a visible category. Hidden apps and apps not yet assigned to any
-  category never go through `AppCard`, so their `banner` bytes are computed, stored, and read by
-  nothing. (`icon`, in contrast, genuinely is needed for every app regardless of hidden state —
-  `applications_panel_page.dart:123` renders it in the Applications panel's "Hidden" tab, so an app
-  can be recognized before being unhidden.) The recent background-thread fix
-  (see Done below) only moved this work off the platform thread; it didn't reduce it — this is the
-  actual work-reduction/power angle. Lazy-computing `banner` only when an app is added to a visible
-  category (the `addToCategory` hook already exists) would cut this to zero cost for apps that
-  never show a banner, with no fundamental added cost elsewhere. Found via conversation
-  (2026-08-08), verified against the code — `banner`'s only read site confirmed via grep across
-  `lib/`.
-
 - **Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
   bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).** `AGENTS.md:97-100`
   currently documents that files carrying Fesser's copyright line keep `FLauncher` as the header
@@ -46,6 +31,30 @@
   Noted, not yet decided.
 
 ## Done
+
+~~**`buildAppMap()` encodes `banner` for every app, including ones that never render through an
+`AppCard`.**~~ — fixed (2026-08-08), Route B (of two considered; see the conversation this came
+from): `getApplications()`'s bulk sync now takes a `visiblePackageNames` argument -- Dart queries
+its own database for which apps currently sit in a visible category *before* calling native, and
+`buildAppMap()` only computes `banner` for those (`icon` stays unconditional for everyone, still
+needed for the Applications panel's Hidden tab). A new lean `getAppBanner(packageName)` method
+covers the moment an app newly becomes visible outside a full sync -- wired into `addToCategory`
+and `unHideApplication` (hiding never removes the category-membership row, so unhiding alone can
+make an app visible again) via a shared `_ensureBanner` helper that no-ops if a banner is already
+present. Deliberately *not* wired into `moveToCategory`: it always moves between two already-visible
+categories, so the app already has a banner in practice, and that method already runs inside a
+`_database.transaction()` -- adding a platform-channel round-trip inside a DB transaction isn't
+worth it for what's realistically always a no-op check. Also deliberately *not* threaded into the
+native-initiated `PACKAGE_ADDED`/`PACKAGE_CHANGED`/`PACKAGES_AVAILABLE` `EventChannel` path (which
+still always includes the banner): those fire only when an app is installed/updated on the device,
+a rare event compared to the bulk sync running on every cold start, so keeping that path simple
+outweighed adding native-side visibility-state tracking for it. Verified: `flutter analyze`,
+`flutter test` (added coverage for the new visible-package-names argument and the
+fetch-vs-skip banner logic, on top of updating ~28 existing stubs across two test files for the
+changed `getApplications` signature), a debug build, and a clean emulator install confirming
+banners still render correctly on a genuinely fresh install (which exercises the on-demand path via
+`addToCategory` during first-run category seeding, since the very first bulk sync runs before any
+category exists yet).
 
 ~~**Tizen pairing token is stored in plaintext in the settings backup file.**~~ — fixed
 (2026-08-08), decided: strip it, both paths. **Deliberate Downloads export:**
