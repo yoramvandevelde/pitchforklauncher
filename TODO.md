@@ -20,17 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **Icon/banner encoding blocks the platform thread on every app sync.**
-  `MainActivity.getApplications()`/`buildAppMap()`/`drawableToByteArray()`
-  (`MainActivity.kt:183-214,286-303`) run synchronously on the platform thread whenever apps are
-  queried — cold start and every `PACKAGE_ADDED`/`PACKAGE_CHANGED`. Per app: `loadBanner`/
-  `loadIcon`, rasterize to a `Bitmap`, `Bitmap.compress(PNG, 100)`. On a TV with 50-100 apps that's
-  easily hundreds of ms of UI-thread block, visible as the "Loading..." state
-  (`apps_service.dart:143-168`). `backgroundExecutor` already exists in this file (used for
-  `writeSettingsBackup`/`readSettingsBackup`) — dispatching `getApplications()` through it would be
-  the same pattern already established, no new dependency. Found via a review pass (2026-08-06),
-  verified against the code.
-
 - **`TimeWidget` ticks every second, permanently.** `lib/widgets/time_widget.dart:41` —
   `Timer.periodic(Duration(seconds: 1))` + `setState` runs for as long as the launcher is on
   screen (which for a TV launcher is essentially always), even though the displayed text only
@@ -70,8 +59,71 @@
   `SettingsBackupStorage.write` ignores `renameTo`'s return value) turned out to be wrong: Kotlin's
   `return try { ...; tempFile.renameTo(target) } catch { false }` does return it, and the failure
   correctly propagates up to `settings_backup_service.dart`'s `BackupException`. Not added here.
+  **Update (2026-08-07, Grok pass, verified):** the same token also has a second, passive exposure
+  path — `AndroidManifest.xml:53,55` sets `android:allowBackup="true"` with
+  `android:fullBackupContent="true"` as a literal boolean (not a `@xml/backup_rules` file scoping
+  what's included), so the token rides along in Android's own Auto Backup to the user's Google
+  account on every backup cycle, with no explicit export action needed — broader and less visible
+  than the Downloads-file case. Same open decision (strip the token vs. accept and document) should
+  cover both; a `fullBackupContent`/`dataExtractionRules` rules file excluding the relevant prefs
+  key would close the passive path specifically without touching the deliberate Downloads export.
+
+- **`SettingsBackupStorage.write`/`read` don't sanitize `fileName`.** `SettingsBackupStorage.kt:77,88`
+  builds `File(downloadsDirectory, fileName)` straight from the channel argument, so a name
+  containing `../` could escape the Downloads directory. Not exploitable today —
+  `settings_backup_service.dart:36`'s `backupFileName` is a hardcoded constant, and the channel
+  isn't reachable from outside this app — but a basename-only check (or rejecting anything with a
+  path separator) is a one-line, zero-risk hardening that's worth having before any future caller
+  (a file picker, say) could ever make it live. Found via a review pass (2026-08-07, Grok),
+  verified against the code.
+
+- **MethodChannel handler throws instead of `result.notImplemented()`, and does unchecked casts on
+  every argument.** `MainActivity.kt:67-122` — each branch does e.g. `call.arguments as String` or
+  `args["keyCode"] as Int` with no type check, and the `else` branch does
+  `throw IllegalArgumentException()` rather than `result.notImplemented()`. Not attacker-reachable
+  (only this app's own Dart code calls the channel, always with fixed argument shapes) — this is a
+  hygiene/convention nit, not a vulnerability, but it's the standard Flutter pattern and cheap to
+  match. Found via a review pass (2026-08-07, Grok), verified against the code.
+
+- **`buildAppMap()` encodes `banner` for every app, including ones that never render through an
+  `AppCard`.** `MainActivity.kt:207-214` builds `banner` unconditionally for every installed app,
+  but `banner` has exactly one consumer in the whole codebase — `app_card.dart:124-125` — which
+  only draws for apps sitting in a visible category. Hidden apps and apps not yet assigned to any
+  category never go through `AppCard`, so their `banner` bytes are computed, stored, and read by
+  nothing. (`icon`, in contrast, genuinely is needed for every app regardless of hidden state —
+  `applications_panel_page.dart:123` renders it in the Applications panel's "Hidden" tab, so an app
+  can be recognized before being unhidden.) The recent background-thread fix
+  (see Done below) only moved this work off the platform thread; it didn't reduce it — this is the
+  actual work-reduction/power angle. Lazy-computing `banner` only when an app is added to a visible
+  category (the `addToCategory` hook already exists) would cut this to zero cost for apps that
+  never show a banner, with no fundamental added cost elsewhere. Found via conversation
+  (2026-08-08), verified against the code — `banner`'s only read site confirmed via grep across
+  `lib/`.
+
+- **Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
+  bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).** `AGENTS.md:97-100`
+  currently documents that files carrying Fesser's copyright line keep `FLauncher` as the header
+  title while wholly-new files use `PitchforkLauncher` — in practice that reads as more
+  inconsistent than intentional. Non-negotiable regardless of what's decided: the copyright
+  attribution line itself, `Copyright (C) 2021  Étienne Fesser` (present in all 47 files that carry
+  it, per `AGENTS.md:90-95`), stays untouched everywhere it appears — only the decorative title line
+  above it, and cosmetic references like the pubspec package name, are up for reconsideration.
+  Noted, not yet decided.
 
 ## Done
+
+~~**Icon/banner encoding blocks the platform thread on every app sync.**~~ — fixed (2026-08-08):
+`getApplications()` (the `"getApplications"` MethodChannel handler) and the `PACKAGE_ADDED`/
+`PACKAGE_CHANGED`/`PACKAGES_AVAILABLE` `EventChannel` callbacks now hop onto the same
+`backgroundExecutor` already used for settings-backup I/O, posting the result back via
+`mainHandler` — same pattern, no new dependency. Verified via a clean debug install on the
+emulator (`just uninstall` + `just build-install`, needed since the emulator had a release build
+on it, different signing key): app list loads and renders correctly, `flutter analyze` and the
+full `flutter test` suite (203 tests) both pass, no crashes in logcat. **Scope, precisely:** this
+fixes *where* the icon/banner encoding runs (off the platform thread), not *how much* of it
+happens — every installed app still gets encoded on cold start regardless of whether it's ever
+shown. See the `banner`-specific work-reduction item above (Open) for the actual CPU/power
+angle.
 
 ### Known issue: Back button leaves FLauncher when opened via the Home-button override
 
