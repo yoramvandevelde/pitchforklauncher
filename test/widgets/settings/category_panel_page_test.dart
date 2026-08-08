@@ -167,12 +167,43 @@ void main() {
     verify(appsService.setCategoryRowHeight(favoritesCategory, 120));
   });
 
+  testWidgets("'Show category name' calls AppsService", (tester) async {
+    final appsService = MockAppsService();
+    final favoritesCategory = fakeCategory(
+      name: "Favorites",
+      sort: CategorySort.alphabetical,
+      type: CategoryType.row,
+      rowHeight: 110,
+      showName: true,
+    );
+    when(appsService.categoriesWithApps).thenReturn([
+      CategoryWithApps(favoritesCategory, []),
+      CategoryWithApps(fakeCategory(name: "Applications"), []),
+    ]);
+    when(appsService.setCategoryShowName(favoritesCategory, false)).thenAnswer((_) => Future.value());
+
+    await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    verify(appsService.setCategoryShowName(favoritesCategory, false));
+  });
+
   group("'Delete'", () {
     Future<void> openConfirmationDialog(WidgetTester tester) async {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      // One more than before: the new "Show category name" SwitchListTile sits between the
+      // row-height/columns-count control and the Delete button.
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();

@@ -847,6 +847,17 @@ void main() {
     verify(database.listCategoriesWithVisibleApps());
   });
 
+  test("setCategoryShowName persists change in database", () async {
+    final database = MockFLauncherDatabase();
+    final category = fakeCategory(showName: true);
+    final appsService = await _buildInitialisedAppsService(MockFLauncherChannel(), database, []);
+
+    await appsService.setCategoryShowName(category, false);
+
+    verify(database.updateCategory(category.id, CategoriesCompanion(showName: Value(false))));
+    verify(database.listCategoriesWithVisibleApps());
+  });
+
   test("reloadFromDatabase refreshes the cache without re-syncing installed apps", () async {
     final channel = MockFLauncherChannel();
     when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));

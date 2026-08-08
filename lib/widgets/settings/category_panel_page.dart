@@ -150,6 +150,13 @@ class CategoryPanelPage extends StatelessWidget {
                           ],
                         ),
                       ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                      value: category.showName,
+                      onChanged: (value) => context.read<AppsService>().setCategoryShowName(category, value),
+                      title: Text("Show category name"),
+                      dense: true,
+                    ),
                     Divider(),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),

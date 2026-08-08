@@ -361,4 +361,12 @@ class AppsService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> setCategoryShowName(Category category, bool showName, {bool shouldNotifyListeners = true}) async {
+    await _database.updateCategory(category.id, CategoriesCompanion(showName: Value(showName)));
+    _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
+    if (shouldNotifyListeners) {
+      notifyListeners();
+    }
+  }
 }
