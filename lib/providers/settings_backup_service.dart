@@ -181,6 +181,7 @@ class SettingsBackupService {
               'rowHeight': categoryWithApps.category.rowHeight,
               'columnsCount': categoryWithApps.category.columnsCount,
               'order': categoryWithApps.category.order,
+              'showName': categoryWithApps.category.showName,
               'apps': categoryWithApps.applications
                   .map((app) => app.packageName)
                   .toList(),
@@ -277,6 +278,7 @@ class SettingsBackupService {
                 rowHeight: Value(category.rowHeight),
                 columnsCount: Value(category.columnsCount),
                 order: category.order,
+                showName: Value(category.showName),
               ),
             );
         categoryIds.add(inserted.id);
@@ -390,6 +392,7 @@ class _ParsedCategory {
   final int columnsCount;
   final int order;
   final List<String> apps;
+  final bool showName;
 
   _ParsedCategory({
     required this.name,
@@ -399,6 +402,7 @@ class _ParsedCategory {
     required this.columnsCount,
     required this.order,
     required this.apps,
+    required this.showName,
   });
 
   factory _ParsedCategory.fromJson(Map<String, dynamic> json) =>
@@ -410,6 +414,9 @@ class _ParsedCategory {
         columnsCount: json['columnsCount'] as int,
         order: json['order'] as int,
         apps: (json['apps'] as List<dynamic>).cast<String>(),
+        // Absent in backups written before this field existed -- same default as the database
+        // column itself, so an older backup restores exactly like it always has (name shown).
+        showName: json['showName'] as bool? ?? true,
       );
 }
 

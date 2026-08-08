@@ -43,14 +43,15 @@ class AppsGrid extends StatelessWidget {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Text(
-              category.name,
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                  fontWeight: FontWeight.bold, shadows: kOverlayTextShadows),
+          if (category.showName)
+            Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Text(
+                category.name,
+                style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                    fontWeight: FontWeight.bold, shadows: kOverlayTextShadows),
+              ),
             ),
-          ),
           applications.isNotEmpty
               ? GridView.custom(
                   shrinkWrap: true,

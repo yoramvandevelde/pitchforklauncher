@@ -32,6 +32,8 @@ others find it useful.
   launch.
 - **Modern toolchain**, current as of August 2026 (Flutter, AGP, Kotlin, compileSdk).
 - Customizable categories, manually reorderable
+- Per-category toggle to hide its name label on the home screen, independent of the category's
+  actual name (Settings > Categories > pick one > "Show category name")
 
 ## Installation
 

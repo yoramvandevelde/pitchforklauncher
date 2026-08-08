@@ -334,3 +334,13 @@ file access to that folder (another app with storage permissions, a USB/file-man
 etc.) — it includes TV Input hostnames/IPs, category/app layout and the wallpaper. No UI warning for
 this; acceptable for a single-user device, but worth knowing before treating that file as
 disposable or sharing it.
+
+## Per-category name-visibility toggle
+
+`Category.showName` (schema v6) controls whether `apps_grid.dart`/`category_row.dart` render the
+name label above a category's apps on the home screen — the category keeps its actual name either
+way, used everywhere else (management UI, `AddToCategoryDialog`, etc.); this only gates that one
+piece of on-screen text. Defaults to `true`, so existing categories are unaffected by the upgrade.
+Toggled per category via a `SwitchListTile` in `CategoryPanelPage`, alongside the existing
+sort/type/row-height controls. Included in settings backup export/import, falling back to `true`
+when absent (any backup written before this field existed).

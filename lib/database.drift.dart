@@ -552,6 +552,21 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _showNameMeta = const VerificationMeta(
+    'showName',
+  );
+  @override
+  late final GeneratedColumn<bool> showName = GeneratedColumn<bool>(
+    'show_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("show_name" IN (0, 1))',
+    ),
+    defaultValue: Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -561,6 +576,7 @@ class $CategoriesTable extends Categories
     rowHeight,
     columnsCount,
     order,
+    showName,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -608,6 +624,12 @@ class $CategoriesTable extends Categories
     } else if (isInserting) {
       context.missing(_orderMeta);
     }
+    if (data.containsKey('show_name')) {
+      context.handle(
+        _showNameMeta,
+        showName.isAcceptableOrUnknown(data['show_name']!, _showNameMeta),
+      );
+    }
     return context;
   }
 
@@ -649,6 +671,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.int,
         data['${effectivePrefix}order'],
       )!,
+      showName: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}show_name'],
+      )!,
     );
   }
 
@@ -671,6 +697,7 @@ class Category extends DataClass implements Insertable<Category> {
   final int rowHeight;
   final int columnsCount;
   final int order;
+  final bool showName;
   const Category({
     required this.id,
     required this.name,
@@ -679,6 +706,7 @@ class Category extends DataClass implements Insertable<Category> {
     required this.rowHeight,
     required this.columnsCount,
     required this.order,
+    required this.showName,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -694,6 +722,7 @@ class Category extends DataClass implements Insertable<Category> {
     map['row_height'] = Variable<int>(rowHeight);
     map['columns_count'] = Variable<int>(columnsCount);
     map['order'] = Variable<int>(order);
+    map['show_name'] = Variable<bool>(showName);
     return map;
   }
 
@@ -706,6 +735,7 @@ class Category extends DataClass implements Insertable<Category> {
       rowHeight: Value(rowHeight),
       columnsCount: Value(columnsCount),
       order: Value(order),
+      showName: Value(showName),
     );
   }
 
@@ -726,6 +756,7 @@ class Category extends DataClass implements Insertable<Category> {
       rowHeight: serializer.fromJson<int>(json['rowHeight']),
       columnsCount: serializer.fromJson<int>(json['columnsCount']),
       order: serializer.fromJson<int>(json['order']),
+      showName: serializer.fromJson<bool>(json['showName']),
     );
   }
   @override
@@ -743,6 +774,7 @@ class Category extends DataClass implements Insertable<Category> {
       'rowHeight': serializer.toJson<int>(rowHeight),
       'columnsCount': serializer.toJson<int>(columnsCount),
       'order': serializer.toJson<int>(order),
+      'showName': serializer.toJson<bool>(showName),
     };
   }
 
@@ -754,6 +786,7 @@ class Category extends DataClass implements Insertable<Category> {
     int? rowHeight,
     int? columnsCount,
     int? order,
+    bool? showName,
   }) => Category(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -762,6 +795,7 @@ class Category extends DataClass implements Insertable<Category> {
     rowHeight: rowHeight ?? this.rowHeight,
     columnsCount: columnsCount ?? this.columnsCount,
     order: order ?? this.order,
+    showName: showName ?? this.showName,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -774,6 +808,7 @@ class Category extends DataClass implements Insertable<Category> {
           ? data.columnsCount.value
           : this.columnsCount,
       order: data.order.present ? data.order.value : this.order,
+      showName: data.showName.present ? data.showName.value : this.showName,
     );
   }
 
@@ -786,14 +821,23 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('type: $type, ')
           ..write('rowHeight: $rowHeight, ')
           ..write('columnsCount: $columnsCount, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('showName: $showName')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, sort, type, rowHeight, columnsCount, order);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    sort,
+    type,
+    rowHeight,
+    columnsCount,
+    order,
+    showName,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -804,7 +848,8 @@ class Category extends DataClass implements Insertable<Category> {
           other.type == this.type &&
           other.rowHeight == this.rowHeight &&
           other.columnsCount == this.columnsCount &&
-          other.order == this.order);
+          other.order == this.order &&
+          other.showName == this.showName);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -815,6 +860,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<int> rowHeight;
   final Value<int> columnsCount;
   final Value<int> order;
+  final Value<bool> showName;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -823,6 +869,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.rowHeight = const Value.absent(),
     this.columnsCount = const Value.absent(),
     this.order = const Value.absent(),
+    this.showName = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
@@ -832,6 +879,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.rowHeight = const Value.absent(),
     this.columnsCount = const Value.absent(),
     required int order,
+    this.showName = const Value.absent(),
   }) : name = Value(name),
        order = Value(order);
   static Insertable<Category> custom({
@@ -842,6 +890,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<int>? rowHeight,
     Expression<int>? columnsCount,
     Expression<int>? order,
+    Expression<bool>? showName,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -851,6 +900,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (rowHeight != null) 'row_height': rowHeight,
       if (columnsCount != null) 'columns_count': columnsCount,
       if (order != null) 'order': order,
+      if (showName != null) 'show_name': showName,
     });
   }
 
@@ -862,6 +912,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<int>? rowHeight,
     Value<int>? columnsCount,
     Value<int>? order,
+    Value<bool>? showName,
   }) {
     return CategoriesCompanion(
       id: id ?? this.id,
@@ -871,6 +922,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       rowHeight: rowHeight ?? this.rowHeight,
       columnsCount: columnsCount ?? this.columnsCount,
       order: order ?? this.order,
+      showName: showName ?? this.showName,
     );
   }
 
@@ -902,6 +954,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
+    if (showName.present) {
+      map['show_name'] = Variable<bool>(showName.value);
+    }
     return map;
   }
 
@@ -914,7 +969,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('type: $type, ')
           ..write('rowHeight: $rowHeight, ')
           ..write('columnsCount: $columnsCount, ')
-          ..write('order: $order')
+          ..write('order: $order, ')
+          ..write('showName: $showName')
           ..write(')'))
         .toString();
   }
@@ -1579,6 +1635,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       Value<int> rowHeight,
       Value<int> columnsCount,
       required int order,
+      Value<bool> showName,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
     CategoriesCompanion Function({
@@ -1589,6 +1646,7 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<int> rowHeight,
       Value<int> columnsCount,
       Value<int> order,
+      Value<bool> showName,
     });
 
 final class $$CategoriesTableReferences
@@ -1661,6 +1719,11 @@ class $$CategoriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get showName => $composableBuilder(
+    column: $table.showName,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> appsCategoriesRefs(
     Expression<bool> Function($$AppsCategoriesTableFilterComposer f) f,
   ) {
@@ -1730,6 +1793,11 @@ class $$CategoriesTableOrderingComposer
     column: $table.order,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get showName => $composableBuilder(
+    column: $table.showName,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -1763,6 +1831,9 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<int> get order =>
       $composableBuilder(column: $table.order, builder: (column) => column);
+
+  GeneratedColumn<bool> get showName =>
+      $composableBuilder(column: $table.showName, builder: (column) => column);
 
   Expression<T> appsCategoriesRefs<T extends Object>(
     Expression<T> Function($$AppsCategoriesTableAnnotationComposer a) f,
@@ -1825,6 +1896,7 @@ class $$CategoriesTableTableManager
                 Value<int> rowHeight = const Value.absent(),
                 Value<int> columnsCount = const Value.absent(),
                 Value<int> order = const Value.absent(),
+                Value<bool> showName = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
                 name: name,
@@ -1833,6 +1905,7 @@ class $$CategoriesTableTableManager
                 rowHeight: rowHeight,
                 columnsCount: columnsCount,
                 order: order,
+                showName: showName,
               ),
           createCompanionCallback:
               ({
@@ -1843,6 +1916,7 @@ class $$CategoriesTableTableManager
                 Value<int> rowHeight = const Value.absent(),
                 Value<int> columnsCount = const Value.absent(),
                 required int order,
+                Value<bool> showName = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
                 name: name,
@@ -1851,6 +1925,7 @@ class $$CategoriesTableTableManager
                 rowHeight: rowHeight,
                 columnsCount: columnsCount,
                 order: order,
+                showName: showName,
               ),
           withReferenceMapper: (p0) => p0
               .map(

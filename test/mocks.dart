@@ -77,6 +77,7 @@ Category fakeCategory({
   CategoryType type = CategoryType.grid,
   int rowHeight = 110,
   int columnsCount = 6,
+  bool showName = true,
 }) => Category(
   id: id ?? _nextFakeCategoryId++,
   name: name,
@@ -85,4 +86,5 @@ Category fakeCategory({
   rowHeight: rowHeight,
   columnsCount: columnsCount,
   order: order,
+  showName: showName,
 );

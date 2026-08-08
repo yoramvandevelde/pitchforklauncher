@@ -806,6 +806,23 @@ class MockAppsService extends _i1.Mock implements _i13.AppsService {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> setCategoryShowName(
+    _i6.Category? category,
+    bool? showName, {
+    bool? shouldNotifyListeners = true,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #setCategoryShowName,
+              [category, showName],
+              {#shouldNotifyListeners: shouldNotifyListeners},
+            ),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   void addListener(_i12.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
