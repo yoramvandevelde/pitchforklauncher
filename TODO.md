@@ -33,7 +33,87 @@
   doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
   the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
 
+- **Downscale icons before PNG-encoding them in `drawableToByteArray`.** Flagged by the same
+  review. `MainActivity.buildAppMap()` encodes `loadIcon()` output at full intrinsic resolution
+  (adaptive icons can be 432x432 or larger) for every installed app on every cold start, even
+  though the largest place an icon is ever displayed is 48 logical px
+  (`applications_panel_page.dart`). Costs: PNG-encode CPU on the background executor at cold
+  start, MethodChannel payload + SQLite blob size (stored forever), and later decode
+  memory/`imageCache` pressure (`Image.memory(icon, height: 48)` decodes at intrinsic size, no
+  `cacheWidth`). Fix: scale the bitmap to a bounded size (e.g. 192x192, still 2-4x oversampled at
+  every display site) inside `drawableToByteArray` before compressing. Biggest remaining
+  cold-start lever per that review.
+
+- **`FilterQuality.high` + codec-side target size in `_resizeToScreen`.** Same method as the
+  wallpaper item above, two independent one-line-ish changes: (1) the `Canvas.drawImageRect` call
+  uses the default `Paint()` (`FilterQuality.none`, nearest-neighbor), which produces visible
+  aliasing/moiré when downscaling a detailed photo -- use `Paint()..filterQuality =
+  FilterQuality.high` for the one-time bake. (2) `instantiateImageCodec(bytes)` decodes the source
+  at full resolution before downscaling; passing the already-computed cover-scaled
+  `targetWidth`/`targetHeight` lets the platform codec sample-decode instead -- relevant for
+  `pickWallpaper()` picks (a 12 MP photo decoded full-size transiently holds ~48 MB of RGBA).
+
+- **Add the GPL header to `lib/widgets/color_helpers.dart`.** The only file in the tree missing
+  the license header every other source file carries; `AGENTS.md`'s License section mandates it.
+  The file is upstream-derived (backs the app-card border pulse), so it needs Fesser's copyright
+  line alongside the current one. Compliance nit, trivial fix.
+
+- **At leisure, from the same review:** the accessibility service only consumes `ACTION_UP`
+  (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
+  through to the foreground app/system while `UP` is hijacked, the classic shape of a
+  both-things-fire bug on other firmware even though it works fine on this hardware; standard fix
+  is to also consume `DOWN` for any keycode being claimed, tracked until its matching `UP`. The
+  `AppsService` `EventChannel` listener for `PACKAGE_ADDED`/`PACKAGE_CHANGED` is async and
+  unserialized, so two events arriving close together (an app update) can interleave
+  persist/reload and briefly publish stale state -- self-healing on the next event, but a one-line
+  queue/dirty-flag would close it. `CandidateNode` in `lib/custom_traversal_policy.dart` is a pure
+  ceremony wrapper around `FocusNode` that's immediately unwrapped elsewhere -- would read better
+  as `List<FocusNode>` end to end.
+
+- **Unverified ideas from the same review, not yet checked against the running app:**
+  - *PitchforkLauncher may list itself.* `MainActivity.queryIntentActivities` matches this app's
+    own `MainActivity` (it declares `LEANBACK_LAUNCHER`) and nothing filters `packageName ==
+    this.packageName` -- confirmed in the source, but whether this is actually visible/annoying in
+    practice (Settings -> Applications, or seeded into a "TV Applications" category on fresh
+    install) hasn't been checked on device. If it's there and it bugs you, one-line filter in
+    `getApplications`. Launching it is harmless either way (`singleTask` just brings it to front).
+  - *Fetch `versionName` lazily instead of in the bulk sync.* `buildAppMap` calls
+    `packageManager.getPackageInfo(packageName, 0).versionName` for every installed app on every
+    sync (an extra binder round-trip per app), but `version` is only ever displayed in
+    `ApplicationInfoPanel` when that one panel opens. Moving the fetch to a small on-demand channel
+    method removes N binder calls from cold start -- micro, scales with installed-app count.
+    Alternatively keep it as-is, but then it's a conscious choice rather than an oversight.
+  - *`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes:*
+    `_refreshState()`'s `Future.forEach` over `appsRemovedFromSystem`'s `applicationExists` checks
+    runs one platform-channel round-trip at a time (list is almost always empty, but `Future.wait`
+    would collapse the round-trips when it isn't); `categoriesWithApps` allocates a fresh
+    list + `UnmodifiableListView` per category on every access, so `Selector`s reading it
+    (`categories_panel_page.dart`, `add_to_category_dialog.dart`) always see a new instance and
+    rebuild on every notification regardless of whether anything relevant changed -- a cached
+    wrapper invalidated on mutation would make them properly selective; the system-vs-database diff
+    is an O(n·m) linear scan that a `Set` of package names would make O(n).
+  - *`app_card.dart`'s `_animation.forward()`/`.stop()` calls live inside a `Selector` builder
+    (a `build` method).* Works today because both calls are idempotent, but animation control is a
+    side effect that idiomatically belongs in a focus-change listener (`didChangeDependencies` or a
+    `FocusNode` listener) instead. Nit-level; leave as-is if the current shape is deliberate.
+
 ## Done
+
+~~**Pre-crop `assets/default_wallpaper.jpg` to 1920x1080.**~~ — done (2026-08-08): the bundled
+asset was 4000x2491 (~3.9 MB), above the Google TV Streamer 4K's actual 1920x1080 render size
+(`adb shell wm size` on the real device: `Physical size: 3840x2160`, `Override size: 1920x1080` --
+apps render into the 1080p framebuffer, which the TV pipeline then upscales to the panel), so
+`WallpaperService._resizeToScreen` fired on every fresh install (decode the ~10 MP JPEG, re-encode
+as PNG at 1920x1080) and the resulting PNG was then re-read and re-decoded on every subsequent
+cold start. Cropped and scaled the asset itself offline, using the same crop-then-scale math
+`_resizeToScreen` applies at runtime (`BoxFit.cover`: scale so the shorter relative dimension
+fills the target, crop the overflow on the other axis centered) so the visible composition matches
+what was already being displayed -- concretely, crop the original 4000x2491 to a centered
+4000x2250 region, then downscale that to 1920x1080. This makes `_resizeToScreen`'s early-return
+apply, removing both the first-run encode and the per-start PNG decode; no code change. Also
+dropped the file size from 3.9 MB to 2.4 MB as a side effect (re-encoded at high JPEG quality, not
+the smaller-but-untested default). Verified: `flutter analyze --fatal-infos` clean, full test
+suite (212 tests) passes. Flagged by the 2026-08-08 second-pass review (`REVIEW.md`).
 
 ~~**Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
 bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).**~~ — decided (2026-08-08):
