@@ -20,6 +20,19 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
+- **Add `dart format --set-exit-if-changed` as a CI gate.** Recommended by the 2026-08-07 Kimi
+  review pass (`REVIEW.md`). Not as simple as adding the CI step: running it today would reformat
+  **65 files**, mostly tests. Not a line-length issue (tried `analysis_options.yaml`'s
+  `formatter: page_width: 120` first, no effect) -- it's Dart's newer "tall style" formatter
+  (current pin: Dart 3.12.2 via Flutter 3.44.8) wanting different indentation/nesting for
+  `when(...).thenAnswer((_) => ...)`-shaped test code that was last formatted under an older
+  style. E.g. `when(x).thenAnswer((_) => Future.value([...]))` currently keeps the callback and
+  its body inline; the new style breaks the callback onto its own line and adds trailing commas
+  throughout, which in turn keeps list/map literals multi-line instead of sometimes collapsing
+  them. Purely stylistic, no functional change, but it touches most of `test/` at once -- worth
+  doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
+  the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
+
 ## Done
 
 ~~**Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
