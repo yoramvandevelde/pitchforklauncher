@@ -33,6 +33,35 @@
   doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
   the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
 
+- **App-card banners visibly pop in/"blink" on cold start (~100-250ms, noticeable).** Raised
+  2026-08-08 after observing this regression relative to `FLauncher`/earlier Pitchfork. Root cause,
+  traced through the code (not yet profiled on-device): the data itself isn't staggered --
+  `AppsService._init()` awaits the full native `getApplications()` call, banner bytes included,
+  before flipping `initialized` to true and calling `notifyListeners()`
+  (`lib/providers/apps_service.dart:49-69`), and `FLauncher`'s `Consumer<AppsService>`
+  (`lib/flauncher.dart:79`) shows nothing but `_emptyState()` until then -- so there's no
+  "banner missing, then arrives" state at the Dart/data layer. What *is* staggered is image
+  decode: every visible category's `AppCard`s mount in the same layout pass (`ListView.custom`/
+  `GridView.custom` build what's in the initial viewport immediately), and each one paints its
+  banner via a bare `Ink.image(image: MemoryImage(bytes))` (`lib/widgets/app_card.dart:124`) with
+  no `frameBuilder`, no `gaplessPlayback`, no fade, no `cacheWidth`/`cacheHeight` -- so every
+  visible card decodes its PNG banner independently and paints blank (the `Material`'s own
+  background color) until its own decode finishes. Dozens of these resolving within roughly the
+  same short window reads as a single collective flicker rather than a graceful materialization.
+  Likely not a new bug so much as a pre-existing decode cost that only became perceptible once
+  cold start got faster elsewhere (see "Icon/banner encoding blocks the platform thread" in Done)
+  -- the total wait shrank, so this last visible step stopped being absorbed into a longer, less
+  sharply-bounded loading pause. **Considered and rejected: reverting the platform-thread-off
+  fix.** That fix wasn't cosmetic -- blocking Android's main thread during a bulk sync risks real
+  ANRs as the installed-app count grows, an orthogonal and more serious problem than this one;
+  undoing it would reintroduce that risk without actually removing the flicker, since the decode
+  gap already existed before that fix and lives in the Flutter layer, not the threading choice.
+  **Planned fix:** a fade-in on each `AppCard`'s banner once its own decode completes (`Image`'s
+  `frameBuilder`, or an `AnimatedOpacity`/`AnimatedSwitcher` keyed on load state) so the pop-in
+  reads as a soft materialize instead of a flash; possibly paired with `cacheWidth`/`cacheHeight`
+  on the banner `Ink.image` (same "decode smaller, display flat" angle as Perf #2's icon downscale
+  above) to shrink the decode cost itself. To try after the current wallpaper-precrop branch merges.
+
 - **Downscale icons before PNG-encoding them in `drawableToByteArray`.** Flagged by the same
   review. `MainActivity.buildAppMap()` encodes `loadIcon()` output at full intrinsic resolution
   (adaptive icons can be 432x432 or larger) for every installed app on every cold start, even
