@@ -35,17 +35,6 @@
   always-on-when-enabled cost affects every card, not just the one actually showing the pulse.
   Consider only animating while genuinely focused. Found via the same review pass.
 
-- **`network_image_mock` dev dependency is unused.** `pubspec.yaml:33` — zero imports anywhere in
-  `lib/` or `test/`. Leftover from before this app had any `Image.network` widgets. Remove +
-  `flutter pub get`. Found via the same review pass, confirmed dead by grep.
-
-- **`TickerModel` is effectively dead code in production.** `flauncher_app.dart:110` always
-  registers `TickerModel(null)`, so `app_card.dart:61`'s `tickerProvider ?? this` never actually
-  uses the injected ticker — `_AppCardState` already has its own `SingleTickerProviderStateMixin`
-  to fall back to. Only `test/flauncher_test.dart:705` supplies a real one. Removing it needs a
-  small test refactor (that test currently relies on the injection to control animation timing).
-  Found via the same review pass.
-
 - **Tizen pairing token is stored in plaintext in the settings backup file.**
   `settings_backup_service.dart:191` includes the full `tvInputs` list (via
   `TvInputConfig.toJson()`) in the exported JSON, which for a `SamsungTizenProfile` input includes
@@ -67,15 +56,6 @@
   than the Downloads-file case. Same open decision (strip the token vs. accept and document) should
   cover both; a `fullBackupContent`/`dataExtractionRules` rules file excluding the relevant prefs
   key would close the passive path specifically without touching the deliberate Downloads export.
-
-- **`SettingsBackupStorage.write`/`read` don't sanitize `fileName`.** `SettingsBackupStorage.kt:77,88`
-  builds `File(downloadsDirectory, fileName)` straight from the channel argument, so a name
-  containing `../` could escape the Downloads directory. Not exploitable today —
-  `settings_backup_service.dart:36`'s `backupFileName` is a hardcoded constant, and the channel
-  isn't reachable from outside this app — but a basename-only check (or rejecting anything with a
-  path separator) is a one-line, zero-risk hardening that's worth having before any future caller
-  (a file picker, say) could ever make it live. Found via a review pass (2026-08-07, Grok),
-  verified against the code.
 
 - **MethodChannel handler throws instead of `result.notImplemented()`, and does unchecked casts on
   every argument.** `MainActivity.kt:67-122` — each branch does e.g. `call.arguments as String` or
@@ -111,6 +91,25 @@
   Noted, not yet decided.
 
 ## Done
+
+~~**`network_image_mock` dev dependency is unused.**~~ — removed (2026-08-08): dropped from
+`pubspec.yaml` and `pubspec.lock` via `flutter pub get`.
+
+~~**`TickerModel` is effectively dead code in production.**~~ — removed (2026-08-08): deleted
+`lib/providers/ticker_model.dart`, its registration in `flauncher_app.dart`, and
+`app_card.dart`'s `Provider.of<TickerModel>(...).tickerProvider ?? this` (now just `vsync: this`,
+what production always resolved to anyway). `test/flauncher_test.dart`'s `_pumpWidgetWithProviders`
+no longer injects a `TickerModel(tester)` either — turned out unnecessary: `tester.pump(...)`
+already drives any `Ticker` in the tree regardless of which `TickerProvider` created it, confirmed
+by the full suite (203 tests) still passing, including the focus-navigation test that used to rely
+on the injected one. Verified further via a clean emulator install: the focus-pulse animation
+still renders on the focused card.
+
+~~**`SettingsBackupStorage.write`/`read` don't sanitize `fileName`.**~~ — fixed (2026-08-08): added
+a private `isSafeFileName` check (rejects anything that isn't a bare filename — a path separator,
+or literally "." / "..") gating both `write` and `read`. The existing caller's hardcoded filename
+trivially passes it, so no behavior change was expected for the actual backup/restore flow —
+confirmed manually on the emulator (Backup then Restore both still succeed) rather than assumed.
 
 ~~**Icon/banner encoding blocks the platform thread on every app sync.**~~ — fixed (2026-08-08):
 `getApplications()` (the `"getApplications"` MethodChannel handler) and the `PACKAGE_ADDED`/
