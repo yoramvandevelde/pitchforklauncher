@@ -20,17 +20,27 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
-  bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).** `AGENTS.md:97-100`
-  currently documents that files carrying Fesser's copyright line keep `FLauncher` as the header
-  title while wholly-new files use `PitchforkLauncher` — in practice that reads as more
-  inconsistent than intentional. Non-negotiable regardless of what's decided: the copyright
-  attribution line itself, `Copyright (C) 2021  Étienne Fesser` (present in all 47 files that carry
-  it, per `AGENTS.md:90-95`), stays untouched everywhere it appears — only the decorative title line
-  above it, and cosmetic references like the pubspec package name, are up for reconsideration.
-  Noted, not yet decided.
-
 ## Done
+
+~~**Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
+bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).**~~ — decided (2026-08-08):
+**Header title, rebranded in one pass.** All 58 files carrying the decorative project-name line
+(56 with Fesser's copyright line, plus 2 wholly-new files that had mistakenly kept saying
+`FLauncher` -- an unrelated pre-existing bug, fixed alongside this) now say `PitchforkLauncher`,
+including the ones that still carry `Copyright (C) 2021  Étienne Fesser` -- that copyright line
+itself, the only part the license actually requires preserving, is untouched everywhere. The
+previous incremental split (old files keep `FLauncher`, only touched/new files get the new name)
+made sense while this was an actively-rebased fork, where every unmodified line stays a zero-diff
+match against upstream for future merges; it stopped making sense once the project settled into
+being its own thing, no longer tracking FLauncher's GitLab -- at that point the split just reads as
+inconsistent rather than as a deliberate policy. `AGENTS.md` updated to document the new rule and
+why the old one no longer applies. **`pubspec.yaml`'s `name: flauncher`, left as-is.** This is a
+technical package identifier, not a cosmetic label -- renaming it means rewriting the import prefix
+(`package:flauncher/...`) across every file in `lib/`, for zero user-visible benefit (the actual
+app identity users see comes from `AndroidManifest.xml`'s `android:label` and the
+`io.sifft.pitchforklauncher` application id, both already correctly branded). Common in fork-land
+to leave this alone indefinitely given that cost/benefit; not a loose end. Verified: `flutter
+analyze`, `flutter test` (comment-only change, unsurprisingly unaffected), and a debug build.
 
 ~~**`buildAppMap()` encodes `banner` for every app, including ones that never render through an
 `AppCard`.**~~ — fixed (2026-08-08), Route B (of two considered; see the conversation this came
