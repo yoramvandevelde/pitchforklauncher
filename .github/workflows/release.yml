@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
@@ -69,18 +70,28 @@ jobs:
 
       # pubspec.yaml's version: field is never actually used for a real release build (the build
       # above overrides it via --build-name/--build-number) -- this just keeps it from drifting
-      # stale, for the sake of ad-hoc local builds that don't pass those flags themselves.
+      # stale, for the sake of ad-hoc local builds that don't pass those flags themselves. Goes
+      # through a PR (opened and merged by this same job) rather than pushing to main directly --
+      # main requires a pull request for every change now, no exceptions for automation either.
       - name: Bump pubspec.yaml version on main
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin main
           git checkout main
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           sed -i "s/^version: .*/version: ${GITHUB_REF_NAME}/" pubspec.yaml
-          git add pubspec.yaml
-          if git diff --cached --quiet; then
+          if git diff --quiet -- pubspec.yaml; then
             echo "pubspec.yaml version already up to date, nothing to commit."
-          else
-            git commit -m "Bump pubspec.yaml version to ${GITHUB_REF_NAME}"
-            git push origin main
+            exit 0
           fi
+          branch="bump-pubspec-version-${GITHUB_REF_NAME}"
+          git checkout -b "$branch"
+          git add pubspec.yaml
+          git commit -m "Bump pubspec.yaml version to ${GITHUB_REF_NAME}"
+          git push origin "$branch"
+          pr_url=$(gh pr create --base main --head "$branch" \
+            --title "Bump pubspec.yaml version to ${GITHUB_REF_NAME}" \
+            --body "Automated version bump after releasing ${GITHUB_REF_NAME}.")
+          gh pr merge "$pr_url" --squash --delete-branch
