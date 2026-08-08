@@ -85,6 +85,21 @@
   hygiene/convention nit, not a vulnerability, but it's the standard Flutter pattern and cheap to
   match. Found via a review pass (2026-08-07, Grok), verified against the code.
 
+- **`buildAppMap()` encodes `banner` for every app, including ones that never render through an
+  `AppCard`.** `MainActivity.kt:207-214` builds `banner` unconditionally for every installed app,
+  but `banner` has exactly one consumer in the whole codebase — `app_card.dart:124-125` — which
+  only draws for apps sitting in a visible category. Hidden apps and apps not yet assigned to any
+  category never go through `AppCard`, so their `banner` bytes are computed, stored, and read by
+  nothing. (`icon`, in contrast, genuinely is needed for every app regardless of hidden state —
+  `applications_panel_page.dart:123` renders it in the Applications panel's "Hidden" tab, so an app
+  can be recognized before being unhidden.) The recent background-thread fix
+  (see Done below) only moved this work off the platform thread; it didn't reduce it — this is the
+  actual work-reduction/power angle. Lazy-computing `banner` only when an app is added to a visible
+  category (the `addToCategory` hook already exists) would cut this to zero cost for apps that
+  never show a banner, with no fundamental added cost elsewhere. Found via conversation
+  (2026-08-08), verified against the code — `banner`'s only read site confirmed via grep across
+  `lib/`.
+
 - **Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
   bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).** `AGENTS.md:97-100`
   currently documents that files carrying Fesser's copyright line keep `FLauncher` as the header
@@ -104,7 +119,11 @@
 `mainHandler` — same pattern, no new dependency. Verified via a clean debug install on the
 emulator (`just uninstall` + `just build-install`, needed since the emulator had a release build
 on it, different signing key): app list loads and renders correctly, `flutter analyze` and the
-full `flutter test` suite (203 tests) both pass, no crashes in logcat.
+full `flutter test` suite (203 tests) both pass, no crashes in logcat. **Scope, precisely:** this
+fixes *where* the icon/banner encoding runs (off the platform thread), not *how much* of it
+happens — every installed app still gets encoded on cold start regardless of whether it's ever
+shown. See the `banner`-specific work-reduction item above (Open) for the actual CPU/power
+angle.
 
 ### Known issue: Back button leaves FLauncher when opened via the Home-button override
 
