@@ -24,6 +24,7 @@ import 'package:flauncher/flauncher_channel.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
+import 'package:flauncher/providers/tv_input/tv_input_profiles.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 
@@ -188,7 +189,17 @@ class SettingsBackupService {
           .toList(),
       'hiddenApps': hiddenApps,
       'buttonMappings': buttonMappings,
-      'tvInputs': _tvInputService.inputs.map((input) => input.toJson()).toList(),
+      // Excludes each input's secret params (e.g. a Samsung TV's pairing token, which has replay
+      // value -- see TvInputProfile.secretParamKeys) from the export. Falls back to no exclusion
+      // for an input whose profile id isn't registered (shouldn't happen, but toJson() already
+      // defaults to that safely).
+      'tvInputs': _tvInputService.inputs
+          .map(
+            (input) => input.toJson(
+              excludeParamKeys: tvInputProfiles[input.profileId]?.secretParamKeys ?? const {},
+            ),
+          )
+          .toList(),
       'wallpaperBytesBase64': wallpaperBytes != null
           ? base64Encode(wallpaperBytes)
           : null,

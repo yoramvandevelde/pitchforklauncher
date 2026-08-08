@@ -31,4 +31,8 @@ void main() {
   test("ships the Samsung Tizen profile", () {
     expect(tvInputProfiles["samsung_tizen"], isA<SamsungTizenProfile>());
   });
+
+  test("Samsung Tizen profile marks its pairing token as secret", () {
+    expect(SamsungTizenProfile().secretParamKeys, {"token"});
+  });
 }

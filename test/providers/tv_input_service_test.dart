@@ -39,6 +39,9 @@ class _FakeProfile implements TvInputProfile {
   List<TvInputParamSpec> get paramSpecs => const [];
 
   @override
+  Set<String> get secretParamKeys => const {};
+
+  @override
   Future<Map<String, String>?> selectInput(Map<String, String> params) =>
       onSelectInput(params);
 }
