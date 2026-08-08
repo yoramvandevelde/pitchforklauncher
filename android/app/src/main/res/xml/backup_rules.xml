@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ PitchforkLauncher
+  ~ Copyright (C) 2026  Yoram van de Velde
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+  -->
+
+<!-- Legacy (pre-API 31) Auto Backup rules. FlutterSharedPreferences.xml is the one file every
+     shared_preferences-backed setting lives in (time format, animation toggle, button mappings,
+     wallpaper source id, and TV inputs, the last of which can include a Samsung TV's pairing
+     token, see SamsungTizenProfile.secretParamKeys). Android's backup rules only work at file
+     granularity, not per-key within a file, so excluding just the token means excluding this
+     whole file; the app's own Backup/Restore feature (SettingsBackupService) already covers
+     recovering those settings deliberately, and already strips secrets from that export. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSharedPreferences.xml" />
+</full-backup-content>
