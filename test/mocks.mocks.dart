@@ -193,12 +193,22 @@ class MockFLauncherChannel extends _i1.Mock implements _i8.FLauncherChannel {
   }
 
   @override
-  _i4.Future<List<dynamic>> getApplications() =>
+  _i4.Future<List<dynamic>> getApplications(
+    List<String>? visiblePackageNames,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#getApplications, []),
+            Invocation.method(#getApplications, [visiblePackageNames]),
             returnValue: _i4.Future<List<dynamic>>.value(<dynamic>[]),
           )
           as _i4.Future<List<dynamic>>);
+
+  @override
+  _i4.Future<_i9.Uint8List?> getAppBanner(String? packageName) =>
+      (super.noSuchMethod(
+            Invocation.method(#getAppBanner, [packageName]),
+            returnValue: _i4.Future<_i9.Uint8List?>.value(),
+          )
+          as _i4.Future<_i9.Uint8List?>);
 
   @override
   _i4.Future<bool> applicationExists(String? packageName) =>

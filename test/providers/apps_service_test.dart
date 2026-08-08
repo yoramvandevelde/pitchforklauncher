@@ -31,8 +31,9 @@ void main() {
   group("AppsService initialised correctly", () {
     test("with empty database", () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'io.sifft.pitchforklauncher',
               'name': 'FLauncher',
@@ -137,8 +138,9 @@ void main() {
 
     test("sorts matched apps into topical categories, falling back to TV/Non-TV split", () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'com.netflix.ninja',
               'name': 'Netflix',
@@ -258,8 +260,9 @@ void main() {
 
     test("sorts a matched app into the System category as a compact row", () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'com.android.vending',
               'name': 'Play Store',
@@ -313,8 +316,9 @@ void main() {
 
     test("seeds the Streaming category with default_app_categories.dart's configured column count", () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'com.netflix.ninja',
               'name': 'Netflix',
@@ -354,11 +358,12 @@ void main() {
     test("categorization follows default_app_categories.dart's own order, not the device's alphabetical app order",
         () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
       // Jellyfin/Plex are both "Media" -- alphabetically "Jellyfin" sorts before "Plex", but
       // default_app_categories.dart lists Plex before Jellyfin. Netflix is "Streaming", listed
       // before "Media" in the file, but must still end up visually *above* Media.
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'org.jellyfin.androidtv',
               'name': 'Jellyfin',
@@ -423,8 +428,9 @@ void main() {
 
     test("with newly installed, uninstalled and existing apps", () async {
       final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
       final database = MockFLauncherDatabase();
-      when(channel.getApplications()).thenAnswer((_) => Future.value([
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
               'packageName': 'io.sifft.pitchforklauncher',
               'name': 'FLauncher',
@@ -482,8 +488,36 @@ void main() {
     });
   });
 
+  test("passes the package names of apps in a visible category to getApplications", () async {
+    final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
+    List<dynamic>? receivedVisiblePackageNames;
+    when(channel.getApplications(any)).thenAnswer((invocation) {
+      receivedVisiblePackageNames = invocation.positionalArguments[0] as List<dynamic>;
+      return Future.value([]);
+    });
+    final database = MockFLauncherDatabase();
+    when(database.listApplications()).thenAnswer((_) => Future.value([]));
+    final category = fakeCategory(name: "Streaming");
+    when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+          CategoryWithApps(category, [
+            fakeApp(packageName: "com.app.one"),
+            fakeApp(packageName: "com.app.two"),
+          ]),
+        ]));
+    when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+    when(database.wasCreated).thenReturn(false);
+
+    AppsService(channel, database);
+    await untilCalled(channel.addAppsChangedListener(any));
+    await untilCalled(channel.getApplications(any));
+
+    expect(receivedVisiblePackageNames, unorderedEquals(["com.app.one", "com.app.two"]));
+  });
+
   test("launchApp calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final app = fakeApp();
@@ -493,6 +527,7 @@ void main() {
 
   test("openAppInfo calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final app = fakeApp();
@@ -504,6 +539,7 @@ void main() {
 
   test("uninstallApp calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final app = fakeApp();
@@ -515,6 +551,7 @@ void main() {
 
   test("openSettings calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
 
@@ -525,6 +562,7 @@ void main() {
 
   test("isDefaultLauncher calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     when(channel.isDefaultLauncher()).thenAnswer((_) => Future.value(true));
     final appsService = await _buildInitialisedAppsService(channel, database, []);
@@ -537,6 +575,7 @@ void main() {
 
   test("startAmbientMode calls channel", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
 
@@ -547,6 +586,7 @@ void main() {
 
   test("addToCategory adds app to category", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final category = fakeCategory(name: "Category");
@@ -559,8 +599,39 @@ void main() {
     verify(database.listCategoriesWithVisibleApps());
   });
 
+  test("addToCategory fetches and persists a banner for an app that doesn't have one yet", () async {
+    final channel = MockFLauncherChannel();
+    final bannerBytes = Uint8List.fromList([1, 2, 3]);
+    final database = MockFLauncherDatabase();
+    final appsService = await _buildInitialisedAppsService(channel, database, []);
+    // Must be stubbed after _buildInitialisedAppsService: that helper stubs getAppBanner(any)
+    // itself, and a later `when()` call takes priority over an earlier one for the same mock.
+    when(channel.getAppBanner("app.without.banner")).thenAnswer((_) => Future.value(bannerBytes));
+    final category = fakeCategory(name: "Category");
+    when(database.nextAppCategoryOrder(category.id)).thenAnswer((_) => Future.value(0));
+
+    await appsService.addToCategory(fakeApp(packageName: "app.without.banner", banner: null), category);
+
+    verify(channel.getAppBanner("app.without.banner"));
+    verify(database.updateApp("app.without.banner", AppsCompanion(banner: Value(bannerBytes))));
+  });
+
+  test("addToCategory doesn't fetch a banner for an app that already has one", () async {
+    final channel = MockFLauncherChannel();
+    final database = MockFLauncherDatabase();
+    final appsService = await _buildInitialisedAppsService(channel, database, []);
+    final category = fakeCategory(name: "Category");
+    when(database.nextAppCategoryOrder(category.id)).thenAnswer((_) => Future.value(0));
+
+    await appsService.addToCategory(
+        fakeApp(packageName: "app.with.banner", banner: Uint8List.fromList([1, 2, 3])), category);
+
+    verifyNever(channel.getAppBanner(any));
+  });
+
   test("removeFromCategory removes app from category", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final app = fakeApp(packageName: "app.to.be.added");
@@ -574,6 +645,7 @@ void main() {
 
   test("moveToCategory adds app to the target category and removes it from the source category", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final app = fakeApp(packageName: "app.to.be.moved");
@@ -591,6 +663,7 @@ void main() {
 
   test("saveOrderInCategory persists apps order from memory to database", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final category = fakeCategory(name: "Category");
     final appsService = await _buildInitialisedAppsService(channel, database, [
@@ -608,6 +681,7 @@ void main() {
 
   test("reorderApplication changes application order in-memory", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final category = fakeCategory(name: "Category");
     final appsService = await _buildInitialisedAppsService(channel, database, [
@@ -622,6 +696,7 @@ void main() {
 
   test("addCategory adds category at index 0 and moves others", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final existingCategory = fakeCategory(name: "Existing Category", order: 0);
     final appsService = await _buildInitialisedAppsService(
@@ -639,6 +714,7 @@ void main() {
 
   test("renameCategory renames category", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final category = fakeCategory(name: "Old name", order: 0);
     final appsService = await _buildInitialisedAppsService(
@@ -655,6 +731,7 @@ void main() {
 
   test("deleteCategory deletes category", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final defaultCategory = fakeCategory(name: "Applications", order: 0);
     final categoryToDelete = fakeCategory(name: "Delete Me", order: 1);
@@ -678,6 +755,7 @@ void main() {
 
   test("moveCategory changes categories order", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final applicationsCategory = fakeCategory(name: "Applications", order: 0);
     final favoritesCategory = fakeCategory(name: "Favorites", order: 1);
@@ -771,6 +849,7 @@ void main() {
 
   test("reloadFromDatabase refreshes the cache without re-syncing installed apps", () async {
     final channel = MockFLauncherChannel();
+    when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
     final database = MockFLauncherDatabase();
     final appsService = await _buildInitialisedAppsService(channel, database, []);
     final application = fakeApp();
@@ -786,7 +865,7 @@ void main() {
     expect(appsService.categoriesWithApps.length, 1);
     expect(appsService.categoriesWithApps.first.category, category);
     expect(appsService.categoriesWithApps.first.applications, [application]);
-    verifyNever(channel.getApplications());
+    verifyNever(channel.getApplications(any));
   });
 }
 
@@ -795,7 +874,8 @@ Future<AppsService> _buildInitialisedAppsService(
   MockFLauncherDatabase database,
   List<CategoryWithApps> categoriesWithApps,
 ) async {
-  when(channel.getApplications()).thenAnswer((_) => Future.value([]));
+  when(channel.getApplications(any)).thenAnswer((_) => Future.value([]));
+  when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
   when(database.listApplications()).thenAnswer((_) => Future.value([]));
   when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value(categoriesWithApps));
   when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
