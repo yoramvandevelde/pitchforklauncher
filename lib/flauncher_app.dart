@@ -23,7 +23,6 @@ import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
-import 'package:flauncher/providers/ticker_model.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flutter/material.dart';
@@ -107,7 +106,6 @@ class FLauncherApp extends StatelessWidget {
           _fLauncherChannel,
         ),
       ),
-      Provider<TickerModel>(create: (context) => TickerModel(null)),
     ],
     child: MaterialApp(
       shortcuts: {

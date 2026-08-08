@@ -66,8 +66,16 @@ object SettingsBackupStorage {
 
     fun isAvailable(): Boolean = isSupported() && Environment.isExternalStorageManager()
 
+    /** Rejects anything that isn't a bare filename -- a `fileName` containing a path separator
+     * (or literally "." / "..") could otherwise make `File(downloadsDirectory, fileName)` escape
+     * the Downloads directory. Not reachable today: `settings_backup_service.dart`'s caller always
+     * passes a hardcoded constant, and the channel isn't reachable from outside this app -- but
+     * cheap insurance against any future caller (a file picker, say) doing otherwise. */
+    private fun isSafeFileName(fileName: String): Boolean =
+        fileName.isNotBlank() && fileName != "." && fileName != ".." && File(fileName).name == fileName
+
     fun write(fileName: String, bytes: ByteArray): Boolean {
-        if (!isAvailable()) return false
+        if (!isAvailable() || !isSafeFileName(fileName)) return false
         return try {
             downloadsDirectory.mkdirs()
             // Write to a temp file and rename over the target rather than truncating it directly:
@@ -84,7 +92,7 @@ object SettingsBackupStorage {
     }
 
     fun read(fileName: String): ByteArray? {
-        if (!isAvailable()) return null
+        if (!isAvailable() || !isSafeFileName(fileName)) return null
         val file = File(downloadsDirectory, fileName)
         if (!file.exists()) return null
         return try {
