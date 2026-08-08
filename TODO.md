@@ -2,6 +2,17 @@
 
 ## Open
 
+- **Icon/banner encoding blocks the platform thread on every app sync.**
+  `MainActivity.getApplications()`/`buildAppMap()`/`drawableToByteArray()`
+  (`MainActivity.kt:183-214,286-303`) run synchronously on the platform thread whenever apps are
+  queried — cold start and every `PACKAGE_ADDED`/`PACKAGE_CHANGED`. Per app: `loadBanner`/
+  `loadIcon`, rasterize to a `Bitmap`, `Bitmap.compress(PNG, 100)`. On a TV with 50-100 apps that's
+  easily hundreds of ms of UI-thread block, visible as the "Loading..." state
+  (`apps_service.dart:143-168`). `backgroundExecutor` already exists in this file (used for
+  `writeSettingsBackup`/`readSettingsBackup`) — dispatching `getApplications()` through it would be
+  the same pattern already established, no new dependency. Found via a review pass (2026-08-06),
+  verified against the code.
+
 - **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
   the KGP fix below: with both plugins fixed, the *only* remaining KGP warning is our own module
   still applying `id "org.jetbrains.kotlin.android"` directly. See
@@ -19,17 +30,6 @@
   "Enabling built-in Kotlin requires Flutter 3.47 or later". As of 2026-08-06, 3.47 is in active
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
-
-- **Icon/banner encoding blocks the platform thread on every app sync.**
-  `MainActivity.getApplications()`/`buildAppMap()`/`drawableToByteArray()`
-  (`MainActivity.kt:183-214,286-303`) run synchronously on the platform thread whenever apps are
-  queried — cold start and every `PACKAGE_ADDED`/`PACKAGE_CHANGED`. Per app: `loadBanner`/
-  `loadIcon`, rasterize to a `Bitmap`, `Bitmap.compress(PNG, 100)`. On a TV with 50-100 apps that's
-  easily hundreds of ms of UI-thread block, visible as the "Loading..." state
-  (`apps_service.dart:143-168`). `backgroundExecutor` already exists in this file (used for
-  `writeSettingsBackup`/`readSettingsBackup`) — dispatching `getApplications()` through it would be
-  the same pattern already established, no new dependency. Found via a review pass (2026-08-06),
-  verified against the code.
 
 - **`TimeWidget` ticks every second, permanently.** `lib/widgets/time_widget.dart:41` —
   `Timer.periodic(Duration(seconds: 1))` + `setState` runs for as long as the launcher is on
@@ -70,6 +70,41 @@
   `SettingsBackupStorage.write` ignores `renameTo`'s return value) turned out to be wrong: Kotlin's
   `return try { ...; tempFile.renameTo(target) } catch { false }` does return it, and the failure
   correctly propagates up to `settings_backup_service.dart`'s `BackupException`. Not added here.
+  **Update (2026-08-07, Grok pass, verified):** the same token also has a second, passive exposure
+  path — `AndroidManifest.xml:53,55` sets `android:allowBackup="true"` with
+  `android:fullBackupContent="true"` as a literal boolean (not a `@xml/backup_rules` file scoping
+  what's included), so the token rides along in Android's own Auto Backup to the user's Google
+  account on every backup cycle, with no explicit export action needed — broader and less visible
+  than the Downloads-file case. Same open decision (strip the token vs. accept and document) should
+  cover both; a `fullBackupContent`/`dataExtractionRules` rules file excluding the relevant prefs
+  key would close the passive path specifically without touching the deliberate Downloads export.
+
+- **`SettingsBackupStorage.write`/`read` don't sanitize `fileName`.** `SettingsBackupStorage.kt:77,88`
+  builds `File(downloadsDirectory, fileName)` straight from the channel argument, so a name
+  containing `../` could escape the Downloads directory. Not exploitable today —
+  `settings_backup_service.dart:36`'s `backupFileName` is a hardcoded constant, and the channel
+  isn't reachable from outside this app — but a basename-only check (or rejecting anything with a
+  path separator) is a one-line, zero-risk hardening that's worth having before any future caller
+  (a file picker, say) could ever make it live. Found via a review pass (2026-08-07, Grok),
+  verified against the code.
+
+- **MethodChannel handler throws instead of `result.notImplemented()`, and does unchecked casts on
+  every argument.** `MainActivity.kt:67-122` — each branch does e.g. `call.arguments as String` or
+  `args["keyCode"] as Int` with no type check, and the `else` branch does
+  `throw IllegalArgumentException()` rather than `result.notImplemented()`. Not attacker-reachable
+  (only this app's own Dart code calls the channel, always with fixed argument shapes) — this is a
+  hygiene/convention nit, not a vulnerability, but it's the standard Flutter pattern and cheap to
+  match. Found via a review pass (2026-08-07, Grok), verified against the code.
+
+- **Reconsider the `FLauncher`/`PitchforkLauncher` title split in file headers, and the remaining
+  bare `flauncher` naming (`pubspec.yaml:1`'s package `name: flauncher`).** `AGENTS.md:97-100`
+  currently documents that files carrying Fesser's copyright line keep `FLauncher` as the header
+  title while wholly-new files use `PitchforkLauncher` — in practice that reads as more
+  inconsistent than intentional. Non-negotiable regardless of what's decided: the copyright
+  attribution line itself, `Copyright (C) 2021  Étienne Fesser` (present in all 47 files that carry
+  it, per `AGENTS.md:90-95`), stays untouched everywhere it appears — only the decorative title line
+  above it, and cosmetic references like the pubspec package name, are up for reconsideration.
+  Noted, not yet decided.
 
 ## Done
 
