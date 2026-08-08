@@ -22,7 +22,6 @@ import 'dart:async';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
-import 'package:flauncher/providers/ticker_model.dart';
 import 'package:flauncher/widgets/add_to_category_dialog.dart';
 import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/color_helpers.dart';
@@ -58,7 +57,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   bool _moving = false;
   MemoryImage? _imageProvider;
   late final AnimationController _animation = AnimationController(
-    vsync: Provider.of<TickerModel>(context, listen: false).tickerProvider ?? this,
+    vsync: this,
     duration: Duration(
       milliseconds: 800,
     ),
