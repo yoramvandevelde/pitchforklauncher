@@ -94,10 +94,14 @@ wholly new file (not derived from his code), the header should only carry your o
 Match the existing header format/wording in a neighboring file of the same language for the
 boilerplate GPL text.
 
-The project-name line at the top of the header (`FLauncher` vs `PitchforkLauncher`) is stylistic,
-not a license requirement — GPL only mandates preserving the copyright attribution line itself, not
-this title text. Files carrying Fesser's copyright line (modified from his code) keep `FLauncher`
-as the title. Wholly new files use `PitchforkLauncher`.
+The project-name line at the top of the header is stylistic, not a license requirement — GPL only
+mandates preserving the copyright attribution line itself, not this title text. Every file uses
+`PitchforkLauncher` as the title, including ones that still carry Fesser's copyright line —
+rebranded in one pass (2026-08-08) rather than the incremental "old files keep `FLauncher`" split
+used before then. That split made sense while this was an actively-rebased fork (unmodified lines
+stay a zero-diff match against upstream); it stopped making sense once this project settled into
+being its own thing, no longer tracking FLauncher's GitLab. The copyright attribution line itself
+is untouched either way.
 
 - **Bundled non-pub assets (fonts, etc.) need a manual `LicenseRegistry.addLicense()` call** in
   `main.dart`. Flutter's "VIEW LICENSES" screen (`FLauncherAboutDialog`) auto-collects licenses
