@@ -44,6 +44,13 @@ abstract class TvInputProfile {
 
   List<TvInputParamSpec> get paramSpecs;
 
+  /// Keys within [selectInput]'s returned/persisted params that hold a secret (a pairing token,
+  /// say) rather than plain configuration -- excluded from the settings-backup export (see
+  /// [TvInputConfig.toJson]'s `excludeParamKeys`). Empty by default: most profiles have nothing
+  /// secret to exclude, and only [paramSpecs] keys plus whatever a profile chooses to persist via
+  /// [selectInput]'s return value can ever appear in `params` to begin with.
+  Set<String> get secretParamKeys => const {};
+
   /// Sends whatever brand-specific command switches the TV to this input. [params] contains one
   /// entry per [paramSpecs] key, as entered by the user, plus any extra values a previous call
   /// chose to persist (see the return value below). Implementations should let failures

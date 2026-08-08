@@ -71,6 +71,13 @@ class SamsungTizenProfile implements TvInputProfile {
     TvInputParamSpec(key: "key", label: "Remote key code (e.g. KEY_HDMI)"),
   ];
 
+  /// The pairing token [selectInput] persists on first connect (see the class doc comment) has
+  /// replay value -- whoever has it can reconnect to the TV as "Pitchfork" without re-pairing --
+  /// so it's excluded from the settings-backup export. Re-pairing on restore just costs one more
+  /// "Allow access?" prompt.
+  @override
+  Set<String> get secretParamKeys => const {"token"};
+
   @override
   Future<Map<String, String>?> selectInput(Map<String, String> params) async {
     final host = params["host"];

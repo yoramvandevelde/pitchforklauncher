@@ -41,11 +41,16 @@ class TvInputConfig {
     required this.params,
   });
 
-  Map<String, dynamic> toJson() => {
+  /// [excludeParamKeys] strips the given keys from [params] -- used by the settings-backup export
+  /// to omit secrets like a TV's pairing token (see [TvInputProfile.secretParamKeys]) without
+  /// touching the live, in-app copy this method is also used for.
+  Map<String, dynamic> toJson({Set<String> excludeParamKeys = const {}}) => {
     "id": id,
     "label": label,
     "profileId": profileId,
-    "params": params,
+    "params": excludeParamKeys.isEmpty
+        ? params
+        : (Map<String, String>.from(params)..removeWhere((key, _) => excludeParamKeys.contains(key))),
   };
 
   factory TvInputConfig.fromJson(Map<String, dynamic> json) => TvInputConfig(

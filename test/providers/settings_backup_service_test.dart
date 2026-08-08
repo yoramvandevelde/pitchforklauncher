@@ -959,4 +959,59 @@ void main() {
       await database.close();
     },
   );
+
+  test(
+    "export strips a Samsung TV input's pairing token, keeps the rest of its params",
+    () async {
+      final database = FLauncherDatabase.inMemory();
+      SharedPreferences.setMockInitialValues({});
+      final sharedPreferences = await SharedPreferences.getInstance();
+      final settingsService = SettingsService(sharedPreferences);
+      final wallpaperService = MockWallpaperService();
+      final tvInputService = MockTvInputService();
+      final appsService = MockAppsService();
+      final buttonMappingService = MockButtonMappingService();
+
+      when(wallpaperService.wallpaperBytes).thenReturn(null);
+      when(buttonMappingService.mappings).thenReturn([]);
+      when(tvInputService.inputs).thenReturn([
+        const TvInputConfig(
+          id: 'tv1',
+          label: 'Living room TV',
+          profileId: 'samsung_tizen',
+          params: {
+            'host': '192.168.1.50',
+            'key': 'KEY_HDMI',
+            'token': 'has-replay-value-dont-export-me',
+          },
+        ),
+      ]);
+
+      final backupService = SettingsBackupService(
+        database,
+        settingsService,
+        wallpaperService,
+        tvInputService,
+        appsService,
+        buttonMappingService,
+        fLauncherChannel,
+      );
+
+      await backupService.exportSettings();
+
+      final exported =
+          jsonDecode(
+                utf8.decode(
+                  fakeDownloads[SettingsBackupService.backupFileName]!,
+                ),
+              )
+              as Map<String, dynamic>;
+      final exportedParams =
+          (exported['tvInputs'] as List)[0]['params'] as Map<String, dynamic>;
+      expect(exportedParams, {'host': '192.168.1.50', 'key': 'KEY_HDMI'});
+      expect(exportedParams.containsKey('token'), isFalse);
+
+      await database.close();
+    },
+  );
 }
