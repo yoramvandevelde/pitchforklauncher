@@ -2,17 +2,6 @@
 
 ## Open
 
-- **Icon/banner encoding blocks the platform thread on every app sync.**
-  `MainActivity.getApplications()`/`buildAppMap()`/`drawableToByteArray()`
-  (`MainActivity.kt:183-214,286-303`) run synchronously on the platform thread whenever apps are
-  queried — cold start and every `PACKAGE_ADDED`/`PACKAGE_CHANGED`. Per app: `loadBanner`/
-  `loadIcon`, rasterize to a `Bitmap`, `Bitmap.compress(PNG, 100)`. On a TV with 50-100 apps that's
-  easily hundreds of ms of UI-thread block, visible as the "Loading..." state
-  (`apps_service.dart:143-168`). `backgroundExecutor` already exists in this file (used for
-  `writeSettingsBackup`/`readSettingsBackup`) — dispatching `getApplications()` through it would be
-  the same pattern already established, no new dependency. Found via a review pass (2026-08-06),
-  verified against the code.
-
 - **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
   the KGP fix below: with both plugins fixed, the *only* remaining KGP warning is our own module
   still applying `id "org.jetbrains.kotlin.android"` directly. See
@@ -107,6 +96,15 @@
   Noted, not yet decided.
 
 ## Done
+
+~~**Icon/banner encoding blocks the platform thread on every app sync.**~~ — fixed (2026-08-08):
+`getApplications()` (the `"getApplications"` MethodChannel handler) and the `PACKAGE_ADDED`/
+`PACKAGE_CHANGED`/`PACKAGES_AVAILABLE` `EventChannel` callbacks now hop onto the same
+`backgroundExecutor` already used for settings-backup I/O, posting the result back via
+`mainHandler` — same pattern, no new dependency. Verified via a clean debug install on the
+emulator (`just uninstall` + `just build-install`, needed since the emulator had a release build
+on it, different signing key): app list loads and renders correctly, `flutter analyze` and the
+full `flutter test` suite (203 tests) both pass, no crashes in logcat.
 
 ### Known issue: Back button leaves FLauncher when opened via the Home-button override
 

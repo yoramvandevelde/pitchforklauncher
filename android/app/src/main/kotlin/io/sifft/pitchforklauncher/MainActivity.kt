@@ -50,11 +50,13 @@ private const val BUTTON_CAPTURE_EVENT_CHANNEL = "io.sifft.pitchforklauncher/but
 class MainActivity : FlutterActivity() {
     private val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
 
-    // MethodChannel handlers run on the platform (UI) thread by default -- reading/writing the
-    // settings backup file synchronously there (it includes the base64-encoded wallpaper, which
-    // can be several hundred KB) risks janking rendering or an ANR on slow storage. Both handlers
-    // below hop onto this single background thread for the actual file I/O and post the result
-    // back via mainHandler, same shape `AsyncTask` used to hide before it was deprecated.
+    // MethodChannel/EventChannel handlers run on the platform (UI) thread by default -- reading/
+    // writing the settings backup file synchronously there (it includes the base64-encoded
+    // wallpaper, which can be several hundred KB) risks janking rendering or an ANR on slow
+    // storage, and so does encoding every installed app's icon/banner to PNG on every sync
+    // (cold start, and every PACKAGE_ADDED/PACKAGE_CHANGED/PACKAGES_AVAILABLE). All of those hop
+    // onto this single background thread for the actual work and post the result back via
+    // mainHandler, same shape `AsyncTask` used to hide before it was deprecated.
     private val backgroundExecutor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -64,7 +66,10 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                "getApplications" -> result.success(getApplications())
+                "getApplications" -> backgroundExecutor.execute {
+                    val apps = getApplications()
+                    mainHandler.post { result.success(apps) }
+                }
                 "applicationExists" -> result.success(applicationExists(call.arguments as String))
                 "launchApp" -> result.success(launchApp(call.arguments as String))
                 "openSettings" -> result.success(openSettings())
@@ -143,19 +148,27 @@ class MainActivity : FlutterActivity() {
                     }
 
                     override fun onPackageAdded(packageName: String, user: UserHandle) {
-                        getApplication(packageName)
-                            ?.let { events.success(mapOf("action" to "PACKAGE_ADDED", "activityInfo" to it)) }
+                        backgroundExecutor.execute {
+                            getApplication(packageName)?.let { app ->
+                                mainHandler.post { events.success(mapOf("action" to "PACKAGE_ADDED", "activityInfo" to app)) }
+                            }
+                        }
                     }
 
                     override fun onPackageChanged(packageName: String, user: UserHandle) {
-                        getApplication(packageName)
-                            ?.let { events.success(mapOf("action" to "PACKAGE_CHANGED", "activityInfo" to it)) }
+                        backgroundExecutor.execute {
+                            getApplication(packageName)?.let { app ->
+                                mainHandler.post { events.success(mapOf("action" to "PACKAGE_CHANGED", "activityInfo" to app)) }
+                            }
+                        }
                     }
 
                     override fun onPackagesAvailable(packageNames: Array<out String>, user: UserHandle, replacing: Boolean) {
-                        val applications = packageNames.mapNotNull(::getApplication)
-                        if (applications.isNotEmpty()) {
-                            events.success(mapOf("action" to "PACKAGES_AVAILABLE", "activitiesInfo" to applications))
+                        backgroundExecutor.execute {
+                            val applications = packageNames.mapNotNull(::getApplication)
+                            if (applications.isNotEmpty()) {
+                                mainHandler.post { events.success(mapOf("action" to "PACKAGES_AVAILABLE", "activitiesInfo" to applications)) }
+                            }
                         }
                     }
 
