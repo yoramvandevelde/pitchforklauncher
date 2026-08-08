@@ -20,21 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **`TimeWidget` ticks every second, permanently.** `lib/widgets/time_widget.dart:41` —
-  `Timer.periodic(Duration(seconds: 1))` + `setState` runs for as long as the launcher is on
-  screen (which for a TV launcher is essentially always), even though the displayed text only
-  changes once a minute. Could reschedule to the next minute boundary instead, or skip `setState`
-  when the formatted string hasn't actually changed. Found via the same review pass.
-
-- **App-card focus-pulse animation runs continuously for every card, not just the focused one.**
-  `lib/widgets/app_card.dart:57-85,162-189` — the `AnimationController`'s status listener flips
-  forward/reverse unconditionally once started; the `Selector` in `build()` only gates on the
-  `appHighlightAnimationEnabled` setting, not on `Focus.of(context).hasFocus`, so every `AppCard`'s
-  `AnimatedBuilder` subtree repaints at 60fps whenever the setting is on — including cards that
-  aren't focused. There's already a Settings toggle to turn the whole thing off, but the
-  always-on-when-enabled cost affects every card, not just the one actually showing the pulse.
-  Consider only animating while genuinely focused. Found via the same review pass.
-
 - **Tizen pairing token is stored in plaintext in the settings backup file.**
   `settings_backup_service.dart:191` includes the full `tvInputs` list (via
   `TvInputConfig.toJson()`) in the exported JSON, which for a `SamsungTizenProfile` input includes
@@ -56,14 +41,6 @@
   than the Downloads-file case. Same open decision (strip the token vs. accept and document) should
   cover both; a `fullBackupContent`/`dataExtractionRules` rules file excluding the relevant prefs
   key would close the passive path specifically without touching the deliberate Downloads export.
-
-- **MethodChannel handler throws instead of `result.notImplemented()`, and does unchecked casts on
-  every argument.** `MainActivity.kt:67-122` — each branch does e.g. `call.arguments as String` or
-  `args["keyCode"] as Int` with no type check, and the `else` branch does
-  `throw IllegalArgumentException()` rather than `result.notImplemented()`. Not attacker-reachable
-  (only this app's own Dart code calls the channel, always with fixed argument shapes) — this is a
-  hygiene/convention nit, not a vulnerability, but it's the standard Flutter pattern and cheap to
-  match. Found via a review pass (2026-08-07, Grok), verified against the code.
 
 - **`buildAppMap()` encodes `banner` for every app, including ones that never render through an
   `AppCard`.** `MainActivity.kt:207-214` builds `banner` unconditionally for every installed app,
@@ -91,6 +68,34 @@
   Noted, not yet decided.
 
 ## Done
+
+~~**`TimeWidget` ticks every second, permanently.**~~ — fixed (2026-08-08): `_refreshTime()` now
+skips `setState` when the tick lands in the same hour+minute as the last one — both display
+formats (`Hm`/`jm`) show hour:minute only, never seconds, so those ticks wouldn't have changed
+what's on screen anyway. Kept the per-second `Timer.periodic` itself rather than rescheduling to
+the next minute boundary: a self-correcting reschedule would cut the wake-ups themselves (60/min
+down to 1/min) but adds real complexity (must recompute the delay from the actual wall clock on
+every fire, or risk drifting to a fixed arbitrary phase — e.g. permanently ticking at :39 past
+every minute — if implemented as a naive `Timer.periodic(minutes: 1)` from whatever moment the
+widget happens to init). Traded that root-cause fix for the simpler one; still cuts ~59 out of 60
+rebuilds/repaints per minute.
+
+~~**App-card focus-pulse animation runs continuously for every card, not just the focused one.**~~
+— fixed (2026-08-08): the `AnimationController` now only runs (`.forward()`) for the genuinely
+focused card; every other card calls `.stop()` instead of ticking at 60fps for an always-`null`
+border. `.stop()` rather than resetting, so a card that loses and regains focus resumes its color
+cycle from wherever it left off. The `AnimatedContainer`/`AnimatedBuilder` widget tree itself stays
+mounted regardless of focus (only whether `appHighlightAnimationEnabled` is on gates that) so the
+existing 200ms border-appear/disappear transition on focus change is unaffected. Verified via a
+clean emulator install: the focused card's border still renders correctly.
+
+~~**MethodChannel handler throws instead of `result.notImplemented()`.**~~ — fixed (2026-08-08):
+`MainActivity.kt`'s `else` branch now calls `result.notImplemented()`, the standard Flutter
+pattern, instead of throwing `IllegalArgumentException()`. The unchecked-casts half of this item
+(e.g. `call.arguments as String`) was left as-is -- that's the normal, idiomatic shape of a Kotlin
+MethodChannel handler (every branch in this file does the same), and wrapping each one
+defensively would be a materially different, larger change than the "cheap to match" scope this
+item was filed under.
 
 ~~**`network_image_mock` dev dependency is unused.**~~ — removed (2026-08-08): dropped from
 `pubspec.yaml` and `pubspec.lock` via `flutter pub get`.
