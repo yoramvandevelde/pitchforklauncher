@@ -21,17 +21,8 @@
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
 - **Add `dart format --set-exit-if-changed` as a CI gate.** Recommended by the 2026-08-07 Kimi
-  review pass (`REVIEW.md`). Not as simple as adding the CI step: running it today would reformat
-  **65 files**, mostly tests. Not a line-length issue (tried `analysis_options.yaml`'s
-  `formatter: page_width: 120` first, no effect) -- it's Dart's newer "tall style" formatter
-  (current pin: Dart 3.12.2 via Flutter 3.44.8) wanting different indentation/nesting for
-  `when(...).thenAnswer((_) => ...)`-shaped test code that was last formatted under an older
-  style. E.g. `when(x).thenAnswer((_) => Future.value([...]))` currently keeps the callback and
-  its body inline; the new style breaks the callback onto its own line and adds trailing commas
-  throughout, which in turn keeps list/map literals multi-line instead of sometimes collapsing
-  them. Purely stylistic, no functional change, but it touches most of `test/` at once -- worth
-  doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
-  the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
+  review pass (`REVIEW.md`). The dedicated reformat pass this was blocked on is done (see Done,
+  below) -- the repo is now a clean baseline, so this is just the CI step itself.
 
 - **At leisure, from the same review:** the accessibility service only consumes `ACTION_UP`
   (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
@@ -51,6 +42,14 @@
   O(n·m) linear scan that a `Set` of package names would make O(n).
 
 ## Done
+
+~~**Reformat entire codebase with `dart format` (tall style).**~~ -- done (2026-08-09): running
+`dart format --set-exit-if-changed` today would have failed on 61 files, mostly tests, that hadn't
+been touched since Dart's newer "tall style" formatter (Dart 3.12.2 via Flutter 3.44.8) started
+wanting different indentation/nesting for `when(...).thenAnswer((_) => ...)`-shaped test code. Ran
+`dart format .` across the whole repo as its own dedicated pass -- purely stylistic, no functional
+change. Verified: `flutter analyze --fatal-infos` clean, full test suite (213 tests) passes
+unchanged. Clears the way for the CI gate item above.
 
 ~~**`AppsService` `EventChannel` listener for `PACKAGE_ADDED`/`PACKAGE_CHANGED` was async and
 unserialized.**~~ -- fixed (2026-08-09): two events arriving close together (e.g. an app update,
