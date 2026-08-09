@@ -76,22 +76,7 @@ class FLauncher extends StatelessWidget {
             body: Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
               child: Consumer<AppsService>(
-                builder: (context, appsService, _) => appsService.initialized
-                    ? SingleChildScrollView(
-                        // The top gap lives inside the scrollable content (rather than as
-                        // padding around the whole SingleChildScrollView) so the viewport itself
-                        // spans the full screen -- scrolling can then carry categories all the
-                        // way up behind the transparent app bar instead of hard-clipping them at
-                        // a fixed line. At rest (scroll offset 0) this spacer keeps the first
-                        // category at the same position as before.
-                        child: Column(
-                          children: [
-                            SizedBox(height: _categoriesTopGap),
-                            _categories(appsService.categoriesWithApps),
-                          ],
-                        ),
-                      )
-                    : _emptyState(context),
+                builder: (context, appsService, _) => _AppsBody(appsService: appsService),
               ),
             ),
           ),
@@ -100,7 +85,7 @@ class FLauncher extends StatelessWidget {
     ),
   );
 
-  Widget _categories(List<CategoryWithApps> categoriesWithApps) => Column(
+  static Widget _categories(List<CategoryWithApps> categoriesWithApps) => Column(
     children: categoriesWithApps.map((categoryWithApps) {
       switch (categoryWithApps.category.type) {
         case CategoryType.row:
@@ -166,14 +151,51 @@ class FLauncher extends StatelessWidget {
       width: logicalSize.width,
     );
   }
+}
 
-  Widget _emptyState(BuildContext context) => Center(
+/// Bridges [AppsService.initialized] to the screen: while loading, an empty slot sits behind the
+/// wallpaper (no spinner -- a launch is normally fast enough that one would only ever flash
+/// briefly, and a slow one, e.g. a fresh install seeding default categories, is rare enough not to
+/// design around); once ready, the grid cross-fades in rather than popping in, mirroring the
+/// wallpaper switcher above.
+class _AppsBody extends StatelessWidget {
+  final AppsService appsService;
+
+  const _AppsBody({required this.appsService});
+
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: const Duration(milliseconds: 1000),
+    // Same reasoning as the wallpaper switcher above: without confining each curve to the first
+    // half, the loading slot and the grid would both be partially transparent around the
+    // midpoint, letting the plain wallpaper show through as a brief dip instead of a clean
+    // handoff.
+    switchInCurve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+    switchOutCurve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    // The default layoutBuilder centers non-positioned children in a Stack. The loading slot (no
+    // intrinsic height) and the grid (fills the viewport) then get centered in a box sized to fit
+    // both, which shifts the grid down from its resting top-anchored position for as long as the
+    // outgoing loading slot is still a transition sibling -- top-aligning both avoids that.
+    layoutBuilder: (currentChild, previousChildren) => Stack(
+      alignment: Alignment.topCenter,
+      children: [...previousChildren, ?currentChild],
+    ),
+    child: appsService.initialized
+        ? _content(context)
+        : const SizedBox.shrink(key: ValueKey("loading")),
+  );
+
+  Widget _content(BuildContext context) => SingleChildScrollView(
+    // The top gap lives inside the scrollable content (rather than as padding around the whole
+    // SingleChildScrollView) so the viewport itself spans the full screen -- scrolling can then
+    // carry categories all the way up behind the transparent app bar instead of hard-clipping
+    // them at a fixed line. At rest (scroll offset 0) this spacer keeps the first category at the
+    // same position as before.
+    key: const ValueKey("content"),
     child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        CircularProgressIndicator(),
-        SizedBox(height: 16),
-        Text("Loading...", style: Theme.of(context).textTheme.titleLarge),
+        SizedBox(height: FLauncher._categoriesTopGap),
+        FLauncher._categories(appsService.categoriesWithApps),
       ],
     ),
   );
