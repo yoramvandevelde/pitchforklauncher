@@ -102,25 +102,24 @@ void main() {
     verify(appsService.openSettings());
   });
 
-  testWidgets(
-    "'Pitchfork Settings' opens PitchforkSettingsPanelPage",
-    (tester) async {
-      final appsService = MockAppsService();
-      when(appsService.categoriesWithApps).thenReturn([]);
-      when(appsService.applications).thenReturn([]);
+  testWidgets("'Pitchfork Settings' opens PitchforkSettingsPanelPage", (
+    tester,
+  ) async {
+    final appsService = MockAppsService();
+    when(appsService.categoriesWithApps).thenReturn([]);
+    when(appsService.applications).thenReturn([]);
 
-      await _pumpWidgetWithProviders(tester, appsService);
+    await _pumpWidgetWithProviders(tester, appsService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      expect(find.byKey(Key("PitchforkSettingsPanelPage")), findsOneWidget);
-    },
-  );
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.byKey(Key("PitchforkSettingsPanelPage")), findsOneWidget);
+  });
 
   testWidgets("'About PitchforkLauncher' opens about dialog", (tester) async {
     final appsService = MockAppsService();

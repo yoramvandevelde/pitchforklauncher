@@ -33,57 +33,58 @@ class AppsGrid extends StatelessWidget {
   final Category category;
   final List<App> applications;
 
-  AppsGrid({
-    super.key,
-    required this.category,
-    required this.applications,
-  });
+  AppsGrid({super.key, required this.category, required this.applications});
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (category.showName)
-            Padding(
-              padding: EdgeInsets.only(left: 16),
-              child: Text(
-                category.name,
-                style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                    fontWeight: FontWeight.bold, shadows: kOverlayTextShadows),
-              ),
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (category.showName)
+        Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Text(
+            category.name,
+            style: Theme.of(context).textTheme.titleLarge!.copyWith(
+              fontWeight: FontWeight.bold,
+              shadows: kOverlayTextShadows,
             ),
-          applications.isNotEmpty
-              ? GridView.custom(
-                  shrinkWrap: true,
-                  primary: false,
-                  gridDelegate: _buildSliverGridDelegate(),
-                  padding: EdgeInsets.all(16),
-                  childrenDelegate: SliverChildBuilderDelegate(
-                    (context, index) => EnsureVisible(
-                      key: Key("${category.id}-${applications[index].packageName}"),
-                      alignment: 0.5,
-                      child: AppCard(
-                        category: category,
-                        application: applications[index],
-                        autofocus: index == 0,
-                        onMove: (direction) => _onMove(context, direction, index),
-                        onMoveEnd: () => _saveOrder(context),
-                      ),
-                    ),
-                    childCount: applications.length,
-                    findChildIndexCallback: _findChildIndex,
+          ),
+        ),
+      applications.isNotEmpty
+          ? GridView.custom(
+              shrinkWrap: true,
+              primary: false,
+              gridDelegate: _buildSliverGridDelegate(),
+              padding: EdgeInsets.all(16),
+              childrenDelegate: SliverChildBuilderDelegate(
+                (context, index) => EnsureVisible(
+                  key: Key("${category.id}-${applications[index].packageName}"),
+                  alignment: 0.5,
+                  child: AppCard(
+                    category: category,
+                    application: applications[index],
+                    autofocus: index == 0,
+                    onMove: (direction) => _onMove(context, direction, index),
+                    onMoveEnd: () => _saveOrder(context),
                   ),
-                )
-              : _emptyState(context),
-        ],
-      );
+                ),
+                childCount: applications.length,
+                findChildIndexCallback: _findChildIndex,
+              ),
+            )
+          : _emptyState(context),
+    ],
+  );
 
-  int _findChildIndex(Key key) =>
-      applications.indexWhere((app) => "${category.id}-${app.packageName}" == (key as ValueKey<String>).value);
+  int _findChildIndex(Key key) => applications.indexWhere(
+    (app) =>
+        "${category.id}-${app.packageName}" == (key as ValueKey<String>).value,
+  );
 
   void _onMove(BuildContext context, AxisDirection direction, int index) {
     final currentRow = (index / category.columnsCount).floor();
-    final totalRows = ((applications.length - 1) / category.columnsCount).floor();
+    final totalRows = ((applications.length - 1) / category.columnsCount)
+        .floor();
 
     int? newIndex;
     switch (direction) {
@@ -99,7 +100,10 @@ class AppsGrid extends StatelessWidget {
         break;
       case AxisDirection.down:
         if (currentRow < totalRows) {
-          newIndex = min(index + category.columnsCount, applications.length - 1);
+          newIndex = min(
+            index + category.columnsCount,
+            applications.length - 1,
+          );
         }
         break;
       case AxisDirection.left:
@@ -119,7 +123,8 @@ class AppsGrid extends StatelessWidget {
     appsService.saveOrderInCategory(category);
   }
 
-  SliverGridDelegate _buildSliverGridDelegate() => SliverGridDelegateWithFixedCrossAxisCount(
+  SliverGridDelegate _buildSliverGridDelegate() =>
+      SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: category.columnsCount,
         childAspectRatio: 16 / 9,
         mainAxisSpacing: 16,
@@ -127,33 +132,35 @@ class AppsGrid extends StatelessWidget {
       );
 
   Widget _emptyState(BuildContext context) => Padding(
-        padding: EdgeInsets.only(top: 8),
-        child: SizedBox(
-          height: 110,
-          child: EnsureVisible(
-            alignment: 0.1,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    child: InkWell(
-                      onTap: () => showDialog(
-                        context: context,
-                        builder: (_) => SettingsPanel(initialRoute: CategoriesPanelPage.routeName),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Center(
-                          child: Text(
-                            "This category is empty.",
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+    padding: EdgeInsets.only(top: 8),
+    child: SizedBox(
+      height: 110,
+      child: EnsureVisible(
+        alignment: 0.1,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: InkWell(
+                  onTap: () => showDialog(
+                    context: context,
+                    builder: (_) => SettingsPanel(
+                      initialRoute: CategoriesPanelPage.routeName,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Center(
+                      child: Text(
+                        "This category is empty.",
+                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
@@ -162,5 +169,7 @@ class AppsGrid extends StatelessWidget {
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

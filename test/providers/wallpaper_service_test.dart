@@ -115,40 +115,45 @@ void main() {
 
       await wallpaperService.pickWallpaper();
 
-      final codec = await instantiateImageCodec(wallpaperService.wallpaperBytes!);
+      final codec = await instantiateImageCodec(
+        wallpaperService.wallpaperBytes!,
+      );
       final image = (await codec.getNextFrame()).image;
       expect(image.width, targetSize.width.round());
       expect(image.height, targetSize.height.round());
     });
 
-    test("leaves a picked image unchanged when it already fits the screen", () async {
-      final pickedBytes = await _solidColorImageBytes(50, 25);
-      final pickedFile = _MockXFile();
-      when(
-        pickedFile.readAsBytes(),
-      ).thenAnswer((_) => Future.value(pickedBytes));
-      final imagePicker = _MockImagePicker();
-      final fLauncherChannel = MockFLauncherChannel();
-      final settingsService = _mockSettingsService();
-      when(
-        imagePicker.pickImage(source: ImageSource.gallery),
-      ).thenAnswer((_) => Future.value(pickedFile));
-      when(
-        fLauncherChannel.checkForGetContentAvailability(),
-      ).thenAnswer((_) => Future.value(true));
-      final wallpaperService = WallpaperService(
-        imagePicker,
-        fLauncherChannel,
-        MockPicsumService(),
-        _mockDatabase(),
-        targetWallpaperSize: () => const Size(200, 100),
-      )..settingsService = settingsService;
-      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+    test(
+      "leaves a picked image unchanged when it already fits the screen",
+      () async {
+        final pickedBytes = await _solidColorImageBytes(50, 25);
+        final pickedFile = _MockXFile();
+        when(
+          pickedFile.readAsBytes(),
+        ).thenAnswer((_) => Future.value(pickedBytes));
+        final imagePicker = _MockImagePicker();
+        final fLauncherChannel = MockFLauncherChannel();
+        final settingsService = _mockSettingsService();
+        when(
+          imagePicker.pickImage(source: ImageSource.gallery),
+        ).thenAnswer((_) => Future.value(pickedFile));
+        when(
+          fLauncherChannel.checkForGetContentAvailability(),
+        ).thenAnswer((_) => Future.value(true));
+        final wallpaperService = WallpaperService(
+          imagePicker,
+          fLauncherChannel,
+          MockPicsumService(),
+          _mockDatabase(),
+          targetWallpaperSize: () => const Size(200, 100),
+        )..settingsService = settingsService;
+        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
 
-      await wallpaperService.pickWallpaper();
+        await wallpaperService.pickWallpaper();
 
-      expect(wallpaperService.wallpaperBytes, pickedBytes);
-    });
+        expect(wallpaperService.wallpaperBytes, pickedBytes);
+      },
+    );
 
     test("throws error when no file explorer installed", () async {
       final fLauncherChannel = MockFLauncherChannel();
@@ -363,85 +368,82 @@ void main() {
   );
 
   group("seeds default wallpaper", () {
-    test(
-      "writes bundled asset when fresh install and no wallpaper file exists",
-      () async {
-        final imagePicker = _MockImagePicker();
-        final fLauncherChannel = MockFLauncherChannel();
-        final settingsService = _mockSettingsService();
-        final wallpaperService = WallpaperService(
-          imagePicker,
-          fLauncherChannel,
-          MockPicsumService(),
-          _mockDatabase(isFreshInstall: true),
-          // Disabled so this test can assert byte-for-byte fidelity below -- resizing is covered
-          // separately in "resizes the seeded default wallpaper to the target screen size".
-          targetWallpaperSize: () => null,
-        )..settingsService = settingsService;
-        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-        // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
-        // includes a real (multi-MB) disk read/write, so pumpEventQueue() -- which only drains
-        // already-queued microtasks a fixed number of times rather than letting wall-clock time
-        // pass -- can exit before the write actually finishes. Poll for the real completion signal
-        // instead, bounded by a generous timeout.
-        final stopwatch = Stopwatch()..start();
-        while (wallpaperService.wallpaperBytes == null &&
-            stopwatch.elapsed < const Duration(seconds: 10)) {
-          await Future.delayed(const Duration(milliseconds: 10));
-        }
+    test("writes bundled asset when fresh install and no wallpaper file exists", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final settingsService = _mockSettingsService();
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(isFreshInstall: true),
+        // Disabled so this test can assert byte-for-byte fidelity below -- resizing is covered
+        // separately in "resizes the seeded default wallpaper to the target screen size".
+        targetWallpaperSize: () => null,
+      )..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      // isFreshInstall()/rootBundle.load()/file write is a multi-hop async chain that now
+      // includes a real (multi-MB) disk read/write, so pumpEventQueue() -- which only drains
+      // already-queued microtasks a fixed number of times rather than letting wall-clock time
+      // pass -- can exit before the write actually finishes. Poll for the real completion signal
+      // instead, bounded by a generous timeout.
+      final stopwatch = Stopwatch()..start();
+      while (wallpaperService.wallpaperBytes == null &&
+          stopwatch.elapsed < const Duration(seconds: 10)) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
 
-        expect(wallpaperService.wallpaperBytes, isNotNull);
-        expect(wallpaperService.wallpaperBytes, isNotEmpty);
-        expect(await File("./wallpaper").exists(), isTrue);
-        expect(
-          await File("./wallpaper").readAsBytes(),
-          wallpaperService.wallpaperBytes,
-        );
-        // Not just non-empty: byte-for-byte identical to the actual bundled asset. A regression
-        // to `.buffer.asUint8List()` (which ignores a ByteData's offsetInBytes/lengthInBytes and
-        // can return a view into a different/larger buffer instead of the loaded asset's own
-        // bytes) would still pass the two checks above while silently seeding garbage.
-        expect(
-          wallpaperService.wallpaperBytes,
-          await File("assets/default_wallpaper.jpg").readAsBytes(),
-        );
-      },
-    );
+      expect(wallpaperService.wallpaperBytes, isNotNull);
+      expect(wallpaperService.wallpaperBytes, isNotEmpty);
+      expect(await File("./wallpaper").exists(), isTrue);
+      expect(
+        await File("./wallpaper").readAsBytes(),
+        wallpaperService.wallpaperBytes,
+      );
+      // Not just non-empty: byte-for-byte identical to the actual bundled asset. A regression
+      // to `.buffer.asUint8List()` (which ignores a ByteData's offsetInBytes/lengthInBytes and
+      // can return a view into a different/larger buffer instead of the loaded asset's own
+      // bytes) would still pass the two checks above while silently seeding garbage.
+      expect(
+        wallpaperService.wallpaperBytes,
+        await File("assets/default_wallpaper.jpg").readAsBytes(),
+      );
+    });
 
-    test(
-      "resizes the seeded default wallpaper to the target screen size",
-      () async {
-        final imagePicker = _MockImagePicker();
-        final fLauncherChannel = MockFLauncherChannel();
-        final settingsService = _mockSettingsService();
-        // assets/default_wallpaper.jpg is 4000x2491 -- comfortably bigger than this target on
-        // both axes, so a resize is guaranteed to actually trigger.
-        const targetSize = Size(200, 100);
-        final wallpaperService = WallpaperService(
-          imagePicker,
-          fLauncherChannel,
-          MockPicsumService(),
-          _mockDatabase(isFreshInstall: true),
-          targetWallpaperSize: () => targetSize,
-        )..settingsService = settingsService;
-        await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
-        final stopwatch = Stopwatch()..start();
-        while (wallpaperService.wallpaperBytes == null &&
-            stopwatch.elapsed < const Duration(seconds: 10)) {
-          await Future.delayed(const Duration(milliseconds: 10));
-        }
+    test("resizes the seeded default wallpaper to the target screen size", () async {
+      final imagePicker = _MockImagePicker();
+      final fLauncherChannel = MockFLauncherChannel();
+      final settingsService = _mockSettingsService();
+      // assets/default_wallpaper.jpg is 4000x2491 -- comfortably bigger than this target on
+      // both axes, so a resize is guaranteed to actually trigger.
+      const targetSize = Size(200, 100);
+      final wallpaperService = WallpaperService(
+        imagePicker,
+        fLauncherChannel,
+        MockPicsumService(),
+        _mockDatabase(isFreshInstall: true),
+        targetWallpaperSize: () => targetSize,
+      )..settingsService = settingsService;
+      await untilCalled(pathProviderPlatform.getApplicationDocumentsPath());
+      final stopwatch = Stopwatch()..start();
+      while (wallpaperService.wallpaperBytes == null &&
+          stopwatch.elapsed < const Duration(seconds: 10)) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
 
-        final bytes = wallpaperService.wallpaperBytes!;
-        // Resized output is re-encoded (PNG), so it's a different byte sequence from the
-        // original JPEG asset -- proves the bytes on disk were actually transformed, not just
-        // passed through unchanged.
-        expect(bytes, isNot(await File("assets/default_wallpaper.jpg").readAsBytes()));
-        final codec = await instantiateImageCodec(bytes);
-        final image = (await codec.getNextFrame()).image;
-        expect(image.width, targetSize.width.round());
-        expect(image.height, targetSize.height.round());
-      },
-    );
+      final bytes = wallpaperService.wallpaperBytes!;
+      // Resized output is re-encoded (PNG), so it's a different byte sequence from the
+      // original JPEG asset -- proves the bytes on disk were actually transformed, not just
+      // passed through unchanged.
+      expect(
+        bytes,
+        isNot(await File("assets/default_wallpaper.jpg").readAsBytes()),
+      );
+      final codec = await instantiateImageCodec(bytes);
+      final image = (await codec.getNextFrame()).image;
+      expect(image.width, targetSize.width.round());
+      expect(image.height, targetSize.height.round());
+    });
 
     test("does not seed when not a fresh install", () async {
       final imagePicker = _MockImagePicker();

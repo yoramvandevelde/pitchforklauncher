@@ -27,58 +27,75 @@ class GradientPanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text("Gradient", style: Theme.of(context).textTheme.titleLarge),
-          Divider(),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              childAspectRatio: 4 / 3,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              children: FLauncherGradients.all
-                  .map((gradient) => EnsureVisible(alignment: 0.5, child: _gradientCard(gradient)))
-                  .toList(),
-            ),
-          ),
-        ],
-      );
+    children: [
+      Text("Gradient", style: Theme.of(context).textTheme.titleLarge),
+      Divider(),
+      Expanded(
+        child: GridView.count(
+          crossAxisCount: 2,
+          childAspectRatio: 4 / 3,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          children: FLauncherGradients.all
+              .map(
+                (gradient) => EnsureVisible(
+                  alignment: 0.5,
+                  child: _gradientCard(gradient),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    ],
+  );
 
   Widget _gradientCard(FLauncherGradient fLauncherGradient) => Focus(
-        key: Key("gradient-${fLauncherGradient.uuid}"),
-        canRequestFocus: false,
-        child: Builder(
-          builder: (context) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Card(
-                  clipBehavior: Clip.antiAlias,
-                  shape: _cardBorder(Focus.of(context).hasFocus),
-                  child: InkWell(
-                    autofocus: fLauncherGradient == FLauncherGradients.greatWhale,
-                    onTap: () => context.read<WallpaperService>().setGradient(fLauncherGradient),
-                    child: Container(decoration: BoxDecoration(gradient: fLauncherGradient.gradient)),
+    key: Key("gradient-${fLauncherGradient.uuid}"),
+    canRequestFocus: false,
+    child: Builder(
+      builder: (context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              shape: _cardBorder(Focus.of(context).hasFocus),
+              child: InkWell(
+                autofocus: fLauncherGradient == FLauncherGradients.greatWhale,
+                onTap: () => context.read<WallpaperService>().setGradient(
+                  fLauncherGradient,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: fLauncherGradient.gradient,
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: AnimatedDefaultTextStyle(
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                        decoration: TextDecoration.underline,
-                        color: Focus.of(context).hasFocus ? Colors.white : null,
-                      ),
-                  duration: Duration(milliseconds: 150),
-                  child: Text(fLauncherGradient.name, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      );
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: AnimatedDefaultTextStyle(
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                decoration: TextDecoration.underline,
+                color: Focus.of(context).hasFocus ? Colors.white : null,
+              ),
+              duration: Duration(milliseconds: 150),
+              child: Text(
+                fLauncherGradient.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   ShapeBorder? _cardBorder(bool hasFocus) => hasFocus
-      ? RoundedRectangleBorder(side: BorderSide(color: Colors.white, width: 2), borderRadius: BorderRadius.circular(4))
+      ? RoundedRectangleBorder(
+          side: BorderSide(color: Colors.white, width: 2),
+          borderRadius: BorderRadius.circular(4),
+        )
       : null;
 }

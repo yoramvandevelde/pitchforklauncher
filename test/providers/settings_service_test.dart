@@ -24,7 +24,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_platfor
 
 void main() {
   setUp(() {
-    SharedPreferencesStorePlatform.instance = InMemorySharedPreferencesStore.empty();
+    SharedPreferencesStorePlatform.instance =
+        InMemorySharedPreferencesStore.empty();
   });
 
   test("setUse24HourTimeFormat", () async {
@@ -40,9 +41,14 @@ void main() {
     final sharedPreferences = await SharedPreferences.getInstance();
     final settingsService = SettingsService(sharedPreferences);
 
-    await settingsService.setGradientUuid("4730aa2d-1a90-49a6-9942-ffe82f470e26");
+    await settingsService.setGradientUuid(
+      "4730aa2d-1a90-49a6-9942-ffe82f470e26",
+    );
 
-    expect(sharedPreferences.getString("gradient_uuid"), "4730aa2d-1a90-49a6-9942-ffe82f470e26");
+    expect(
+      sharedPreferences.getString("gradient_uuid"),
+      "4730aa2d-1a90-49a6-9942-ffe82f470e26",
+    );
   });
 
   group("getGradientUuid", () {
@@ -59,7 +65,10 @@ void main() {
     test("with uuid from shared preferences", () async {
       final sharedPreferences = await SharedPreferences.getInstance();
       await sharedPreferences.clear();
-      sharedPreferences.setString("gradient_uuid", "4730aa2d-1a90-49a6-9942-ffe82f470e26");
+      sharedPreferences.setString(
+        "gradient_uuid",
+        "4730aa2d-1a90-49a6-9942-ffe82f470e26",
+      );
       final settingsService = SettingsService(sharedPreferences);
 
       final gradientUuid = settingsService.gradientUuid;
@@ -97,7 +106,9 @@ void main() {
 
     await settingsService.setUse24HourTimeFormat(false);
     await settingsService.setAppHighlightAnimationEnabled(false);
-    await settingsService.setGradientUuid("4730aa2d-1a90-49a6-9942-ffe82f470e26");
+    await settingsService.setGradientUuid(
+      "4730aa2d-1a90-49a6-9942-ffe82f470e26",
+    );
     await settingsService.setPicsumPhotoId(42);
     await settingsService.setPicsumGrayscale(true);
     await settingsService.setPicsumBlur(4);

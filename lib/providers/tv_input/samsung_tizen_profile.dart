@@ -45,7 +45,8 @@ class SamsungTizenProfile implements TvInputProfile {
   /// [WebSocket.connect] (production), but overridable in tests so the pairing/token logic can
   /// be verified against a fake [WebSocket] instead of a real TLS connection -- same pattern as
   /// [TvInputService]'s injectable `profiles`.
-  final Future<WebSocket> Function(String url, {HttpClient? customClient}) _connect;
+  final Future<WebSocket> Function(String url, {HttpClient? customClient})
+  _connect;
 
   SamsungTizenProfile({
     Future<WebSocket> Function(String url, {HttpClient? customClient})? connect,

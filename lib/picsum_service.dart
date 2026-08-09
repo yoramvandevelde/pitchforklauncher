@@ -46,7 +46,8 @@ class PicsumService {
   // so tests can exercise the timeout path without actually waiting on it.
   final Duration _timeout;
 
-  PicsumService({Client? client, this._timeout = const Duration(seconds: 10)}) : _client = client ?? Client();
+  PicsumService({Client? client, this._timeout = const Duration(seconds: 10)})
+    : _client = client ?? Client();
 
   /// Fetches a fresh, unfiltered random photo and captures its Picsum id so it can later be
   /// re-fetched with different filters via [photoById] instead of rolling a new random photo.
@@ -56,12 +57,20 @@ class PicsumService {
   /// discard it, so the redirect is followed manually here to read the id out of it first.
   Future<PicsumPhoto> randomPhoto() async {
     final size = PlatformDispatcher.instance.implicitView!.physicalSize;
-    final uri = Uri.parse("https://picsum.photos/${size.width.toInt()}/${size.height.toInt()}");
+    final uri = Uri.parse(
+      "https://picsum.photos/${size.width.toInt()}/${size.height.toInt()}",
+    );
     final probeRequest = Request("GET", uri)..followRedirects = false;
-    final probeResponse = await Response.fromStream(await _timed(_client.send(probeRequest), uri));
+    final probeResponse = await Response.fromStream(
+      await _timed(_client.send(probeRequest), uri),
+    );
     final location = probeResponse.headers["location"];
-    if (probeResponse.statusCode < 300 || probeResponse.statusCode >= 400 || location == null) {
-      throw PicsumException("Expected a redirect with a Location header from $uri, got ${probeResponse.statusCode}");
+    if (probeResponse.statusCode < 300 ||
+        probeResponse.statusCode >= 400 ||
+        location == null) {
+      throw PicsumException(
+        "Expected a redirect with a Location header from $uri, got ${probeResponse.statusCode}",
+      );
     }
     final resolved = uri.resolve(location);
     final id = _idFromResolvedUri(resolved);
@@ -71,23 +80,35 @@ class PicsumService {
 
   /// Re-fetches the same numbered photo, optionally with grayscale/blur applied. Both filters are
   /// combinable in a single request (confirmed against the live API).
-  Future<Uint8List> photoById(int id, {bool grayscale = false, int? blur}) async {
+  Future<Uint8List> photoById(
+    int id, {
+    bool grayscale = false,
+    int? blur,
+  }) async {
     final size = PlatformDispatcher.instance.implicitView!.physicalSize;
-    final base = "https://picsum.photos/id/$id/${size.width.toInt()}/${size.height.toInt()}";
-    final params = <String>[if (grayscale) "grayscale", if (blur != null) "blur=$blur"];
+    final base =
+        "https://picsum.photos/id/$id/${size.width.toInt()}/${size.height.toInt()}";
+    final params = <String>[
+      if (grayscale) "grayscale",
+      if (blur != null) "blur=$blur",
+    ];
     final uri = Uri.parse(params.isEmpty ? base : "$base?${params.join("&")}");
     final response = await _timed(_client.get(uri), uri);
     return _bodyBytesOrThrow(response, uri);
   }
 
   Future<T> _timed<T>(Future<T> future, Uri uri) => future.timeout(
-        _timeout,
-        onTimeout: () => throw PicsumException("Timed out after ${_timeout.inSeconds}s waiting for a response from $uri"),
-      );
+    _timeout,
+    onTimeout: () => throw PicsumException(
+      "Timed out after ${_timeout.inSeconds}s waiting for a response from $uri",
+    ),
+  );
 
   Uint8List _bodyBytesOrThrow(Response response, Uri uri) {
     if (response.statusCode != 200) {
-      throw PicsumException("Expected a 200 response from $uri, got ${response.statusCode}");
+      throw PicsumException(
+        "Expected a 200 response from $uri, got ${response.statusCode}",
+      );
     }
     return response.bodyBytes;
   }
@@ -95,7 +116,9 @@ class PicsumService {
   int _idFromResolvedUri(Uri uri) {
     final segments = uri.pathSegments;
     final index = segments.indexOf("id");
-    final id = index == -1 || index + 1 >= segments.length ? null : int.tryParse(segments[index + 1]);
+    final id = index == -1 || index + 1 >= segments.length
+        ? null
+        : int.tryParse(segments[index + 1]);
     if (id == null) {
       throw PicsumException("Could not parse a photo id from $uri");
     }

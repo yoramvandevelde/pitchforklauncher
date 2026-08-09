@@ -39,9 +39,9 @@ void main() {
   setUp(() {
     fakeDownloads = {};
     fLauncherChannel = MockFLauncherChannel();
-    when(
-      fLauncherChannel.writeSettingsBackup(any, any),
-    ).thenAnswer((invocation) {
+    when(fLauncherChannel.writeSettingsBackup(any, any)).thenAnswer((
+      invocation,
+    ) {
       fakeDownloads[invocation.positionalArguments[0] as String] =
           invocation.positionalArguments[1] as Uint8List;
       return Future.value(true);
@@ -147,10 +147,7 @@ void main() {
 
       await backupService.exportSettings();
 
-      expect(
-        fakeDownloads[SettingsBackupService.backupFileName],
-        isNotNull,
-      );
+      expect(fakeDownloads[SettingsBackupService.backupFileName], isNotNull);
 
       // Mutate everything before importing.
       await database.delete(database.categories).go();
@@ -170,16 +167,14 @@ void main() {
 
       final capturedMappings = <Map<String, dynamic>>[];
       final removedKeyCodes = <int>[];
-      when(buttonMappingService.mappings).thenReturn([
-        ButtonMapping(999, 'Old', 'com.old'),
-      ]);
+      when(
+        buttonMappingService.mappings,
+      ).thenReturn([ButtonMapping(999, 'Old', 'com.old')]);
       when(buttonMappingService.removeMapping(any)).thenAnswer((invocation) {
         removedKeyCodes.add(invocation.positionalArguments[0] as int);
         return Future.value();
       });
-      when(buttonMappingService.setMapping(any, any)).thenAnswer((
-        invocation,
-      ) {
+      when(buttonMappingService.setMapping(any, any)).thenAnswer((invocation) {
         capturedMappings.add({
           'keyCode': invocation.positionalArguments[0] as int,
           'packageName': invocation.positionalArguments[1] as String,
@@ -198,9 +193,7 @@ void main() {
             invocation.positionalArguments[0] as List<TvInputConfig>;
         return Future.value();
       });
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       await backupService.importSettings();
 
@@ -278,12 +271,8 @@ void main() {
       buttonMappingService.setMapping(any, any),
     ).thenAnswer((_) => Future.value());
     when(tvInputService.inputs).thenReturn([]);
-    when(
-      tvInputService.replaceAll(any),
-    ).thenAnswer((_) => Future.value());
-    when(
-      appsService.reloadFromDatabase(),
-    ).thenAnswer((_) => Future.value());
+    when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+    when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
@@ -417,12 +406,8 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
@@ -481,12 +466,8 @@ void main() {
       wallpaperService.restoreWallpaper(any),
     ).thenAnswer((_) => Future.value());
     when(tvInputService.inputs).thenReturn([]);
-    when(
-      tvInputService.replaceAll(any),
-    ).thenAnswer((_) => Future.value());
-    when(
-      appsService.reloadFromDatabase(),
-    ).thenAnswer((_) => Future.value());
+    when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+    when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
     final backupService = SettingsBackupService(
       database,
@@ -565,12 +546,8 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
@@ -757,9 +734,7 @@ void main() {
         buttonMappingService.removeMapping(any),
       ).thenAnswer((_) => Future.value());
       final capturedMappings = <Map<String, dynamic>>[];
-      when(buttonMappingService.setMapping(any, any)).thenAnswer((
-        invocation,
-      ) {
+      when(buttonMappingService.setMapping(any, any)).thenAnswer((invocation) {
         capturedMappings.add({
           'keyCode': invocation.positionalArguments[0] as int,
           'packageName': invocation.positionalArguments[1] as String,
@@ -770,12 +745,8 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
@@ -823,12 +794,8 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
@@ -887,9 +854,7 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
 
       final backupService = SettingsBackupService(
         database,
@@ -923,44 +888,41 @@ void main() {
     },
   );
 
-  test(
-    "throws BackupException when the native side reports the write failed "
-    "(e.g. \"All files access\" not granted)",
-    () async {
-      final database = FLauncherDatabase.inMemory();
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
-      final wallpaperService = MockWallpaperService();
-      final tvInputService = MockTvInputService();
-      final appsService = MockAppsService();
-      final buttonMappingService = MockButtonMappingService();
+  test("throws BackupException when the native side reports the write failed "
+      "(e.g. \"All files access\" not granted)", () async {
+    final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+    final wallpaperService = MockWallpaperService();
+    final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
 
-      when(wallpaperService.wallpaperBytes).thenReturn(null);
-      when(buttonMappingService.mappings).thenReturn([]);
-      when(tvInputService.inputs).thenReturn([]);
-      when(
-        fLauncherChannel.writeSettingsBackup(any, any),
-      ).thenAnswer((_) => Future.value(false));
+    when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(buttonMappingService.mappings).thenReturn([]);
+    when(tvInputService.inputs).thenReturn([]);
+    when(
+      fLauncherChannel.writeSettingsBackup(any, any),
+    ).thenAnswer((_) => Future.value(false));
 
-      final backupService = SettingsBackupService(
-        database,
-        settingsService,
-        wallpaperService,
-        tvInputService,
-        appsService,
-        buttonMappingService,
-        fLauncherChannel,
-      );
+    final backupService = SettingsBackupService(
+      database,
+      settingsService,
+      wallpaperService,
+      tvInputService,
+      appsService,
+      buttonMappingService,
+      fLauncherChannel,
+    );
 
-      await expectLater(
-        () => backupService.exportSettings(),
-        throwsA(isA<BackupException>()),
-      );
+    await expectLater(
+      () => backupService.exportSettings(),
+      throwsA(isA<BackupException>()),
+    );
 
-      await database.close();
-    },
-  );
+    await database.close();
+  });
 
   test(
     "export strips a Samsung TV input's pairing token, keeps the rest of its params",
@@ -1041,12 +1003,8 @@ void main() {
         wallpaperService.restoreWallpaper(any),
       ).thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
-      when(
-        tvInputService.replaceAll(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        appsService.reloadFromDatabase(),
-      ).thenAnswer((_) => Future.value());
+      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
       fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
         utf8.encode(
@@ -1093,7 +1051,9 @@ void main() {
 
       await backupService.importSettings();
 
-      final restoredCategory = await database.select(database.categories).getSingle();
+      final restoredCategory = await database
+          .select(database.categories)
+          .getSingle();
       expect(restoredCategory.showName, true);
 
       await database.close();

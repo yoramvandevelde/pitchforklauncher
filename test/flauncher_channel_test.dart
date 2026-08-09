@@ -29,21 +29,24 @@ void main() {
   test("getApplications", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     List<dynamic>? receivedVisiblePackageNames;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "getApplications") {
-        receivedVisiblePackageNames = call.arguments as List<dynamic>;
-        return [
-          {'packageName': 'io.sifft.pitchforklauncher'}
-        ];
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "getApplications") {
+            receivedVisiblePackageNames = call.arguments as List<dynamic>;
+            return [
+              {'packageName': 'io.sifft.pitchforklauncher'},
+            ];
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
-    final apps = await fLauncherChannel.getApplications(['io.sifft.pitchforklauncher']);
+    final apps = await fLauncherChannel.getApplications([
+      'io.sifft.pitchforklauncher',
+    ]);
 
     expect(apps, [
-      {'packageName': 'io.sifft.pitchforklauncher'}
+      {'packageName': 'io.sifft.pitchforklauncher'},
     ]);
     expect(receivedVisiblePackageNames, ['io.sifft.pitchforklauncher']);
   });
@@ -51,13 +54,14 @@ void main() {
   test("launchApp", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     String? packageName;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "launchApp") {
-        packageName = call.arguments as String;
-        return;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "launchApp") {
+            packageName = call.arguments as String;
+            return;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     await fLauncherChannel.launchApp("io.sifft.pitchforklauncher");
@@ -68,13 +72,14 @@ void main() {
   test("openSettings", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     bool called = false;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "openSettings") {
-        called = true;
-        return;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "openSettings") {
+            called = true;
+            return;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     await fLauncherChannel.openSettings();
@@ -85,13 +90,14 @@ void main() {
   test("openAppInfo", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     String? packageName;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "openAppInfo") {
-        packageName = call.arguments as String;
-        return;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "openAppInfo") {
+            packageName = call.arguments as String;
+            return;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     await fLauncherChannel.openAppInfo("io.sifft.pitchforklauncher");
@@ -102,13 +108,14 @@ void main() {
   test("uninstallApp", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     String? packageName;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "uninstallApp") {
-        packageName = call.arguments as String;
-        return;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "uninstallApp") {
+            packageName = call.arguments as String;
+            return;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     await fLauncherChannel.uninstallApp("io.sifft.pitchforklauncher");
@@ -118,12 +125,13 @@ void main() {
 
   test("isDefaultLauncher", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "isDefaultLauncher") {
-        return true;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "isDefaultLauncher") {
+            return true;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     final isDefaultLauncher = await fLauncherChannel.isDefaultLauncher();
@@ -133,15 +141,17 @@ void main() {
 
   test("checkForGetContentAvailability", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "checkForGetContentAvailability") {
-        return true;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "checkForGetContentAvailability") {
+            return true;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
-    final getContentAvailable = await fLauncherChannel.checkForGetContentAvailability();
+    final getContentAvailable = await fLauncherChannel
+        .checkForGetContentAvailability();
 
     expect(getContentAvailable, isTrue);
   });
@@ -149,13 +159,14 @@ void main() {
   test("startAmbientMode", () async {
     final channel = MethodChannel('io.sifft.pitchforklauncher/method');
     bool called = false;
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
-      if (call.method == "startAmbientMode") {
-        called = true;
-        return;
-      }
-      fail("Unhandled method name");
-    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == "startAmbientMode") {
+            called = true;
+            return;
+          }
+          fail("Unhandled method name");
+        });
     final fLauncherChannel = FLauncherChannel();
 
     await fLauncherChannel.startAmbientMode();

@@ -26,13 +26,18 @@ import 'package:flutter/material.dart';
 /// Going up or down will always go to the next or previous row. All other
 /// traversal policy try to be smart, and in some cases can skip rows when
 /// going up or down.
-class RowByRowTraversalPolicy extends FocusTraversalPolicy with DirectionalFocusTraversalPolicyMixin {
+class RowByRowTraversalPolicy extends FocusTraversalPolicy
+    with DirectionalFocusTraversalPolicyMixin {
   @override
-  Iterable<FocusNode> sortDescendants(Iterable<FocusNode> descendants, FocusNode currentNode) => descendants;
+  Iterable<FocusNode> sortDescendants(
+    Iterable<FocusNode> descendants,
+    FocusNode currentNode,
+  ) => descendants;
 
   @override
   bool inDirection(FocusNode currentNode, TraversalDirection direction) {
-    List<FocusNode>? nodes = currentNode.nearestScope?.traversalDescendants.toList();
+    List<FocusNode>? nodes = currentNode.nearestScope?.traversalDescendants
+        .toList();
     if (nodes == null) {
       return super.inDirection(currentNode, direction);
     }
@@ -79,10 +84,16 @@ class NodeSearcher {
         copy.removeWhere((element) => element.isAboveOrEquals(from));
         break;
       case TraversalDirection.right:
-        copy.removeWhere((element) => element.isLeftToOrEquals(from) || !element.isOnTheSameRow(from));
+        copy.removeWhere(
+          (element) =>
+              element.isLeftToOrEquals(from) || !element.isOnTheSameRow(from),
+        );
         break;
       case TraversalDirection.left:
-        copy.removeWhere((element) => element.isRightToOrEquals(from) || !element.isOnTheSameRow(from));
+        copy.removeWhere(
+          (element) =>
+              element.isRightToOrEquals(from) || !element.isOnTheSameRow(from),
+        );
         break;
     }
     return copy;
@@ -91,9 +102,15 @@ class NodeSearcher {
   /// Used as a fallback when [findCandidates] finds nothing further right along the row: looks
   /// for a node that is both above `from` and still to the right of it, e.g. the header's
   /// settings icon reachable from the end of the topmost app row.
-  List<FocusNode> findCandidatesAboveOnSameSide(List<FocusNode> nodes, FocusNode from) {
+  List<FocusNode> findCandidatesAboveOnSameSide(
+    List<FocusNode> nodes,
+    FocusNode from,
+  ) {
     final copy = List<FocusNode>.from(nodes, growable: true);
-    copy.removeWhere((element) => element.isBelowOrEquals(from) || element.isLeftToOrEquals(from));
+    copy.removeWhere(
+      (element) =>
+          element.isBelowOrEquals(from) || element.isLeftToOrEquals(from),
+    );
     // With 3+ rows, "above and to the right" can also match app cards in a row that's merely
     // closer above (not just the header) -- keep only the top-most matches so the header wins
     // over any such row, matching the "topmost row only" intent instead of picking whichever
@@ -107,17 +124,22 @@ class NodeSearcher {
 
   FocusNode findBestFocusNode(List<FocusNode> candidates, FocusNode from) {
     return candidates.reduce((bestNode, challenger) {
-      if (directionToSearch == TraversalDirection.down && challenger.isAbove(bestNode)) {
+      if (directionToSearch == TraversalDirection.down &&
+          challenger.isAbove(bestNode)) {
         return challenger;
-      } else if (directionToSearch == TraversalDirection.up && challenger.isBelow(bestNode)) {
+      } else if (directionToSearch == TraversalDirection.up &&
+          challenger.isBelow(bestNode)) {
         return challenger;
-      } else if (directionToSearch == TraversalDirection.left && challenger.isRightTo(bestNode)) {
+      } else if (directionToSearch == TraversalDirection.left &&
+          challenger.isRightTo(bestNode)) {
         return challenger;
-      } else if (directionToSearch == TraversalDirection.right && challenger.isLeftTo(bestNode)) {
+      } else if (directionToSearch == TraversalDirection.right &&
+          challenger.isLeftTo(bestNode)) {
         return challenger;
       }
       // compute the element which is the closest horizontally
-      if (challenger.isOnTheSameRow(bestNode) && challenger.distance(from) < bestNode.distance(from)) {
+      if (challenger.isOnTheSameRow(bestNode) &&
+          challenger.distance(from) < bestNode.distance(from)) {
         return challenger;
       }
       return bestNode;
@@ -165,7 +187,9 @@ extension Geometry on FocusNode {
   }
 
   double distance(FocusNode other) {
-    return sqrt(pow(rect.center.dx.round() - other.rect.center.dx.round(), 2) +
-        pow(rect.center.dy.round() - other.rect.center.dy.round(), 2));
+    return sqrt(
+      pow(rect.center.dx.round() - other.rect.center.dx.round(), 2) +
+          pow(rect.center.dy.round() - other.rect.center.dy.round(), 2),
+    );
   }
 }

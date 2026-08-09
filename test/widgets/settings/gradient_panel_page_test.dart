@@ -42,14 +42,20 @@ void main() {
 
     await _pumpWidgetWithProviders(tester, wallpaperService);
 
-    expect(find.byKey(Key("gradient-${FLauncherGradients.greatWhale.uuid}")), findsOneWidget);
+    expect(
+      find.byKey(Key("gradient-${FLauncherGradients.greatWhale.uuid}")),
+      findsOneWidget,
+    );
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
     verify(wallpaperService.setGradient(FLauncherGradients.greatWhale));
   });
 }
 
-Future<void> _pumpWidgetWithProviders(WidgetTester tester, WallpaperService wallpaperService) async {
+Future<void> _pumpWidgetWithProviders(
+  WidgetTester tester,
+  WallpaperService wallpaperService,
+) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [

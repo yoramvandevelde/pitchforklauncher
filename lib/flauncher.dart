@@ -76,7 +76,8 @@ class FLauncher extends StatelessWidget {
             body: Padding(
               padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
               child: Consumer<AppsService>(
-                builder: (context, appsService, _) => _AppsBody(appsService: appsService),
+                builder: (context, appsService, _) =>
+                    _AppsBody(appsService: appsService),
               ),
             ),
           ),
@@ -85,30 +86,31 @@ class FLauncher extends StatelessWidget {
     ),
   );
 
-  static Widget _categories(List<CategoryWithApps> categoriesWithApps) => Column(
-    children: categoriesWithApps.map((categoryWithApps) {
-      switch (categoryWithApps.category.type) {
-        case CategoryType.row:
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: CategoryRow(
-              key: Key(categoryWithApps.category.id.toString()),
-              category: categoryWithApps.category,
-              applications: categoryWithApps.applications,
-            ),
-          );
-        case CategoryType.grid:
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: AppsGrid(
-              key: Key(categoryWithApps.category.id.toString()),
-              category: categoryWithApps.category,
-              applications: categoryWithApps.applications,
-            ),
-          );
-      }
-    }).toList(),
-  );
+  static Widget _categories(List<CategoryWithApps> categoriesWithApps) =>
+      Column(
+        children: categoriesWithApps.map((categoryWithApps) {
+          switch (categoryWithApps.category.type) {
+            case CategoryType.row:
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: CategoryRow(
+                  key: Key(categoryWithApps.category.id.toString()),
+                  category: categoryWithApps.category,
+                  applications: categoryWithApps.applications,
+                ),
+              );
+            case CategoryType.grid:
+              return Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: AppsGrid(
+                  key: Key(categoryWithApps.category.id.toString()),
+                  category: categoryWithApps.category,
+                  applications: categoryWithApps.applications,
+                ),
+              );
+          }
+        }).toList(),
+      );
 
   AppBar _appBar(BuildContext context) => AppBar(
     actions: [

@@ -50,7 +50,8 @@ class TvInputConfig {
     "profileId": profileId,
     "params": excludeParamKeys.isEmpty
         ? params
-        : (Map<String, String>.from(params)..removeWhere((key, _) => excludeParamKeys.contains(key))),
+        : (Map<String, String>.from(params)
+            ..removeWhere((key, _) => excludeParamKeys.contains(key))),
   };
 
   factory TvInputConfig.fromJson(Map<String, dynamic> json) => TvInputConfig(

@@ -52,53 +52,60 @@ class _AppLogDialogState extends State<AppLogDialog> {
     }
     final offset = _scrollController.offset;
     final maxExtent = _scrollController.position.maxScrollExtent;
-    if ((direction > 0 && offset >= maxExtent) || (direction < 0 && offset <= 0)) {
+    if ((direction > 0 && offset >= maxExtent) ||
+        (direction < 0 && offset <= 0)) {
       // Already at that end -- let normal directional focus traversal take over (e.g. reaching
       // the Close button below) instead of eating the key with nothing left to scroll.
       return KeyEventResult.ignored;
     }
     final target = (offset + direction * _scrollStep).clamp(0.0, maxExtent);
-    _scrollController.animateTo(target, duration: Duration(milliseconds: 100), curve: Curves.easeOut);
+    _scrollController.animateTo(
+      target,
+      duration: Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+    );
     return KeyEventResult.handled;
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        title: Text("Logs"),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListenableBuilder(
-            listenable: AppLog.instance,
-            builder: (context, _) {
-              final entries = AppLog.instance.entries;
-              if (entries.isEmpty) {
-                return Text("No errors logged since the app was last started.");
-              }
-              return Focus(
-                autofocus: true,
-                onKeyEvent: _handleKey,
-                child: Scrollbar(
-                  controller: _scrollController,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    key: const Key("app_log_scroll_view"),
-                    controller: _scrollController,
-                    child: Text(
-                      entries.join("\n\n"),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(fontFamily: "monospace"),
-                    ),
-                  ),
+    title: Text("Logs"),
+    content: SizedBox(
+      width: double.maxFinite,
+      height: 400,
+      child: ListenableBuilder(
+        listenable: AppLog.instance,
+        builder: (context, _) {
+          final entries = AppLog.instance.entries;
+          if (entries.isEmpty) {
+            return Text("No errors logged since the app was last started.");
+          }
+          return Focus(
+            autofocus: true,
+            onKeyEvent: _handleKey,
+            child: Scrollbar(
+              controller: _scrollController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                key: const Key("app_log_scroll_view"),
+                controller: _scrollController,
+                child: Text(
+                  entries.join("\n\n"),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontFamily: "monospace"),
                 ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text("Close"),
-          ),
-        ],
-      );
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text("Close"),
+      ),
+    ],
+  );
 }

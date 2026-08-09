@@ -54,9 +54,7 @@ void main() {
     expect(find.byKey(Key("TvInputsPanelPage")), findsOneWidget);
   });
 
-  testWidgets("'Set as Home button target' calls AppsService", (
-    tester,
-  ) async {
+  testWidgets("'Set as Home button target' calls AppsService", (tester) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
@@ -71,9 +69,7 @@ void main() {
     verify(appsService.openAccessibilitySettings());
   });
 
-  testWidgets("'Remote buttons' opens ButtonMappingPanelPage", (
-    tester,
-  ) async {
+  testWidgets("'Remote buttons' opens ButtonMappingPanelPage", (tester) async {
     final settingsService = MockSettingsService();
     final appsService = MockAppsService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
@@ -108,192 +104,183 @@ void main() {
     verify(settingsService.setUse24HourTimeFormat(true));
   });
 
-  testWidgets(
-    "'App card highlight animation' toggle calls SettingsService",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+  testWidgets("'App card highlight animation' toggle calls SettingsService", (
+    tester,
+  ) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
 
-      await _pumpWidgetWithProviders(tester, settingsService, appsService);
+    await _pumpWidgetWithProviders(tester, settingsService, appsService);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
-      verify(settingsService.setAppHighlightAnimationEnabled(false));
-    },
-  );
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    verify(settingsService.setAppHighlightAnimationEnabled(false));
+  });
 
-  testWidgets(
-    "'Backup' calls SettingsBackupService after confirmation",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(true));
-      when(
-        backupService.exportSettings(),
-      ).thenAnswer((_) => Future.value());
+  testWidgets("'Backup' calls SettingsBackupService after confirmation", (
+    tester,
+  ) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    final backupService = MockSettingsBackupService();
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+    when(
+      backupService.isStorageAvailable(),
+    ).thenAnswer((_) => Future.value(true));
+    when(backupService.exportSettings()).thenAnswer((_) => Future.value());
 
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
+    await _pumpWidgetWithProviders(
+      tester,
+      settingsService,
+      appsService,
+      settingsBackupService: backupService,
+    );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      expect(find.text("Back up settings?"), findsOneWidget);
+    expect(find.text("Back up settings?"), findsOneWidget);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      verify(backupService.exportSettings());
-      expect(find.text("Backed up"), findsOneWidget);
-    },
-  );
+    verify(backupService.exportSettings());
+    expect(find.text("Backed up"), findsOneWidget);
+  });
 
-  testWidgets(
-    "'Backup' can be cancelled from the confirmation dialog",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(true));
-      when(
-        backupService.exportSettings(),
-      ).thenAnswer((_) => Future.value());
+  testWidgets("'Backup' can be cancelled from the confirmation dialog", (
+    tester,
+  ) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    final backupService = MockSettingsBackupService();
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+    when(
+      backupService.isStorageAvailable(),
+    ).thenAnswer((_) => Future.value(true));
+    when(backupService.exportSettings()).thenAnswer((_) => Future.value());
 
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
+    await _pumpWidgetWithProviders(
+      tester,
+      settingsService,
+      appsService,
+      settingsBackupService: backupService,
+    );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      expect(find.text("Back up settings?"), findsOneWidget);
+    expect(find.text("Back up settings?"), findsOneWidget);
 
-      // Cancel is already focused because of autofocus.
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    // Cancel is already focused because of autofocus.
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      verifyNever(backupService.exportSettings());
-      expect(find.text("Back up settings?"), findsNothing);
-    },
-  );
+    verifyNever(backupService.exportSettings());
+    expect(find.text("Back up settings?"), findsNothing);
+  });
 
-  testWidgets(
-    "'Restore' calls SettingsBackupService after confirmation",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(true));
-      when(backupService.importSettings()).thenAnswer((_) => Future.value());
+  testWidgets("'Restore' calls SettingsBackupService after confirmation", (
+    tester,
+  ) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    final backupService = MockSettingsBackupService();
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+    when(
+      backupService.isStorageAvailable(),
+    ).thenAnswer((_) => Future.value(true));
+    when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
+    await _pumpWidgetWithProviders(
+      tester,
+      settingsService,
+      appsService,
+      settingsBackupService: backupService,
+    );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      expect(find.text("Restore settings?"), findsOneWidget);
+    expect(find.text("Restore settings?"), findsOneWidget);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      verify(backupService.importSettings());
-      expect(find.text("Restored"), findsOneWidget);
-    },
-  );
+    verify(backupService.importSettings());
+    expect(find.text("Restored"), findsOneWidget);
+  });
 
-  testWidgets(
-    "'Restore' can be cancelled from the confirmation dialog",
-    (tester) async {
-      final settingsService = MockSettingsService();
-      final appsService = MockAppsService();
-      final backupService = MockSettingsBackupService();
-      when(settingsService.use24HourTimeFormat).thenReturn(false);
-      when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(true));
-      when(backupService.importSettings()).thenAnswer((_) => Future.value());
+  testWidgets("'Restore' can be cancelled from the confirmation dialog", (
+    tester,
+  ) async {
+    final settingsService = MockSettingsService();
+    final appsService = MockAppsService();
+    final backupService = MockSettingsBackupService();
+    when(settingsService.use24HourTimeFormat).thenReturn(false);
+    when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
+    when(
+      backupService.isStorageAvailable(),
+    ).thenAnswer((_) => Future.value(true));
+    when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
-      await _pumpWidgetWithProviders(
-        tester,
-        settingsService,
-        appsService,
-        settingsBackupService: backupService,
-      );
+    await _pumpWidgetWithProviders(
+      tester,
+      settingsService,
+      appsService,
+      settingsBackupService: backupService,
+    );
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      expect(find.text("Restore settings?"), findsOneWidget);
+    expect(find.text("Restore settings?"), findsOneWidget);
 
-      // Cancel is already focused because of autofocus.
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-      await tester.pumpAndSettle();
+    // Cancel is already focused because of autofocus.
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
 
-      verifyNever(backupService.importSettings());
-      expect(find.text("Restore settings?"), findsNothing);
-    },
-  );
+    verifyNever(backupService.importSettings());
+    expect(find.text("Restore settings?"), findsNothing);
+  });
 
   testWidgets(
     "'Backup' prompts to grant access instead of the confirmation dialog "

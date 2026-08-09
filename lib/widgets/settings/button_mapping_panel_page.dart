@@ -29,31 +29,33 @@ class ButtonMappingPanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text("Remote buttons", style: Theme.of(context).textTheme.titleLarge),
-          Divider(),
-          Text(
-            "Home is always PitchforkLauncher's own button. Map any other remote button to launch an app.",
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-          Selector<ButtonMappingService, List<ButtonMapping>>(
-            selector: (_, service) => service.mappings,
-            builder: (context, mappings, _) => Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: mappings.map((mapping) => _mapping(context, mapping)).toList(),
-                ),
-              ),
+    children: [
+      Text("Remote buttons", style: Theme.of(context).textTheme.titleLarge),
+      Divider(),
+      Text(
+        "Home is always PitchforkLauncher's own button. Map any other remote button to launch an app.",
+        style: Theme.of(context).textTheme.bodySmall,
+        textAlign: TextAlign.center,
+      ),
+      Selector<ButtonMappingService, List<ButtonMapping>>(
+        selector: (_, service) => service.mappings,
+        builder: (context, mappings, _) => Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: mappings
+                  .map((mapping) => _mapping(context, mapping))
+                  .toList(),
             ),
           ),
-          TextButton.icon(
-            icon: Icon(Icons.add),
-            label: Text("Add mapping"),
-            onPressed: () => _addMapping(context),
-          ),
-        ],
-      );
+        ),
+      ),
+      TextButton.icon(
+        icon: Icon(Icons.add),
+        label: Text("Add mapping"),
+        onPressed: () => _addMapping(context),
+      ),
+    ],
+  );
 
   Widget _mapping(BuildContext context, ButtonMapping mapping) {
     final applications = context.read<AppsService>().applications;
@@ -73,14 +75,24 @@ class ButtonMappingPanelPage extends StatelessWidget {
           alignment: 0.5,
           child: ListTile(
             dense: true,
-            leading: app?.icon != null ? Image.memory(app!.icon!, height: 32) : Icon(Icons.apps),
-            title: Text(app?.name ?? mapping.packageName, style: Theme.of(context).textTheme.bodyMedium),
-            subtitle: Text(mapping.label, style: Theme.of(context).textTheme.bodySmall),
+            leading: app?.icon != null
+                ? Image.memory(app!.icon!, height: 32)
+                : Icon(Icons.apps),
+            title: Text(
+              app?.name ?? mapping.packageName,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            subtitle: Text(
+              mapping.label,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
             trailing: IconButton(
               constraints: BoxConstraints(),
               splashRadius: 20,
               icon: Icon(Icons.delete_outline),
-              onPressed: () => context.read<ButtonMappingService>().removeMapping(mapping.keyCode),
+              onPressed: () => context
+                  .read<ButtonMappingService>()
+                  .removeMapping(mapping.keyCode),
             ),
           ),
         ),
@@ -96,7 +108,9 @@ class ButtonMappingPanelPage extends StatelessWidget {
     // the wrong thing (silently navigating the Settings panel instead of the dialog).
     final rootNavigator = Navigator.of(context, rootNavigator: true);
     Map<dynamic, dynamic>? captured;
-    final subscription = buttonMappingService.captureNextButton().listen((event) {
+    final subscription = buttonMappingService.captureNextButton().listen((
+      event,
+    ) {
       captured = event;
       rootNavigator.pop();
     });
@@ -105,7 +119,9 @@ class ButtonMappingPanelPage extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: Text("Press a button"),
-        content: Text("Press the remote button you want to map. It won't do anything else while this is open."),
+        content: Text(
+          "Press the remote button you want to map. It won't do anything else while this is open.",
+        ),
         actions: [
           TextButton(
             autofocus: true,

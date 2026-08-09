@@ -49,16 +49,18 @@ class _TimeWidgetState extends State<TimeWidget> {
 
   @override
   Widget build(BuildContext context) => Selector<SettingsService, bool>(
-        selector: (_, settingsService) => settingsService.use24HourTimeFormat,
-        builder: (context, use24HourTimeFormat, _) => Text(
-          use24HourTimeFormat ? DateFormat.Hm().format(_now) : DateFormat.jm().format(_now),
-          style: Theme.of(context).textTheme.titleLarge!.copyWith(
-            fontWeight: FontWeight.bold,
-            shadows: kOverlayTextShadows,
-          ),
-          textAlign: TextAlign.end,
-        ),
-      );
+    selector: (_, settingsService) => settingsService.use24HourTimeFormat,
+    builder: (context, use24HourTimeFormat, _) => Text(
+      use24HourTimeFormat
+          ? DateFormat.Hm().format(_now)
+          : DateFormat.jm().format(_now),
+      style: Theme.of(context).textTheme.titleLarge!.copyWith(
+        fontWeight: FontWeight.bold,
+        shadows: kOverlayTextShadows,
+      ),
+      textAlign: TextAlign.end,
+    ),
+  );
 
   void _refreshTime() {
     final now = DateTime.now();

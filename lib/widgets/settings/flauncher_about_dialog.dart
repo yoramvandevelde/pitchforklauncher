@@ -24,43 +24,58 @@ import 'package:package_info_plus/package_info_plus.dart';
 class FLauncherAboutDialog extends StatelessWidget {
   final PackageInfo packageInfo;
 
-  FLauncherAboutDialog({
-    super.key,
-    required this.packageInfo,
-  });
+  FLauncherAboutDialog({super.key, required this.packageInfo});
 
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     final underlined = textStyle.copyWith(decoration: TextDecoration.underline);
     final mutedStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
-        );
+      color: Theme.of(
+        context,
+      ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+    );
     return AboutDialog(
       applicationName: packageInfo.appName,
       applicationIcon: Image.asset("assets/logo.png", height: 72),
       children: [
-        Text("${packageInfo.version} (${packageInfo.buildNumber})", style: mutedStyle),
+        Text(
+          "${packageInfo.version} (${packageInfo.buildNumber})",
+          style: mutedStyle,
+        ),
         SizedBox(height: 8),
-        Text("© 2021 Étienne Fesser\n© 2026 Yoram van de Velde", style: mutedStyle),
+        Text(
+          "© 2021 Étienne Fesser\n© 2026 Yoram van de Velde",
+          style: mutedStyle,
+        ),
         SizedBox(height: 24),
         RichText(
           text: TextSpan(
             style: textStyle,
             children: [
               TextSpan(
-                text: "PitchforkLauncher is an open-source alternative launcher for Android TV.\n"
+                text:
+                    "PitchforkLauncher is an open-source alternative launcher for Android TV.\n"
                     "Source code available at ",
               ),
-              TextSpan(text: "https://github.com/yoramvandevelde/pitchforklauncher", style: underlined),
+              TextSpan(
+                text: "https://github.com/yoramvandevelde/pitchforklauncher",
+                style: underlined,
+              ),
               TextSpan(text: ".\n\n"),
               TextSpan(
-                text: "A personal fork of FLauncher by Étienne Fesser — thanks for the solid\n"
+                text:
+                    "A personal fork of FLauncher by Étienne Fesser — thanks for the solid\n"
                     "foundation. Original project at ",
               ),
-              TextSpan(text: "https://gitlab.com/flauncher/flauncher", style: underlined),
+              TextSpan(
+                text: "https://gitlab.com/flauncher/flauncher",
+                style: underlined,
+              ),
               TextSpan(text: ".\n\n"),
-              TextSpan(text: "Default wallpaper photo by Wilhelm Gunkel on Unsplash."),
+              TextSpan(
+                text: "Default wallpaper photo by Wilhelm Gunkel on Unsplash.",
+              ),
             ],
           ),
         ),
@@ -68,7 +83,10 @@ class FLauncherAboutDialog extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(
-            onPressed: () => showDialog<void>(context: context, builder: (_) => const AppLogDialog()),
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => const AppLogDialog(),
+            ),
             child: Text("Logs"),
           ),
         ),

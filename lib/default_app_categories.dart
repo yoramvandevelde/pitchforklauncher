@@ -81,8 +81,14 @@ const Map<String, String> defaultAppCategories = {
 /// not grid, so an omitted [DefaultCategorySettings.type] is only safe for categories that are
 /// genuinely meant to render as a row.
 const Map<String, DefaultCategorySettings> defaultCategorySettings = {
-  "TV Applications": DefaultCategorySettings(type: CategoryType.row, rowHeight: 80),
-  "Streaming": DefaultCategorySettings(type: CategoryType.grid, columnsCount: 5),
+  "TV Applications": DefaultCategorySettings(
+    type: CategoryType.row,
+    rowHeight: 80,
+  ),
+  "Streaming": DefaultCategorySettings(
+    type: CategoryType.grid,
+    columnsCount: 5,
+  ),
   "Media": DefaultCategorySettings(type: CategoryType.grid),
   "System": DefaultCategorySettings(type: CategoryType.row, rowHeight: 80),
 };

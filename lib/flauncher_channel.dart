@@ -22,14 +22,22 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 class FLauncherChannel {
-  static const _methodChannel = MethodChannel('io.sifft.pitchforklauncher/method');
+  static const _methodChannel = MethodChannel(
+    'io.sifft.pitchforklauncher/method',
+  );
   static const _eventChannel = EventChannel('io.sifft.pitchforklauncher/event');
-  static const _buttonCaptureEventChannel = EventChannel('io.sifft.pitchforklauncher/buttonCapture');
+  static const _buttonCaptureEventChannel = EventChannel(
+    'io.sifft.pitchforklauncher/buttonCapture',
+  );
 
   /// [visiblePackageNames] gates which apps get a banner computed natively -- see
   /// MainActivity.kt's getApplications for why (icon is always included regardless).
-  Future<List<dynamic>> getApplications(List<String> visiblePackageNames) async =>
-      (await _methodChannel.invokeListMethod('getApplications', visiblePackageNames))!;
+  Future<List<dynamic>> getApplications(
+    List<String> visiblePackageNames,
+  ) async => (await _methodChannel.invokeListMethod(
+    'getApplications',
+    visiblePackageNames,
+  ))!;
 
   /// Fetches just the banner for one app on demand, for when it newly enters a visible category
   /// after a sync already decided it didn't need one (see AppsService.addToCategory).
@@ -39,31 +47,41 @@ class FLauncherChannel {
   Future<bool> applicationExists(String packageName) async =>
       await _methodChannel.invokeMethod('applicationExists', packageName);
 
-  Future<void> launchApp(String packageName) async => await _methodChannel.invokeMethod('launchApp', packageName);
+  Future<void> launchApp(String packageName) async =>
+      await _methodChannel.invokeMethod('launchApp', packageName);
 
-  Future<void> openSettings() async => await _methodChannel.invokeMethod('openSettings');
+  Future<void> openSettings() async =>
+      await _methodChannel.invokeMethod('openSettings');
 
   Future<void> openAccessibilitySettings() async =>
       await _methodChannel.invokeMethod('openAccessibilitySettings');
 
-  Future<void> openAppInfo(String packageName) async => await _methodChannel.invokeMethod('openAppInfo', packageName);
+  Future<void> openAppInfo(String packageName) async =>
+      await _methodChannel.invokeMethod('openAppInfo', packageName);
 
-  Future<void> uninstallApp(String packageName) async => await _methodChannel.invokeMethod('uninstallApp', packageName);
+  Future<void> uninstallApp(String packageName) async =>
+      await _methodChannel.invokeMethod('uninstallApp', packageName);
 
-  Future<bool> isDefaultLauncher() async => await _methodChannel.invokeMethod('isDefaultLauncher');
+  Future<bool> isDefaultLauncher() async =>
+      await _methodChannel.invokeMethod('isDefaultLauncher');
 
   Future<bool> checkForGetContentAvailability() async =>
       await _methodChannel.invokeMethod("checkForGetContentAvailability");
 
-  Future<void> startAmbientMode() async => await _methodChannel.invokeMethod("startAmbientMode");
+  Future<void> startAmbientMode() async =>
+      await _methodChannel.invokeMethod("startAmbientMode");
 
   void addAppsChangedListener(void Function(Map<dynamic, dynamic>) listener) =>
       _eventChannel.receiveBroadcastStream().listen((event) => listener(event));
 
-  Future<List<dynamic>> getButtonMappings() async => (await _methodChannel.invokeListMethod('getButtonMappings'))!;
+  Future<List<dynamic>> getButtonMappings() async =>
+      (await _methodChannel.invokeListMethod('getButtonMappings'))!;
 
-  Future<void> setButtonMapping(int keyCode, String packageName) async => await _methodChannel
-      .invokeMethod('setButtonMapping', {"keyCode": keyCode, "packageName": packageName});
+  Future<void> setButtonMapping(int keyCode, String packageName) async =>
+      await _methodChannel.invokeMethod('setButtonMapping', {
+        "keyCode": keyCode,
+        "packageName": packageName,
+      });
 
   Future<void> removeButtonMapping(int keyCode) async =>
       await _methodChannel.invokeMethod('removeButtonMapping', keyCode);
@@ -71,7 +89,10 @@ class FLauncherChannel {
   /// Listens for a single remote button press and returns its keycode/label, for the
   /// "press a button to map it" capture flow in the Settings panel.
   Stream<Map<dynamic, dynamic>> captureNextButton() =>
-      _buttonCaptureEventChannel.receiveBroadcastStream().map((event) => event as Map<dynamic, dynamic>).take(1);
+      _buttonCaptureEventChannel
+          .receiveBroadcastStream()
+          .map((event) => event as Map<dynamic, dynamic>)
+          .take(1);
 
   /// Writes [bytes] to [fileName] in the real, shared Downloads folder, so the settings backup
   /// survives an app uninstall. Returns false if the "All files access" permission (see
@@ -86,7 +107,10 @@ class FLauncherChannel {
   /// Reads [fileName] back from the shared Downloads folder, or null if it doesn't exist (never
   /// backed up yet), the permission isn't granted, or the device is below Android 11.
   Future<Uint8List?> readSettingsBackup(String fileName) async =>
-      await _methodChannel.invokeMethod<Uint8List>('readSettingsBackup', fileName);
+      await _methodChannel.invokeMethod<Uint8List>(
+        'readSettingsBackup',
+        fileName,
+      );
 
   /// Whether the "All files access" (`MANAGE_EXTERNAL_STORAGE`) permission that
   /// [writeSettingsBackup]/[readSettingsBackup] rely on is currently granted.

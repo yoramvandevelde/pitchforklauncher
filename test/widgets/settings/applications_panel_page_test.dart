@@ -50,7 +50,7 @@ void main() {
         icon: kTransparentImage,
         sideloaded: false,
         hidden: false,
-      )
+      ),
     ]);
 
     await _pumpWidgetWithProviders(tester, appsService);
@@ -68,7 +68,7 @@ void main() {
         icon: kTransparentImage,
         sideloaded: true,
         hidden: false,
-      )
+      ),
     ]);
 
     await _pumpWidgetWithProviders(tester, appsService);
@@ -91,7 +91,7 @@ void main() {
         icon: kTransparentImage,
         sideloaded: false,
         hidden: true,
-      )
+      ),
     ]);
 
     await _pumpWidgetWithProviders(tester, appsService);
@@ -116,7 +116,9 @@ void main() {
       icon: kTransparentImage,
     );
     when(appsService.applications).thenReturn([application]);
-    when(appsService.categoriesWithApps).thenReturn([CategoryWithApps(fakeCategory(), [])]);
+    when(
+      appsService.categoriesWithApps,
+    ).thenReturn([CategoryWithApps(fakeCategory(), [])]);
 
     await _pumpWidgetWithProviders(tester, appsService);
 
@@ -137,7 +139,9 @@ void main() {
       icon: kTransparentImage,
     );
     when(appsService.applications).thenReturn([application]);
-    when(appsService.categoriesWithApps).thenReturn([CategoryWithApps(fakeCategory(), [])]);
+    when(
+      appsService.categoriesWithApps,
+    ).thenReturn([CategoryWithApps(fakeCategory(), [])]);
 
     await _pumpWidgetWithProviders(tester, appsService);
 
@@ -150,7 +154,10 @@ void main() {
   });
 }
 
-Future<void> _pumpWidgetWithProviders(WidgetTester tester, AppsService appsService) async {
+Future<void> _pumpWidgetWithProviders(
+  WidgetTester tester,
+  AppsService appsService,
+) async {
   await tester.pumpWidget(
     MultiProvider(
       providers: [

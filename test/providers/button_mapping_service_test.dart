@@ -25,9 +25,15 @@ import '../mocks.mocks.dart';
 void main() {
   test("loads mappings on construction", () async {
     final fLauncherChannel = MockFLauncherChannel();
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([
-          {"keyCode": 190, "label": "KEYCODE_BUTTON_3", "packageName": "com.google.android.youtube.tv"},
-        ]));
+    when(fLauncherChannel.getButtonMappings()).thenAnswer(
+      (_) => Future.value([
+        {
+          "keyCode": 190,
+          "label": "KEYCODE_BUTTON_3",
+          "packageName": "com.google.android.youtube.tv",
+        },
+      ]),
+    );
 
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
     await untilCalled(fLauncherChannel.getButtonMappings());
@@ -36,32 +42,54 @@ void main() {
     expect(buttonMappingService.mappings.length, 1);
     expect(buttonMappingService.mappings.first.keyCode, 190);
     expect(buttonMappingService.mappings.first.label, "KEYCODE_BUTTON_3");
-    expect(buttonMappingService.mappings.first.packageName, "com.google.android.youtube.tv");
+    expect(
+      buttonMappingService.mappings.first.packageName,
+      "com.google.android.youtube.tv",
+    );
   });
 
   test("setMapping persists and refreshes", () async {
     final fLauncherChannel = MockFLauncherChannel();
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([]));
+    when(
+      fLauncherChannel.getButtonMappings(),
+    ).thenAnswer((_) => Future.value([]));
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
     await untilCalled(fLauncherChannel.getButtonMappings());
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([
-          {"keyCode": 191, "label": "KEYCODE_BUTTON_4", "packageName": "com.netflix.ninja"},
-        ]));
+    when(fLauncherChannel.getButtonMappings()).thenAnswer(
+      (_) => Future.value([
+        {
+          "keyCode": 191,
+          "label": "KEYCODE_BUTTON_4",
+          "packageName": "com.netflix.ninja",
+        },
+      ]),
+    );
 
     await buttonMappingService.setMapping(191, "com.netflix.ninja");
 
     verify(fLauncherChannel.setButtonMapping(191, "com.netflix.ninja"));
-    expect(buttonMappingService.mappings.single.packageName, "com.netflix.ninja");
+    expect(
+      buttonMappingService.mappings.single.packageName,
+      "com.netflix.ninja",
+    );
   });
 
   test("removeMapping removes and refreshes", () async {
     final fLauncherChannel = MockFLauncherChannel();
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([
-          {"keyCode": 190, "label": "KEYCODE_BUTTON_3", "packageName": "com.google.android.youtube.tv"},
-        ]));
+    when(fLauncherChannel.getButtonMappings()).thenAnswer(
+      (_) => Future.value([
+        {
+          "keyCode": 190,
+          "label": "KEYCODE_BUTTON_3",
+          "packageName": "com.google.android.youtube.tv",
+        },
+      ]),
+    );
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
     await untilCalled(fLauncherChannel.getButtonMappings());
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([]));
+    when(
+      fLauncherChannel.getButtonMappings(),
+    ).thenAnswer((_) => Future.value([]));
 
     await buttonMappingService.removeMapping(190);
 
@@ -71,10 +99,17 @@ void main() {
 
   test("captureNextButton delegates to the channel", () {
     final fLauncherChannel = MockFLauncherChannel();
-    when(fLauncherChannel.getButtonMappings()).thenAnswer((_) => Future.value([]));
-    when(fLauncherChannel.captureNextButton()).thenAnswer((_) => Stream.value({"keyCode": 4, "label": "KEYCODE_BACK"}));
+    when(
+      fLauncherChannel.getButtonMappings(),
+    ).thenAnswer((_) => Future.value([]));
+    when(
+      fLauncherChannel.captureNextButton(),
+    ).thenAnswer((_) => Stream.value({"keyCode": 4, "label": "KEYCODE_BACK"}));
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
 
-    expect(buttonMappingService.captureNextButton(), emits({"keyCode": 4, "label": "KEYCODE_BACK"}));
+    expect(
+      buttonMappingService.captureNextButton(),
+      emits({"keyCode": 4, "label": "KEYCODE_BACK"}),
+    );
   });
 }

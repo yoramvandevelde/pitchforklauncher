@@ -30,23 +30,25 @@ class PickAppForButtonDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<App>>(
-        selector: (_, appsService) => appsService.applications,
-        builder: (context, applications, _) => SimpleDialog(
-          title: Text("Launch which app on $buttonLabel?"),
-          contentPadding: EdgeInsets.all(16),
-          children: applications
-              .map(
-                (application) => Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    autofocus: application == applications.first,
-                    onTap: () => Navigator.of(context).pop(application.packageName),
-                    leading: application.icon != null ? Image.memory(application.icon!, height: 32) : null,
-                    title: Text(application.name),
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-      );
+    selector: (_, appsService) => appsService.applications,
+    builder: (context, applications, _) => SimpleDialog(
+      title: Text("Launch which app on $buttonLabel?"),
+      contentPadding: EdgeInsets.all(16),
+      children: applications
+          .map(
+            (application) => Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                autofocus: application == applications.first,
+                onTap: () => Navigator.of(context).pop(application.packageName),
+                leading: application.icon != null
+                    ? Image.memory(application.icon!, height: 32)
+                    : null,
+                title: Text(application.name),
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }

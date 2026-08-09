@@ -47,40 +47,53 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
     super.dispose();
   }
 
-  FocusNode _upFocusNode(int categoryId) => _upFocusNodes.putIfAbsent(categoryId, () => FocusNode());
+  FocusNode _upFocusNode(int categoryId) =>
+      _upFocusNodes.putIfAbsent(categoryId, () => FocusNode());
 
-  FocusNode _downFocusNode(int categoryId) => _downFocusNodes.putIfAbsent(categoryId, () => FocusNode());
+  FocusNode _downFocusNode(int categoryId) =>
+      _downFocusNodes.putIfAbsent(categoryId, () => FocusNode());
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text("Categories", style: Theme.of(context).textTheme.titleLarge),
-          Divider(),
-          Selector<AppsService, List<CategoryWithApps>>(
-            selector: (_, appsService) => appsService.categoriesWithApps,
-            builder: (_, categories, _) => Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: categories.asMap().keys.map((index) => _category(context, categories, index)).toList(),
-                ),
-              ),
+    children: [
+      Text("Categories", style: Theme.of(context).textTheme.titleLarge),
+      Divider(),
+      Selector<AppsService, List<CategoryWithApps>>(
+        selector: (_, appsService) => appsService.categoriesWithApps,
+        builder: (_, categories, _) => Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: categories
+                  .asMap()
+                  .keys
+                  .map((index) => _category(context, categories, index))
+                  .toList(),
             ),
           ),
-          TextButton.icon(
-            icon: Icon(Icons.add),
-            label: Text("Add Category"),
-            onPressed: () async {
-              final categoryName = await showDialog<String>(context: context, builder: (_) => AddCategoryDialog());
-              if (categoryName != null) {
-                if (!context.mounted) return;
-                await context.read<AppsService>().addCategory(categoryName);
-              }
-            },
-          ),
-        ],
-      );
+        ),
+      ),
+      TextButton.icon(
+        icon: Icon(Icons.add),
+        label: Text("Add Category"),
+        onPressed: () async {
+          final categoryName = await showDialog<String>(
+            context: context,
+            builder: (_) => AddCategoryDialog(),
+          );
+          if (categoryName != null) {
+            if (!context.mounted) return;
+            await context.read<AppsService>().addCategory(categoryName);
+          }
+        },
+      ),
+    ],
+  );
 
-  Widget _category(BuildContext context, List<CategoryWithApps> categories, int index) {
+  Widget _category(
+    BuildContext context,
+    List<CategoryWithApps> categories,
+    int index,
+  ) {
     final categoryId = categories[index].category.id;
     return Padding(
       key: Key(categoryId.toString()),
@@ -91,21 +104,37 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
           alignment: 0.5,
           child: ListTile(
             dense: true,
-            title: Text(categories[index].category.name, style: Theme.of(context).textTheme.bodyMedium),
+            title: Text(
+              categories[index].category.name,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _arrowButton(
                   focusNode: _upFocusNode(categoryId),
                   icon: Icons.arrow_upward,
-                  onPressed:
-                      index > 0 ? () => _move(context, categories.length, categoryId, index, index - 1) : null,
+                  onPressed: index > 0
+                      ? () => _move(
+                          context,
+                          categories.length,
+                          categoryId,
+                          index,
+                          index - 1,
+                        )
+                      : null,
                 ),
                 _arrowButton(
                   focusNode: _downFocusNode(categoryId),
                   icon: Icons.arrow_downward,
                   onPressed: index < categories.length - 1
-                      ? () => _move(context, categories.length, categoryId, index, index + 1)
+                      ? () => _move(
+                          context,
+                          categories.length,
+                          categoryId,
+                          index,
+                          index + 1,
+                        )
                       : null,
                 ),
                 IconButton(
@@ -134,29 +163,36 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
     required FocusNode focusNode,
     required IconData icon,
     required VoidCallback? onPressed,
-  }) =>
-      AnimatedBuilder(
-        animation: focusNode,
-        builder: (context, child) => AnimatedContainer(
-          duration: Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: focusNode.hasFocus ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3) : Colors.transparent,
-          ),
-          child: child,
-        ),
-        child: IconButton(
-          focusNode: focusNode,
-          focusColor: Colors.transparent,
-          constraints: BoxConstraints(),
-          splashRadius: 20,
-          icon: Icon(icon),
-          onPressed: onPressed,
-        ),
-      );
+  }) => AnimatedBuilder(
+    animation: focusNode,
+    builder: (context, child) => AnimatedContainer(
+      duration: Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: focusNode.hasFocus
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.transparent,
+      ),
+      child: child,
+    ),
+    child: IconButton(
+      focusNode: focusNode,
+      focusColor: Colors.transparent,
+      constraints: BoxConstraints(),
+      splashRadius: 20,
+      icon: Icon(icon),
+      onPressed: onPressed,
+    ),
+  );
 
-  Future<void> _move(BuildContext context, int categoriesCount, int categoryId, int oldIndex, int newIndex) async {
+  Future<void> _move(
+    BuildContext context,
+    int categoriesCount,
+    int categoryId,
+    int oldIndex,
+    int newIndex,
+  ) async {
     await context.read<AppsService>().moveCategory(oldIndex, newIndex);
     if (!mounted) return;
 
@@ -164,8 +200,9 @@ class _CategoriesPanelPageState extends State<CategoriesPanelPage> {
     // disabled-widget fallback hands focus to the next traversal stop ("Add Category") instead
     // of somewhere sensible. Explicitly refocus the row's remaining enabled arrow after the
     // rebuild settles.
-    final FocusNode? nodeToRefocus =
-        newIndex == 0 ? _downFocusNode(categoryId) : (newIndex == categoriesCount - 1 ? _upFocusNode(categoryId) : null);
+    final FocusNode? nodeToRefocus = newIndex == 0
+        ? _downFocusNode(categoryId)
+        : (newIndex == categoriesCount - 1 ? _upFocusNode(categoryId) : null);
     if (nodeToRefocus != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
