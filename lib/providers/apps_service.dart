@@ -37,6 +37,13 @@ class AppsService extends ChangeNotifier {
   List<App> _applications = [];
   List<CategoryWithApps> _categoriesWithApps = [];
 
+  // Chains incoming native app-change events (PACKAGE_ADDED/CHANGED/REMOVED, ...) so they're
+  // always processed one at a time. The events are individually async (database writes), and
+  // two of them arriving close together -- e.g. an app update, which fires PACKAGE_ADDED then
+  // PACKAGE_CHANGED in quick succession -- would otherwise run interleaved, briefly persisting
+  // and reading back a half-updated state.
+  Future<void> _eventQueue = Future.value();
+
   bool get initialized => _initialized;
 
   List<App> get applications => UnmodifiableListView(_applications);
@@ -54,24 +61,28 @@ class AppsService extends ChangeNotifier {
     if (_database.wasCreated) {
       await _initDefaultCategories();
     }
-    _fLauncherChannel.addAppsChangedListener((event) async {
-      switch (event["action"]) {
-        case "PACKAGE_ADDED":
-        case "PACKAGE_CHANGED":
-          await _database.persistApps([_buildAppCompanion(event["activityInfo"])]);
-          break;
-        case "PACKAGES_AVAILABLE":
-          await _database.persistApps((event["activitiesInfo"] as List<dynamic>).map(_buildAppCompanion).toList());
-          break;
-        case "PACKAGE_REMOVED":
-          await _database.deleteApps([event["packageName"]]);
-          break;
-      }
-      _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
-      _applications = await _database.listApplications();
-      notifyListeners();
+    _fLauncherChannel.addAppsChangedListener((event) {
+      _eventQueue = _eventQueue.then((_) => _handleAppsChangedEvent(event));
     });
     _initialized = true;
+    notifyListeners();
+  }
+
+  Future<void> _handleAppsChangedEvent(Map<dynamic, dynamic> event) async {
+    switch (event["action"]) {
+      case "PACKAGE_ADDED":
+      case "PACKAGE_CHANGED":
+        await _database.persistApps([_buildAppCompanion(event["activityInfo"])]);
+        break;
+      case "PACKAGES_AVAILABLE":
+        await _database.persistApps((event["activitiesInfo"] as List<dynamic>).map(_buildAppCompanion).toList());
+        break;
+      case "PACKAGE_REMOVED":
+        await _database.deleteApps([event["packageName"]]);
+        break;
+    }
+    _categoriesWithApps = await _database.listCategoriesWithVisibleApps();
+    _applications = await _database.listApplications();
     notifyListeners();
   }
 
