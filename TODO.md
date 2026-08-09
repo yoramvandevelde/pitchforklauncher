@@ -33,20 +33,6 @@
   doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
   the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
 
-- **`FilterQuality.high` + codec-side target size in `_resizeToScreen`.** Same method as the
-  wallpaper item above, two independent one-line-ish changes: (1) the `Canvas.drawImageRect` call
-  uses the default `Paint()` (`FilterQuality.none`, nearest-neighbor), which produces visible
-  aliasing/moiré when downscaling a detailed photo -- use `Paint()..filterQuality =
-  FilterQuality.high` for the one-time bake. (2) `instantiateImageCodec(bytes)` decodes the source
-  at full resolution before downscaling; passing the already-computed cover-scaled
-  `targetWidth`/`targetHeight` lets the platform codec sample-decode instead -- relevant for
-  `pickWallpaper()` picks (a 12 MP photo decoded full-size transiently holds ~48 MB of RGBA).
-
-- **Add the GPL header to `lib/widgets/color_helpers.dart`.** The only file in the tree missing
-  the license header every other source file carries; `AGENTS.md`'s License section mandates it.
-  The file is upstream-derived (backs the app-card border pulse), so it needs Fesser's copyright
-  line alongside the current one. Compliance nit, trivial fix.
-
 - **At leisure, from the same review:** the accessibility service only consumes `ACTION_UP`
   (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
   through to the foreground app/system while `UP` is hijacked, the classic shape of a
@@ -87,6 +73,36 @@
     `FocusNode` listener) instead. Nit-level; leave as-is if the current shape is deliberate.
 
 ## Done
+
+~~**Add the GPL header to `lib/widgets/color_helpers.dart`.**~~ — done (2026-08-09): added, with
+both Fesser's and this project's copyright lines, matching every other source file.
+
+~~**`FilterQuality.high` + codec-side target size in `_resizeToScreen`.**~~ — landed half of this
+(2026-08-09), the other half turned out to be a latent bug, not a one-liner. **Shipped:**
+`Canvas.drawImageRect`'s one-time crop-and-scale bake now uses `Paint()..filterQuality =
+FilterQuality.high` instead of the default nearest-neighbor, fixing visible aliasing/moiré on a
+downscaled photo. **Rejected: codec-side target size on `instantiateImageCodec`.** The suggestion
+was to pass the already-computed cover-scaled `targetWidth`/`targetHeight` so the codec
+sample-decodes instead of decoding at full resolution first. Verified empirically (a throwaway
+test, not kept) before implementing, since this is exactly the kind of thing worth checking against
+the real SDK rather than trusting a review's phrasing: an 800x400 (2:1) source decoded with *both*
+`targetWidth: 100` and `targetHeight: 100` came back as exactly 100x100 -- `instantiateImageCodec`
+does not letterbox or preserve aspect when both dimensions are given, it distorts to fill them
+exactly. That would silently stretch/squash almost every real photo (only ones that already happen
+to share the screen's exact aspect ratio would be unaffected), since the whole reason `_resizeToScreen`
+does its own crop-then-scale afterward is that source photos generally *don't* match the target
+aspect ratio. The safer-looking alternative -- pass only *one* target dimension, which
+`instantiateImageCodec` does scale proportionally (confirmed: the same 800x400 source with only
+`targetWidth: 200` correctly came back 200x100) -- isn't safe either: capping only the width means
+an extreme-aspect-ratio source (e.g. a wide panorama-style crop) can end up with the *other*
+dimension shrunk below what the final cover-crop needs, forcing `drawImageRect` to upscale that
+undersized crop region back up to the target size -- reintroducing, via the "optimization" itself,
+exactly the blur the crop code exists to avoid. Doing this correctly needs to know the source's
+aspect ratio *before* deciding which dimension (if either) is safe to constrain, which means reading
+its dimensions cheaply (e.g. an image header parse) ahead of the real decode -- meaningfully more
+machinery than a one-line codec hint, for a one-time cost on a user-initiated wallpaper pick (not a
+recurring cold-start cost like the banner/icon decode work above). Not worth it at this scope;
+left as a plain full-resolution decode.
 
 ~~**Downscale icons before PNG-encoding them in `drawableToByteArray`.**~~ — fixed (2026-08-09):
 `MainActivity.buildAppMap()` was encoding `loadIcon()` output at full intrinsic resolution
