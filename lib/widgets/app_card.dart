@@ -96,6 +96,27 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     return _imageProvider!;
   }
 
+  /// Banners/icons are persisted at their native intrinsic resolution (see
+  /// `MainActivity.drawableToByteArray`), which is routinely far larger than the card ever
+  /// displays them -- decoding a banner at full size just to paint it into a ~300px-wide card
+  /// wastes CPU and is a meaningful chunk of the cold-start pop-in flicker. This estimates the
+  /// card's on-screen logical width from the category's own layout settings (deliberately
+  /// approximate -- it ignores GridView/ListView padding/spacing -- a decode-size hint doesn't
+  /// need to be pixel-exact, and erring slightly large just means slightly less aggressive
+  /// downscaling, never blur) and scales it to physical pixels so the decode still looks sharp on
+  /// high-density displays. `ResizeImage` leaves images that are already smaller than this
+  /// untouched (`allowUpscaling` defaults to false), so this is safe even if the estimate is off.
+  int _cacheWidth(BuildContext context) {
+    final category = widget.category;
+    final logicalWidth = category.type == CategoryType.grid
+        ? MediaQuery.sizeOf(context).width / category.columnsCount
+        : category.rowHeight * 16 / 9;
+    return (logicalWidth * MediaQuery.devicePixelRatioOf(context)).round();
+  }
+
+  ImageProvider _cachedImage(BuildContext context, Uint8List bytes) =>
+      ResizeImage.resizeIfNeeded(_cacheWidth(context), null, _cachedMemoryImage(bytes));
+
   @override
   Widget build(BuildContext context) => FocusKeyboardListener(
         onPressed: (key) => _onPressed(context, key),
@@ -121,7 +142,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                     onTap: () => _onPressed(context, null),
                     onLongPress: () => _onLongPress(context, null),
                     child: widget.application.banner != null
-                        ? Ink.image(image: _cachedMemoryImage(widget.application.banner!), fit: BoxFit.cover)
+                        ? Ink.image(image: _cachedImage(context, widget.application.banner!), fit: BoxFit.cover)
                         : Padding(
                             padding: EdgeInsets.all(8),
                             child: Row(
@@ -129,7 +150,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
                                 Expanded(
                                   flex: 2,
                                   child: Ink.image(
-                                    image: _cachedMemoryImage(widget.application.icon!),
+                                    image: _cachedImage(context, widget.application.icon!),
                                     height: double.infinity,
                                   ),
                                 ),
