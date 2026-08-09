@@ -252,6 +252,9 @@ class MainActivity : FlutterActivity() {
             .queryIntentActivities(Intent(ACTION_MAIN, null)
                     .addCategory(if (sideloaded) CATEGORY_LAUNCHER else CATEGORY_LEANBACK_LAUNCHER), 0)
             .map(ResolveInfo::activityInfo)
+            // PitchforkLauncher declares LEANBACK_LAUNCHER itself, so it would otherwise show up
+            // in its own app list.
+            .filter { it.packageName != packageName }
 
     private fun buildAppMap(activityInfo: ActivityInfo, sideloaded: Boolean, includeBanner: Boolean) = mapOf(
             "name" to activityInfo.loadLabel(packageManager).toString(),

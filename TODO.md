@@ -45,34 +45,42 @@
   ceremony wrapper around `FocusNode` that's immediately unwrapped elsewhere -- would read better
   as `List<FocusNode>` end to end.
 
-- **Unverified ideas from the same review, not yet checked against the running app:**
-  - *PitchforkLauncher may list itself.* `MainActivity.queryIntentActivities` matches this app's
-    own `MainActivity` (it declares `LEANBACK_LAUNCHER`) and nothing filters `packageName ==
-    this.packageName` -- confirmed in the source, but whether this is actually visible/annoying in
-    practice (Settings -> Applications, or seeded into a "TV Applications" category on fresh
-    install) hasn't been checked on device. If it's there and it bugs you, one-line filter in
-    `getApplications`. Launching it is harmless either way (`singleTask` just brings it to front).
-  - *Fetch `versionName` lazily instead of in the bulk sync.* `buildAppMap` calls
-    `packageManager.getPackageInfo(packageName, 0).versionName` for every installed app on every
-    sync (an extra binder round-trip per app), but `version` is only ever displayed in
-    `ApplicationInfoPanel` when that one panel opens. Moving the fetch to a small on-demand channel
-    method removes N binder calls from cold start -- micro, scales with installed-app count.
-    Alternatively keep it as-is, but then it's a conscious choice rather than an oversight.
-  - *`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes:*
-    `_refreshState()`'s `Future.forEach` over `appsRemovedFromSystem`'s `applicationExists` checks
-    runs one platform-channel round-trip at a time (list is almost always empty, but `Future.wait`
-    would collapse the round-trips when it isn't); `categoriesWithApps` allocates a fresh
-    list + `UnmodifiableListView` per category on every access, so `Selector`s reading it
-    (`categories_panel_page.dart`, `add_to_category_dialog.dart`) always see a new instance and
-    rebuild on every notification regardless of whether anything relevant changed -- a cached
-    wrapper invalidated on mutation would make them properly selective; the system-vs-database diff
-    is an O(n·m) linear scan that a `Set` of package names would make O(n).
-  - *`app_card.dart`'s `_animation.forward()`/`.stop()` calls live inside a `Selector` builder
-    (a `build` method).* Works today because both calls are idempotent, but animation control is a
-    side effect that idiomatically belongs in a focus-change listener (`didChangeDependencies` or a
-    `FocusNode` listener) instead. Nit-level; leave as-is if the current shape is deliberate.
+- **`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.** From the
+  2026-08-07 Kimi review pass, unverified against the running app: `_refreshState()`'s
+  `Future.forEach` over `appsRemovedFromSystem`'s `applicationExists` checks runs one
+  platform-channel round-trip at a time (list is almost always empty, but `Future.wait` would
+  collapse the round-trips when it isn't); `categoriesWithApps` allocates a fresh list +
+  `UnmodifiableListView` per category on every access, so `Selector`s reading it
+  (`categories_panel_page.dart`, `add_to_category_dialog.dart`) always see a new instance and
+  rebuild on every notification regardless of whether anything relevant changed -- a cached wrapper
+  invalidated on mutation would make them properly selective; the system-vs-database diff is an
+  O(n·m) linear scan that a `Set` of package names would make O(n).
 
 ## Done
+
+~~**PitchforkLauncher may list itself.**~~ — fixed (2026-08-09), confirmed on-device first (it did,
+via a mountain-photo banner card matching the app's own `@drawable/banner` exactly):
+`MainActivity.queryIntentActivities` now filters out `it.packageName != packageName`, so its own
+`MainActivity` (which declares `LEANBACK_LAUNCHER`) no longer shows up in a fresh sync. **Explicitly
+not force-removing a stale entry from data synced before this fix existed** -- the app is
+genuinely installed, so the existing `applicationExists()`-gated cleanup in
+`AppsService._refreshState()` correctly leaves it alone (that check exists to protect real
+category placements from being wiped over a transient/incorrect "app looks gone" signal, not to be
+special-cased around); anyone who already has the stale entry removes it the same way as any other
+app they don't want, via the existing hide/remove-from-category flow. Silently deleting existing
+user data as a side effect of a code change, however small, wasn't on the table.
+
+~~**Fetch `versionName` lazily instead of in the bulk sync.**~~ — decided (2026-08-09): not doing
+this. At this app's actual scale (a personal launcher, a few dozen installed apps at most) the
+extra binder round-trip per app is genuinely negligible, and the real cold-start costs in this area
+(icon/banner encoding and decoding) were already addressed separately (see the two entries above).
+Moving `versionName` to an on-demand channel method would still be a reasonable change in the
+abstract, just not worth the added surface for a cost that isn't actually being felt.
+
+~~**`app_card.dart`'s `_animation.forward()`/`.stop()` calls living inside a `Selector` builder.**~~
+— decided (2026-08-09): not doing this. Both calls are idempotent, so calling them from a `build`
+method causes no observable bug -- moving them to a focus-change listener would be marginally more
+idiomatic, but that's a stylistic preference, not a fix for anything broken. Leaving as-is.
 
 ~~**Add the GPL header to `lib/widgets/color_helpers.dart`.**~~ — done (2026-08-09): added, with
 both Fesser's and this project's copyright lines, matching every other source file.
