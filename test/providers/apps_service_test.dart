@@ -23,11 +23,20 @@ import 'package:flauncher/default_app_categories.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:package_info_plus_platform_interface/package_info_data.dart';
+import 'package:package_info_plus_platform_interface/package_info_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import '../mocks.dart';
 import '../mocks.mocks.dart';
 
 void main() {
+  // _initDefaultCategories() reads this to exclude PitchforkLauncher's own package from the
+  // automatic seed -- see the "excludes PitchforkLauncher's own package" test below.
+  setUpAll(() {
+    PackageInfoPlatform.instance = _MockPackageInfoPlatform();
+  });
+
   group("AppsService initialised correctly", () {
     test("with empty database", () async {
       final channel = MockFLauncherChannel();
@@ -35,7 +44,7 @@ void main() {
       final database = MockFLauncherDatabase();
       when(channel.getApplications(any)).thenAnswer((_) => Future.value([
             {
-              'packageName': 'io.sifft.pitchforklauncher',
+              'packageName': 'com.example.app',
               'name': 'FLauncher',
               'version': null,
               'banner': null,
@@ -43,7 +52,7 @@ void main() {
               'sideloaded': false
             },
             {
-              'packageName': 'io.sifft.pitchforklauncher.2',
+              'packageName': 'com.example.app2',
               'name': 'FLauncher 2',
               'version': '2.0.0',
               'banner': null,
@@ -53,7 +62,7 @@ void main() {
           ]));
       when(database.listApplications()).thenAnswer((_) => Future.value([
             fakeApp(
-              packageName: "io.sifft.pitchforklauncher",
+              packageName: "com.example.app",
               name: "FLauncher",
               version: "1.0.0",
               banner: null,
@@ -61,7 +70,7 @@ void main() {
               sideloaded: false,
             ),
             fakeApp(
-              packageName: "io.sifft.pitchforklauncher.2",
+              packageName: "com.example.app2",
               name: "FLauncher 2",
               version: "2.0.0",
               banner: null,
@@ -85,7 +94,7 @@ void main() {
         database.listApplications(),
         database.persistApps([
           AppsCompanion.insert(
-            packageName: "io.sifft.pitchforklauncher",
+            packageName: "com.example.app",
             name: "FLauncher",
             version: "(unknown)",
             banner: Value(null),
@@ -93,7 +102,7 @@ void main() {
             sideloaded: Value(false),
           ),
           AppsCompanion.insert(
-            packageName: "io.sifft.pitchforklauncher.2",
+            packageName: "com.example.app2",
             name: "FLauncher 2",
             version: "2.0.0",
             banner: Value(null),
@@ -118,7 +127,7 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: tvApplicationsCategory.id,
-            appPackageName: "io.sifft.pitchforklauncher",
+            appPackageName: "com.example.app",
             order: 0,
           )
         ]),
@@ -128,12 +137,98 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: nonTvApplicationsCategory.id,
-            appPackageName: "io.sifft.pitchforklauncher.2",
+            appPackageName: "com.example.app2",
             order: 0,
           )
         ]),
         database.listCategoriesWithVisibleApps(),
       ]);
+    });
+
+    test("excludes PitchforkLauncher's own package from the default category seed", () async {
+      final channel = MockFLauncherChannel();
+      when(channel.getAppBanner(any)).thenAnswer((_) => Future.value(null));
+      final database = MockFLauncherDatabase();
+      when(channel.getApplications(any)).thenAnswer((_) => Future.value([
+            {
+              'packageName': 'io.sifft.pitchforklauncher',
+              'name': 'PitchforkLauncher',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false,
+            },
+            {
+              'packageName': 'com.example.app',
+              'name': 'Some App',
+              'version': null,
+              'banner': null,
+              'icon': null,
+              'sideloaded': false,
+            },
+          ]));
+      when(database.listApplications()).thenAnswer((_) => Future.value([
+            fakeApp(
+              packageName: "io.sifft.pitchforklauncher",
+              name: "PitchforkLauncher",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+            fakeApp(
+              packageName: "com.example.app",
+              name: "Some App",
+              version: "1.0.0",
+              banner: null,
+              icon: null,
+              sideloaded: false,
+            ),
+          ]));
+      final tvApplicationsCategory = fakeCategory(name: "TV Applications");
+      when(database.listCategoriesWithVisibleApps()).thenAnswer((_) => Future.value([
+            CategoryWithApps(tvApplicationsCategory, []),
+          ]));
+      when(database.nextAppCategoryOrder(any)).thenAnswer((_) => Future.value(0));
+      when(database.transaction(any)).thenAnswer((realInvocation) => realInvocation.positionalArguments[0]());
+      when(database.wasCreated).thenReturn(true);
+      AppsService(channel, database);
+      await untilCalled(channel.addAppsChangedListener(any));
+
+      // Both apps get persisted to the apps table (still shows up in the Applications panel like
+      // any other installed app) -- only the category seed skips its own package.
+      verify(database.persistApps([
+        AppsCompanion.insert(
+          packageName: "io.sifft.pitchforklauncher",
+          name: "PitchforkLauncher",
+          version: "(unknown)",
+          banner: Value(null),
+          icon: Value(null),
+          sideloaded: Value(false),
+        ),
+        AppsCompanion.insert(
+          packageName: "com.example.app",
+          name: "Some App",
+          version: "(unknown)",
+          banner: Value(null),
+          icon: Value(null),
+          sideloaded: Value(false),
+        ),
+      ]));
+      verify(database.insertAppsCategories([
+        AppsCategoriesCompanion.insert(
+          categoryId: tvApplicationsCategory.id,
+          appPackageName: "com.example.app",
+          order: 0,
+        )
+      ]));
+      verifyNever(database.insertAppsCategories([
+        AppsCategoriesCompanion.insert(
+          categoryId: tvApplicationsCategory.id,
+          appPackageName: "io.sifft.pitchforklauncher",
+          order: 0,
+        )
+      ]));
     });
 
     test("sorts matched apps into topical categories, falling back to TV/Non-TV split", () async {
@@ -150,7 +245,7 @@ void main() {
               'sideloaded': false
             },
             {
-              'packageName': 'io.sifft.pitchforklauncher',
+              'packageName': 'com.example.app',
               'name': 'FLauncher',
               'version': null,
               'banner': null,
@@ -158,7 +253,7 @@ void main() {
               'sideloaded': false
             },
             {
-              'packageName': 'io.sifft.pitchforklauncher.2',
+              'packageName': 'com.example.app2',
               'name': 'FLauncher 2',
               'version': '2.0.0',
               'banner': null,
@@ -176,7 +271,7 @@ void main() {
               sideloaded: false,
             ),
             fakeApp(
-              packageName: "io.sifft.pitchforklauncher",
+              packageName: "com.example.app",
               name: "FLauncher",
               version: "1.0.0",
               banner: null,
@@ -184,7 +279,7 @@ void main() {
               sideloaded: false,
             ),
             fakeApp(
-              packageName: "io.sifft.pitchforklauncher.2",
+              packageName: "com.example.app2",
               name: "FLauncher 2",
               version: "2.0.0",
               banner: null,
@@ -227,7 +322,7 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: tvApplicationsCategory.id,
-            appPackageName: "io.sifft.pitchforklauncher",
+            appPackageName: "com.example.app",
             order: 0,
           )
         ]),
@@ -237,7 +332,7 @@ void main() {
         database.insertAppsCategories([
           AppsCategoriesCompanion.insert(
             categoryId: nonTvApplicationsCategory.id,
-            appPackageName: "io.sifft.pitchforklauncher.2",
+            appPackageName: "com.example.app2",
             order: 0,
           )
         ]),
@@ -896,4 +991,15 @@ Future<AppsService> _buildInitialisedAppsService(
   clearInteractions(channel);
   clearInteractions(database);
   return appsService;
+}
+
+class _MockPackageInfoPlatform with MockPlatformInterfaceMixin implements PackageInfoPlatform {
+  @override
+  Future<PackageInfoData> getAll({String? baseUrl}) async => PackageInfoData(
+    appName: "PitchforkLauncher",
+    packageName: "io.sifft.pitchforklauncher",
+    version: "1.0.0",
+    buildNumber: "1",
+    buildSignature: "",
+  );
 }

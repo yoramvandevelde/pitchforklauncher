@@ -27,6 +27,7 @@ import 'package:flauncher/flauncher_channel.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class AppsService extends ChangeNotifier {
   final FLauncherChannel _fLauncherChannel;
@@ -94,7 +95,13 @@ class AppsService extends ChangeNotifier {
   // categories loop runs after (i.e. on top of) TV/Non-TV Applications below. Per-category display
   // (grid/row, row height, column count) comes from default_app_categories.dart's
   // defaultCategorySettings, keyed by category name.
+  //
+  // PitchforkLauncher's own package is excluded from this automatic seeding only -- it still shows
+  // up in the Applications panel like any other app, and can be added to a category manually from
+  // there if that's what someone wants. It declares LEANBACK_LAUNCHER, so without this exclusion it
+  // would otherwise land in "TV Applications" automatically on every fresh install.
   Future<void> _initDefaultCategories() => _database.transaction(() async {
+        final ownPackageName = (await PackageInfo.fromPlatform()).packageName;
         final installedByPackageName = {for (final app in _applications) app.packageName: app};
         final matchedByCategory = <String, List<App>>{};
         for (final entry in defaultAppCategories.entries) {
@@ -103,7 +110,9 @@ class AppsService extends ChangeNotifier {
             matchedByCategory.putIfAbsent(entry.value, () => []).add(app);
           }
         }
-        final unmatched = _applications.where((app) => !defaultAppCategories.containsKey(app.packageName));
+        final unmatched = _applications
+            .where((app) => !defaultAppCategories.containsKey(app.packageName))
+            .where((app) => app.packageName != ownPackageName);
 
         await _seedCategory("TV Applications", unmatched.where((app) => app.sideloaded == false));
         await _seedCategory("Non-TV Applications", unmatched.where((app) => app.sideloaded == true));
