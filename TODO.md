@@ -20,10 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **Add `dart format --set-exit-if-changed` as a CI gate.** Recommended by the 2026-08-07 Kimi
-  review pass (`REVIEW.md`). The dedicated reformat pass this was blocked on is done (see Done,
-  below) -- the repo is now a clean baseline, so this is just the CI step itself.
-
 - **At leisure, from the same review:** the accessibility service only consumes `ACTION_UP`
   (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
   through to the foreground app/system while `UP` is hijacked, the classic shape of a
@@ -43,13 +39,16 @@
 
 ## Done
 
-~~**Reformat entire codebase with `dart format` (tall style).**~~ -- done (2026-08-09): running
-`dart format --set-exit-if-changed` today would have failed on 61 files, mostly tests, that hadn't
-been touched since Dart's newer "tall style" formatter (Dart 3.12.2 via Flutter 3.44.8) started
-wanting different indentation/nesting for `when(...).thenAnswer((_) => ...)`-shaped test code. Ran
-`dart format .` across the whole repo as its own dedicated pass -- purely stylistic, no functional
-change. Verified: `flutter analyze --fatal-infos` clean, full test suite (213 tests) passes
-unchanged. Clears the way for the CI gate item above.
+~~**Add `dart format --set-exit-if-changed` as a CI gate.**~~ -- done (2026-08-09), in two steps.
+**Reformat first:** running the format check that day would have failed on 61 files, mostly tests,
+that hadn't been touched since Dart's newer "tall style" formatter (Dart 3.12.2 via Flutter
+3.44.8) started wanting different indentation/nesting for `when(...).thenAnswer((_) => ...)`-shaped
+test code -- ran `dart format .` across the whole repo as its own dedicated pass first, purely
+stylistic, no functional change. **Then the CI gate:** added a "Format check" step
+(`dart format --output=none --set-exit-if-changed .`) to `ci.yml`, right after `flutter pub get`
+and before Analyze, so a badly-formatted PR fails fast before the slower analyze/test/build steps
+run. Verified: `flutter analyze --fatal-infos` clean, full test suite (213 tests) passes unchanged,
+and the exact CI command run locally exits 0 against the now-clean baseline.
 
 ~~**`AppsService` `EventChannel` listener for `PACKAGE_ADDED`/`PACKAGE_CHANGED` was async and
 unserialized.**~~ -- fixed (2026-08-09): two events arriving close together (e.g. an app update,
