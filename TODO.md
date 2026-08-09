@@ -33,35 +33,6 @@
   doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
   the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
 
-- **App-card banners visibly pop in/"blink" on cold start (~100-250ms, noticeable).** Raised
-  2026-08-08 after observing this regression relative to `FLauncher`/earlier Pitchfork. Root cause,
-  traced through the code (not yet profiled on-device): the data itself isn't staggered --
-  `AppsService._init()` awaits the full native `getApplications()` call, banner bytes included,
-  before flipping `initialized` to true and calling `notifyListeners()`
-  (`lib/providers/apps_service.dart:49-69`), and `FLauncher`'s `Consumer<AppsService>`
-  (`lib/flauncher.dart:79`) shows nothing but `_emptyState()` until then -- so there's no
-  "banner missing, then arrives" state at the Dart/data layer. What *is* staggered is image
-  decode: every visible category's `AppCard`s mount in the same layout pass (`ListView.custom`/
-  `GridView.custom` build what's in the initial viewport immediately), and each one paints its
-  banner via a bare `Ink.image(image: MemoryImage(bytes))` (`lib/widgets/app_card.dart:124`) with
-  no `frameBuilder`, no `gaplessPlayback`, no fade, no `cacheWidth`/`cacheHeight` -- so every
-  visible card decodes its PNG banner independently and paints blank (the `Material`'s own
-  background color) until its own decode finishes. Dozens of these resolving within roughly the
-  same short window reads as a single collective flicker rather than a graceful materialization.
-  Likely not a new bug so much as a pre-existing decode cost that only became perceptible once
-  cold start got faster elsewhere (see "Icon/banner encoding blocks the platform thread" in Done)
-  -- the total wait shrank, so this last visible step stopped being absorbed into a longer, less
-  sharply-bounded loading pause. **Considered and rejected: reverting the platform-thread-off
-  fix.** That fix wasn't cosmetic -- blocking Android's main thread during a bulk sync risks real
-  ANRs as the installed-app count grows, an orthogonal and more serious problem than this one;
-  undoing it would reintroduce that risk without actually removing the flicker, since the decode
-  gap already existed before that fix and lives in the Flutter layer, not the threading choice.
-  **Planned fix:** a fade-in on each `AppCard`'s banner once its own decode completes (`Image`'s
-  `frameBuilder`, or an `AnimatedOpacity`/`AnimatedSwitcher` keyed on load state) so the pop-in
-  reads as a soft materialize instead of a flash; possibly paired with `cacheWidth`/`cacheHeight`
-  on the banner `Ink.image` (same "decode smaller, display flat" angle as Perf #2's icon downscale
-  above) to shrink the decode cost itself. To try after the current wallpaper-precrop branch merges.
-
 - **Downscale icons before PNG-encoding them in `drawableToByteArray`.** Flagged by the same
   review. `MainActivity.buildAppMap()` encodes `loadIcon()` output at full intrinsic resolution
   (adaptive icons can be 432x432 or larger) for every installed app on every cold start, even
@@ -127,6 +98,57 @@
     `FocusNode` listener) instead. Nit-level; leave as-is if the current shape is deliberate.
 
 ## Done
+
+~~**App-card banners visibly pop in/"blink" on cold start (~100-250ms, noticeable).**~~ — landed
+(2026-08-09, PR #65) as two independent fixes, after the originally-planned per-card `frameBuilder`
+fade-in (see history below) turned out not to work:
+
+1. **Decode banners/icons at card size, not native resolution.** `Ink.image` was decoding every
+   banner/icon at its full intrinsic size (see `MainActivity.drawableToByteArray`) regardless of
+   how small the card displays it -- `app_card.dart` now wraps the image provider in
+   `ResizeImage.resizeIfNeeded`, targeting an estimate of the card's actual on-screen width derived
+   from the category's own layout settings (grid columns / row height), scaled to physical pixels.
+   Deliberately approximate (ignores `GridView`/`ListView` padding) since a decode-size hint
+   doesn't need to be pixel-exact, and `ResizeImage` never upscales past the source, so an
+   over-estimate just means slightly-less-aggressive downscaling, never blur.
+2. **Cross-fade the loading-to-grid handoff instead of popping in.** The spinner-to-content swap
+   (`FLauncher`'s `Consumer<AppsService>`) was an instant `Consumer` rebuild -- the same kind of
+   pop as the per-banner one, just at the whole-screen level. Replaced with an `AnimatedSwitcher`
+   cross-fade, reusing the existing wallpaper switcher's curve-confinement trick (`Interval(0.0,
+   0.5, ...)` on both `switchInCurve`/`switchOutCurve`, so the wallpaper never shows through
+   mid-transition). **The spinner itself was removed, not delay-shown.** A delay-show variant was
+   built and measured first (only render `_emptyState()` if still loading after 300ms) -- while
+   testing it, logging the grid's actual on-screen Y position over time (not screenshots, which
+   turned out unreliable here: Android's own "starting window" task-snapshot can make a cold
+   relaunch look instantly fully-rendered for the first frame or two) showed the grid sitting a
+   measured, exact 47px lower for the whole transition whenever the spinner was present as an
+   `AnimatedSwitcher` sibling. Root cause: `AnimatedSwitcher`'s default `layoutBuilder` centers
+   non-positioned children in a `Stack`; the loading slot (small) and the grid (fills the viewport)
+   were both non-positioned, so the pair got centered in a box sized to fit both, shifting the
+   taller one down for as long as the outgoing loading slot was still a transition sibling. A
+   `layoutBuilder` forcing `Alignment.topCenter` fixed it (confirmed: 72.0px steady throughout, no
+   jump) and is worth keeping regardless -- but with the spinner gone entirely, there's nothing of
+   consequence left to misalign in the first place, and a launch is normally fast enough
+   (single-digit ms range) that a spinner would only ever flash anyway. The rare genuinely slow
+   load (fresh install seeding default categories, or a device with many more apps) doesn't
+   currently get any loading feedback -- accepted trade-off for the simpler, now-provably-correct
+   version; revisit if that ever actually bites in practice.
+
+**History: what was tried and rejected before landing on the above.** Root cause was originally
+traced to image decode, not staggered data (`AppsService._init()` awaits the full native
+`getApplications()` call, banner bytes included, before flipping `initialized`/`notifyListeners()`
+-- so every visible category's `AppCard`s mount and start decoding their own banner independently
+in the same layout pass, and dozens resolving within a short window reads as one collective
+flicker). Considered and rejected reverting the "icon/banner encoding blocks the platform thread"
+fix (Done, below) -- that fix prevents real ANRs as installed-app count grows, an orthogonal and
+more serious problem; the decode gap predates it and lives in the Flutter layer regardless. First
+attempted fix was a per-`AppCard` fade-in (`AnimatedOpacity` wrapping `Ink.image`, driven by an
+`ImageStreamListener` on the resolved image), tested manually on-device: it didn't produce a
+visible fade and made loading *feel* slower. Root cause of that failure: `Ink`/`Ink.image` paint
+their image via the ambient `Material`'s ink-feature controller (so ripples can render over the
+image), a separate paint path from normal `RenderObject` compositing -- an ancestor `Opacity`/
+`AnimatedOpacity` has no effect on what `Ink.image` actually paints. Cleanly reverted rather than
+patched further, and the whole-screen approach above was built instead.
 
 ~~**Pre-crop `assets/default_wallpaper.jpg` to 1920x1080.**~~ — done (2026-08-08): the bundled
 asset was 4000x2491 (~3.9 MB), above the Google TV Streamer 4K's actual 1920x1080 render size
