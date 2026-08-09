@@ -59,16 +59,29 @@
 ## Done
 
 ~~**PitchforkLauncher may list itself.**~~ — fixed (2026-08-09), confirmed on-device first (it did,
-via a mountain-photo banner card matching the app's own `@drawable/banner` exactly):
-`MainActivity.queryIntentActivities` now filters out `it.packageName != packageName`, so its own
-`MainActivity` (which declares `LEANBACK_LAUNCHER`) no longer shows up in a fresh sync. **Explicitly
-not force-removing a stale entry from data synced before this fix existed** -- the app is
-genuinely installed, so the existing `applicationExists()`-gated cleanup in
-`AppsService._refreshState()` correctly leaves it alone (that check exists to protect real
-category placements from being wiped over a transient/incorrect "app looks gone" signal, not to be
-special-cased around); anyone who already has the stale entry removes it the same way as any other
-app they don't want, via the existing hide/remove-from-category flow. Silently deleting existing
-user data as a side effect of a code change, however small, wasn't on the table.
+via a mountain-photo banner card matching the app's own `@drawable/banner` exactly). Went through
+two wrong shapes before landing here -- worth recording why, since both looked reasonable in
+isolation:
+- First attempt: filter it out of `MainActivity.queryIntentActivities` entirely
+  (`it.packageName != packageName`). Too broad -- this also removed it from `getApplications()`'s
+  result, so it stopped showing up in the Applications panel too, not just off the home screen.
+  Nobody should be *unable* to have it there if they want it.
+- Second attempt (still too much): keep it out of `queryIntentActivities`, but also force-delete
+  any already-synced stale entry from the database via a new `_refreshState()` special case. Wrong
+  on principle, not just scope -- this app doesn't remove things from a user's database as a side
+  effect of a code change, ever. The database isn't ours to edit once it exists.
+- **What actually shipped:** `queryIntentActivities` is unchanged -- PitchforkLauncher's own
+  package still flows through `getApplications()` normally, gets persisted like any other app, and
+  shows up in the Applications panel same as before. The only change is in
+  `AppsService._initDefaultCategories()` (the one-time seed that only runs on a genuinely fresh
+  install/database): its own package is excluded from the automatic TV/Non-TV sort, so it doesn't
+  land in a default category by itself. Nothing stops anyone from adding it to a category manually
+  from the Applications panel afterward, exactly like any other app -- this only skips the
+  *automatic* placement, it doesn't block the outcome. Added a regression test
+  (`apps_service_test.dart`: "excludes PitchforkLauncher's own package from the default category
+  seed") asserting both halves: it's still `persistApps`'d, but never `insertAppsCategories`'d by
+  the seed. Verified on a genuinely fresh emulator install (`just uninstall` + `just build-install`):
+  no self-entry on the home screen.
 
 ~~**Fetch `versionName` lazily instead of in the bulk sync.**~~ — decided (2026-08-09): not doing
 this. At this app's actual scale (a personal launcher, a few dozen installed apps at most) the
