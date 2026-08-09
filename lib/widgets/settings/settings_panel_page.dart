@@ -60,10 +60,7 @@ class SettingsPanelPage extends StatelessWidget {
             children: [
               Icon(Icons.category),
               Container(width: 8),
-              Text(
-                "Categories",
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text("Categories", style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
           onPressed: () =>
@@ -74,10 +71,7 @@ class SettingsPanelPage extends StatelessWidget {
             children: [
               Icon(Icons.wallpaper_outlined),
               Container(width: 8),
-              Text(
-                "Wallpaper",
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text("Wallpaper", style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
           onPressed: () =>

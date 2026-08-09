@@ -20,7 +20,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-const longPressableKeys = [LogicalKeyboardKey.select, LogicalKeyboardKey.enter, LogicalKeyboardKey.gameButtonA];
+const longPressableKeys = [
+  LogicalKeyboardKey.select,
+  LogicalKeyboardKey.enter,
+  LogicalKeyboardKey.gameButtonA,
+];
 
 class FocusKeyboardListener extends StatefulWidget {
   final WidgetBuilder builder;
@@ -43,10 +47,10 @@ class _FocusKeyboardListenerState extends State<FocusKeyboardListener> {
 
   @override
   Widget build(BuildContext context) => Focus(
-        canRequestFocus: false,
-        onKeyEvent: (_, keyEvent) => _handleKey(context, keyEvent),
-        child: Builder(builder: widget.builder),
-      );
+    canRequestFocus: false,
+    onKeyEvent: (_, keyEvent) => _handleKey(context, keyEvent),
+    child: Builder(builder: widget.builder),
+  );
 
   KeyEventResult _handleKey(BuildContext context, KeyEvent keyEvent) {
     switch (keyEvent) {
@@ -60,7 +64,11 @@ class _FocusKeyboardListenerState extends State<FocusKeyboardListener> {
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _keyDownEvent(BuildContext context, LogicalKeyboardKey key, {required bool isRepeat}) {
+  KeyEventResult _keyDownEvent(
+    BuildContext context,
+    LogicalKeyboardKey key, {
+    required bool isRepeat,
+  }) {
     if (!longPressableKeys.contains(key)) {
       return widget.onPressed?.call(key) ?? KeyEventResult.ignored;
     }
@@ -82,5 +90,7 @@ class _FocusKeyboardListenerState extends State<FocusKeyboardListener> {
     return KeyEventResult.ignored;
   }
 
-  bool _longPress() => _keyDownAt != null && DateTime.now().millisecondsSinceEpoch - _keyDownAt! >= 500;
+  bool _longPress() =>
+      _keyDownAt != null &&
+      DateTime.now().millisecondsSinceEpoch - _keyDownAt! >= 500;
 }

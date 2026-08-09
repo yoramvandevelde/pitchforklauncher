@@ -25,37 +25,49 @@ import 'package:http/testing.dart';
 
 void main() {
   group("randomPhoto", () {
-    test("follows the redirect, captures the photo id and returns the bytes", () async {
-      final client = MockClient((request) async {
-        if (request.url.host == "picsum.photos") {
-          return Response(
-            "",
-            302,
-            headers: {"location": "https://fastly.picsum.photos/id/568/300/200.jpg?hmac=abc"},
-          );
-        }
-        return Response.bytes(Uint8List.fromList([0x01, 0x02]), 200);
-      });
-      final picsumService = PicsumService(client: client);
+    test(
+      "follows the redirect, captures the photo id and returns the bytes",
+      () async {
+        final client = MockClient((request) async {
+          if (request.url.host == "picsum.photos") {
+            return Response(
+              "",
+              302,
+              headers: {
+                "location":
+                    "https://fastly.picsum.photos/id/568/300/200.jpg?hmac=abc",
+              },
+            );
+          }
+          return Response.bytes(Uint8List.fromList([0x01, 0x02]), 200);
+        });
+        final picsumService = PicsumService(client: client);
 
-      final photo = await picsumService.randomPhoto();
+        final photo = await picsumService.randomPhoto();
 
-      expect(photo.id, 568);
-      expect(photo.bytes, [0x01, 0x02]);
-    });
+        expect(photo.id, 568);
+        expect(photo.bytes, [0x01, 0x02]);
+      },
+    );
 
     test("throws when the response isn't a redirect", () async {
       final client = MockClient((request) async => Response("", 200));
       final picsumService = PicsumService(client: client);
 
-      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
+      expect(
+        () => picsumService.randomPhoto(),
+        throwsA(isA<PicsumException>()),
+      );
     });
 
     test("throws when the redirect has no Location header", () async {
       final client = MockClient((request) async => Response("", 302));
       final picsumService = PicsumService(client: client);
 
-      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
+      expect(
+        () => picsumService.randomPhoto(),
+        throwsA(isA<PicsumException>()),
+      );
     });
 
     test("throws when the resolved photo request isn't a 200", () async {
@@ -64,41 +76,71 @@ void main() {
           return Response(
             "",
             302,
-            headers: {"location": "https://fastly.picsum.photos/id/568/300/200.jpg?hmac=abc"},
+            headers: {
+              "location":
+                  "https://fastly.picsum.photos/id/568/300/200.jpg?hmac=abc",
+            },
           );
         }
         return Response("", 500);
       });
       final picsumService = PicsumService(client: client);
 
-      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
+      expect(
+        () => picsumService.randomPhoto(),
+        throwsA(isA<PicsumException>()),
+      );
     });
 
-    test("throws PicsumException, not a raw FormatException, when the id segment isn't numeric", () async {
-      final client = MockClient((request) async {
-        if (request.url.host == "picsum.photos") {
+    test(
+      "throws PicsumException, not a raw FormatException, when the id segment isn't numeric",
+      () async {
+        final client = MockClient((request) async {
+          if (request.url.host == "picsum.photos") {
+            return Response(
+              "",
+              302,
+              headers: {
+                "location":
+                    "https://fastly.picsum.photos/id/not-a-number/300/200.jpg?hmac=abc",
+              },
+            );
+          }
+          return Response.bytes(Uint8List.fromList([0x01]), 200);
+        });
+        final picsumService = PicsumService(client: client);
+
+        expect(
+          () => picsumService.randomPhoto(),
+          throwsA(isA<PicsumException>()),
+        );
+      },
+    );
+
+    test(
+      "throws PicsumException instead of hanging when the request times out",
+      () async {
+        final client = MockClient((request) async {
+          await Future.delayed(Duration(seconds: 5));
           return Response(
             "",
             302,
-            headers: {"location": "https://fastly.picsum.photos/id/not-a-number/300/200.jpg?hmac=abc"},
+            headers: {
+              "location": "https://fastly.picsum.photos/id/568/300/200.jpg",
+            },
           );
-        }
-        return Response.bytes(Uint8List.fromList([0x01]), 200);
-      });
-      final picsumService = PicsumService(client: client);
+        });
+        final picsumService = PicsumService(
+          client: client,
+          timeout: Duration(milliseconds: 20),
+        );
 
-      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
-    });
-
-    test("throws PicsumException instead of hanging when the request times out", () async {
-      final client = MockClient((request) async {
-        await Future.delayed(Duration(seconds: 5));
-        return Response("", 302, headers: {"location": "https://fastly.picsum.photos/id/568/300/200.jpg"});
-      });
-      final picsumService = PicsumService(client: client, timeout: Duration(milliseconds: 20));
-
-      expect(() => picsumService.randomPhoto(), throwsA(isA<PicsumException>()));
-    });
+        expect(
+          () => picsumService.randomPhoto(),
+          throwsA(isA<PicsumException>()),
+        );
+      },
+    );
   });
 
   // Width/height come from PlatformDispatcher.instance.implicitView, which isn't controllable
@@ -106,20 +148,23 @@ void main() {
   // of an active testWidgets pump cycle) -- these assertions deliberately only pin down what
   // actually matters here: the /id/{id}/ path and the exact query-string filter construction.
   group("photoById", () {
-    test("fetches without query params when no filters are requested", () async {
-      Uri? capturedUri;
-      final client = MockClient((request) async {
-        capturedUri = request.url;
-        return Response.bytes(Uint8List.fromList([0x03]), 200);
-      });
-      final picsumService = PicsumService(client: client);
+    test(
+      "fetches without query params when no filters are requested",
+      () async {
+        Uri? capturedUri;
+        final client = MockClient((request) async {
+          capturedUri = request.url;
+          return Response.bytes(Uint8List.fromList([0x03]), 200);
+        });
+        final picsumService = PicsumService(client: client);
 
-      final bytes = await picsumService.photoById(568);
+        final bytes = await picsumService.photoById(568);
 
-      expect(capturedUri!.pathSegments.take(2), ["id", "568"]);
-      expect(capturedUri!.query, "");
-      expect(bytes, [0x03]);
-    });
+        expect(capturedUri!.pathSegments.take(2), ["id", "568"]);
+        expect(capturedUri!.query, "");
+        expect(bytes, [0x03]);
+      },
+    );
 
     test("builds a bare grayscale flag combined with blur", () async {
       Uri? capturedUri;
@@ -153,17 +198,29 @@ void main() {
       final client = MockClient((request) async => Response("", 404));
       final picsumService = PicsumService(client: client);
 
-      expect(() => picsumService.photoById(568), throwsA(isA<PicsumException>()));
+      expect(
+        () => picsumService.photoById(568),
+        throwsA(isA<PicsumException>()),
+      );
     });
 
-    test("throws PicsumException instead of hanging when the request times out", () async {
-      final client = MockClient((request) async {
-        await Future.delayed(Duration(seconds: 5));
-        return Response.bytes(Uint8List.fromList([0x06]), 200);
-      });
-      final picsumService = PicsumService(client: client, timeout: Duration(milliseconds: 20));
+    test(
+      "throws PicsumException instead of hanging when the request times out",
+      () async {
+        final client = MockClient((request) async {
+          await Future.delayed(Duration(seconds: 5));
+          return Response.bytes(Uint8List.fromList([0x06]), 200);
+        });
+        final picsumService = PicsumService(
+          client: client,
+          timeout: Duration(milliseconds: 20),
+        );
 
-      expect(() => picsumService.photoById(568), throwsA(isA<PicsumException>()));
-    });
+        expect(
+          () => picsumService.photoById(568),
+          throwsA(isA<PicsumException>()),
+        );
+      },
+    );
   });
 }

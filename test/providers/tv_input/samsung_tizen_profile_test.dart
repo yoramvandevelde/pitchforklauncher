@@ -95,20 +95,23 @@ void main() {
     expect(uri.queryParameters.containsKey("token"), isFalse);
   });
 
-  test("resends an existing token as a query param when one is already known", () async {
-    final urls = <String>[];
-    final profile = _profileConnectingTo(socket, capturedUrls: urls);
-    when(socket.first).thenAnswer((_) async => _channelConnectMessage());
+  test(
+    "resends an existing token as a query param when one is already known",
+    () async {
+      final urls = <String>[];
+      final profile = _profileConnectingTo(socket, capturedUrls: urls);
+      when(socket.first).thenAnswer((_) async => _channelConnectMessage());
 
-    await profile.selectInput({
-      "host": "10.10.70.1",
-      "key": "KEY_HDMI1",
-      "token": "already-paired-token",
-    });
+      await profile.selectInput({
+        "host": "10.10.70.1",
+        "key": "KEY_HDMI1",
+        "token": "already-paired-token",
+      });
 
-    final uri = Uri.parse(urls.single);
-    expect(uri.queryParameters["token"], "already-paired-token");
-  });
+      final uri = Uri.parse(urls.single);
+      expect(uri.queryParameters["token"], "already-paired-token");
+    },
+  );
 
   test("sends a Click command for the configured key", () async {
     final profile = _profileConnectingTo(socket);
@@ -116,7 +119,9 @@ void main() {
 
     await profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"});
 
-    final sent = jsonDecode(verify(socket.add(captureAny)).captured.single as String) as Map<String, dynamic>;
+    final sent =
+        jsonDecode(verify(socket.add(captureAny)).captured.single as String)
+            as Map<String, dynamic>;
     expect(sent["method"], "ms.remote.control");
     expect(sent["params"], {
       "Cmd": "Click",
@@ -126,43 +131,55 @@ void main() {
     });
   });
 
-  test("throws StateError when the TV reports ms.channel.unauthorized", () async {
-    final profile = _profileConnectingTo(socket);
-    when(socket.first).thenAnswer(
-      (_) async => jsonEncode({"event": "ms.channel.unauthorized"}),
-    );
+  test(
+    "throws StateError when the TV reports ms.channel.unauthorized",
+    () async {
+      final profile = _profileConnectingTo(socket);
+      when(socket.first).thenAnswer(
+        (_) async => jsonEncode({"event": "ms.channel.unauthorized"}),
+      );
 
-    await expectLater(
-      () => profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"}),
-      throwsStateError,
-    );
-  });
+      await expectLater(
+        () => profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"}),
+        throwsStateError,
+      );
+    },
+  );
 
-  test("returns the real pairing token from data.token, not the decoy under data.clients", () async {
-    final profile = _profileConnectingTo(socket);
-    when(socket.first).thenAnswer(
-      (_) async => _channelConnectMessage(token: "real-pairing-token"),
-    );
+  test(
+    "returns the real pairing token from data.token, not the decoy under data.clients",
+    () async {
+      final profile = _profileConnectingTo(socket);
+      when(socket.first).thenAnswer(
+        (_) async => _channelConnectMessage(token: "real-pairing-token"),
+      );
 
-    final result = await profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"});
+      final result = await profile.selectInput({
+        "host": "10.10.70.1",
+        "key": "KEY_HDMI1",
+      });
 
-    expect(result, {"token": "real-pairing-token"});
-  });
+      expect(result, {"token": "real-pairing-token"});
+    },
+  );
 
   test("returns null when the TV's response carries no token", () async {
     final profile = _profileConnectingTo(socket);
     when(socket.first).thenAnswer((_) async => _channelConnectMessage());
 
-    final result = await profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"});
+    final result = await profile.selectInput({
+      "host": "10.10.70.1",
+      "key": "KEY_HDMI1",
+    });
 
     expect(result, isNull);
   });
 
   test("closes the socket even when the TV denies the connection", () async {
     final profile = _profileConnectingTo(socket);
-    when(socket.first).thenAnswer(
-      (_) async => jsonEncode({"event": "ms.channel.unauthorized"}),
-    );
+    when(
+      socket.first,
+    ).thenAnswer((_) async => jsonEncode({"event": "ms.channel.unauthorized"}));
 
     await expectLater(
       () => profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"}),

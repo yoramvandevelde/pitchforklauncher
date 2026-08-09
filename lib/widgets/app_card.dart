@@ -31,7 +31,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-const _validationKeys = [LogicalKeyboardKey.select, LogicalKeyboardKey.enter, LogicalKeyboardKey.gameButtonA];
+const _validationKeys = [
+  LogicalKeyboardKey.select,
+  LogicalKeyboardKey.enter,
+  LogicalKeyboardKey.gameButtonA,
+];
 
 class AppCard extends StatefulWidget {
   final Category category;
@@ -58,9 +62,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   MemoryImage? _imageProvider;
   late final AnimationController _animation = AnimationController(
     vsync: this,
-    duration: Duration(
-      milliseconds: 800,
-    ),
+    duration: Duration(milliseconds: 800),
   );
   Color _lastBorderColor = Colors.white;
 
@@ -115,151 +117,172 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   }
 
   ImageProvider _cachedImage(BuildContext context, Uint8List bytes) =>
-      ResizeImage.resizeIfNeeded(_cacheWidth(context), null, _cachedMemoryImage(bytes));
+      ResizeImage.resizeIfNeeded(
+        _cacheWidth(context),
+        null,
+        _cachedMemoryImage(bytes),
+      );
 
   @override
   Widget build(BuildContext context) => FocusKeyboardListener(
-        onPressed: (key) => _onPressed(context, key),
-        onLongPress: (key) => _onLongPress(context, key),
-        builder: (context) => AspectRatio(
-          aspectRatio: 16 / 9,
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            transformAlignment: Alignment.center,
-            transform: _scaleTransform(context),
-            child: Material(
-              borderRadius: BorderRadius.circular(8),
-              clipBehavior: Clip.antiAlias,
-              elevation: Focus.of(context).hasFocus ? 16 : 0,
-              shadowColor: Colors.black,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  InkWell(
-                    autofocus: widget.autofocus,
-                    focusColor: Colors.transparent,
-                    onTap: () => _onPressed(context, null),
-                    onLongPress: () => _onLongPress(context, null),
-                    child: widget.application.banner != null
-                        ? Ink.image(image: _cachedImage(context, widget.application.banner!), fit: BoxFit.cover)
-                        : Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: Ink.image(
-                                    image: _cachedImage(context, widget.application.icon!),
-                                    height: double.infinity,
-                                  ),
+    onPressed: (key) => _onPressed(context, key),
+    onLongPress: (key) => _onLongPress(context, key),
+    builder: (context) => AspectRatio(
+      aspectRatio: 16 / 9,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        transformAlignment: Alignment.center,
+        transform: _scaleTransform(context),
+        child: Material(
+          borderRadius: BorderRadius.circular(8),
+          clipBehavior: Clip.antiAlias,
+          elevation: Focus.of(context).hasFocus ? 16 : 0,
+          shadowColor: Colors.black,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              InkWell(
+                autofocus: widget.autofocus,
+                focusColor: Colors.transparent,
+                onTap: () => _onPressed(context, null),
+                onLongPress: () => _onLongPress(context, null),
+                child: widget.application.banner != null
+                    ? Ink.image(
+                        image: _cachedImage(
+                          context,
+                          widget.application.banner!,
+                        ),
+                        fit: BoxFit.cover,
+                      )
+                    : Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Ink.image(
+                                image: _cachedImage(
+                                  context,
+                                  widget.application.icon!,
                                 ),
-                                Flexible(
-                                  flex: 3,
-                                  child: Padding(
-                                    padding: EdgeInsets.only(left: 8),
-                                    child: Text(
-                                      widget.application.name,
-                                      style: Theme.of(context).textTheme.bodySmall,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 3,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                  ),
-                  if (_moving) ..._arrows(),
-                  IgnorePointer(
-                    child: AnimatedOpacity(
-                      duration: Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      opacity: Focus.of(context).hasFocus ? 0 : 0.10,
-                      child: Container(color: Colors.black),
-                    ),
-                  ),
-                  Selector<SettingsService, bool>(
-                    selector: (_, settingsService) => settingsService.appHighlightAnimationEnabled,
-                    builder: (context, appHighlightAnimationEnabled, _) {
-                      final hasFocus = Focus.of(context).hasFocus;
-                      // Only the genuinely focused card needs to actually tick -- every other
-                      // card's border is always null below, so ticking it too would just repaint
-                      // an unchanging result at 60fps for no visible difference. Stopping (not
-                      // resetting) here means a card that loses and regains focus resumes the
-                      // color cycle from wherever it left off, same as it always has.
-                      if (appHighlightAnimationEnabled && hasFocus) {
-                        _animation.forward();
-                      } else {
-                        _animation.stop();
-                      }
-                      if (appHighlightAnimationEnabled) {
-                        return AnimatedBuilder(
-                          animation: _animation,
-                          builder: (context, child) => IgnorePointer(
-                            child: AnimatedContainer(
-                              duration: Duration(milliseconds: 200),
-                              curve: Curves.easeInOut,
-                              decoration: BoxDecoration(
-                                border: hasFocus
-                                    ? Border.all(
-                                        color: _lastBorderColor =
-                                            computeBorderColor(_animation.value, _lastBorderColor),
-                                        width: 3)
-                                    : null,
-                                borderRadius: BorderRadius.circular(8),
+                                height: double.infinity,
                               ),
                             ),
-                          ),
-                        );
-                      }
-                      return SizedBox();
-                    },
-                  ),
-                ],
+                            Flexible(
+                              flex: 3,
+                              child: Padding(
+                                padding: EdgeInsets.only(left: 8),
+                                child: Text(
+                                  widget.application.name,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
               ),
-            ),
+              if (_moving) ..._arrows(),
+              IgnorePointer(
+                child: AnimatedOpacity(
+                  duration: Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  opacity: Focus.of(context).hasFocus ? 0 : 0.10,
+                  child: Container(color: Colors.black),
+                ),
+              ),
+              Selector<SettingsService, bool>(
+                selector: (_, settingsService) =>
+                    settingsService.appHighlightAnimationEnabled,
+                builder: (context, appHighlightAnimationEnabled, _) {
+                  final hasFocus = Focus.of(context).hasFocus;
+                  // Only the genuinely focused card needs to actually tick -- every other
+                  // card's border is always null below, so ticking it too would just repaint
+                  // an unchanging result at 60fps for no visible difference. Stopping (not
+                  // resetting) here means a card that loses and regains focus resumes the
+                  // color cycle from wherever it left off, same as it always has.
+                  if (appHighlightAnimationEnabled && hasFocus) {
+                    _animation.forward();
+                  } else {
+                    _animation.stop();
+                  }
+                  if (appHighlightAnimationEnabled) {
+                    return AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, child) => IgnorePointer(
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 200),
+                          curve: Curves.easeInOut,
+                          decoration: BoxDecoration(
+                            border: hasFocus
+                                ? Border.all(
+                                    color: _lastBorderColor =
+                                        computeBorderColor(
+                                          _animation.value,
+                                          _lastBorderColor,
+                                        ),
+                                    width: 3,
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return SizedBox();
+                },
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   Matrix4 _scaleTransform(BuildContext context) {
     final scale = _moving
         ? 1.0
         : Focus.of(context).hasFocus
-            ? 1.1
-            : 1.0;
+        ? 1.1
+        : 1.0;
     return Matrix4.diagonal3Values(scale, scale, 1.0);
   }
 
   List<Widget> _arrows() => [
-        _arrow(Alignment.centerLeft, Icons.keyboard_arrow_left),
-        _arrow(Alignment.topCenter, Icons.keyboard_arrow_up),
-        _arrow(Alignment.bottomCenter, Icons.keyboard_arrow_down),
-        _arrow(Alignment.centerRight, Icons.keyboard_arrow_right),
-      ];
+    _arrow(Alignment.centerLeft, Icons.keyboard_arrow_left),
+    _arrow(Alignment.topCenter, Icons.keyboard_arrow_up),
+    _arrow(Alignment.bottomCenter, Icons.keyboard_arrow_down),
+    _arrow(Alignment.centerRight, Icons.keyboard_arrow_right),
+  ];
 
   Widget _arrow(Alignment alignment, IconData icon) => Align(
-        alignment: alignment,
-        child: Padding(
-          padding: EdgeInsets.all(4),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
-            ),
-            child: Icon(
-              icon,
-              size: 16,
-            ),
-          ),
+    alignment: alignment,
+    child: Padding(
+      padding: EdgeInsets.all(4),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
         ),
-      );
+        child: Icon(icon, size: 16),
+      ),
+    ),
+  );
 
   KeyEventResult _onPressed(BuildContext context, LogicalKeyboardKey? key) {
     if (_moving) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => Scrollable.ensureVisible(context,
-          alignment: 0.1, duration: Duration(milliseconds: 100), curve: Curves.easeInOut));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => Scrollable.ensureVisible(
+          context,
+          alignment: 0.1,
+          duration: Duration(milliseconds: 100),
+          curve: Curves.easeInOut,
+        ),
+      );
       if (key == LogicalKeyboardKey.arrowLeft) {
         widget.onMove(AxisDirection.left);
       } else if (key == LogicalKeyboardKey.arrowUp) {
@@ -302,7 +325,8 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     } else if (result == ApplicationInfoPanelResult.moveApp) {
       await showDialog<void>(
         context: context,
-        builder: (_) => AddToCategoryDialog(widget.application, moveFrom: widget.category),
+        builder: (_) =>
+            AddToCategoryDialog(widget.application, moveFrom: widget.category),
       );
     }
   }

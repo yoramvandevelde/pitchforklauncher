@@ -45,7 +45,9 @@ void main() {
     expect(Focus.of(tester.element(find.text("Random"))).hasFocus, isTrue);
   });
 
-  testWidgets("'Random' calls randomFromPicsum, not reapplyPicsumFilters", (tester) async {
+  testWidgets("'Random' calls randomFromPicsum, not reapplyPicsumFilters", (
+    tester,
+  ) async {
     final wallpaperService = MockWallpaperService();
     await _pumpWithControlBar(tester, wallpaperService, MockAppsService());
 
@@ -53,23 +55,40 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(wallpaperService.randomFromPicsum());
-    verifyNever(wallpaperService.reapplyPicsumFilters(grayscale: anyNamed("grayscale"), blur: anyNamed("blur")));
+    verifyNever(
+      wallpaperService.reapplyPicsumFilters(
+        grayscale: anyNamed("grayscale"),
+        blur: anyNamed("blur"),
+      ),
+    );
   });
 
-  testWidgets("switches reflect the service's current filter state", (tester) async {
+  testWidgets("switches reflect the service's current filter state", (
+    tester,
+  ) async {
     final wallpaperService = MockWallpaperService();
-    await _pumpWithControlBar(tester, wallpaperService, MockAppsService(), grayscale: true, blurEnabled: true);
+    await _pumpWithControlBar(
+      tester,
+      wallpaperService,
+      MockAppsService(),
+      grayscale: true,
+      blurEnabled: true,
+    );
 
     for (final switchWidget in tester.widgetList<Switch>(find.byType(Switch))) {
       expect(switchWidget.value, isTrue);
     }
   });
 
-  testWidgets("toggling 'Black & White' calls reapplyPicsumFilters", (tester) async {
+  testWidgets("toggling 'Black & White' calls reapplyPicsumFilters", (
+    tester,
+  ) async {
     final wallpaperService = MockWallpaperService();
     await _pumpWithControlBar(tester, wallpaperService, MockAppsService());
 
-    await tester.tap(find.byType(Switch).at(0)); // Black & White is the first switch
+    await tester.tap(
+      find.byType(Switch).at(0),
+    ); // Black & White is the first switch
     await tester.pumpAndSettle();
 
     verify(wallpaperService.reapplyPicsumFilters(grayscale: true, blur: null));
@@ -85,17 +104,27 @@ void main() {
     verify(wallpaperService.reapplyPicsumFilters(grayscale: false, blur: 4));
   });
 
-  testWidgets("toggling Blur while Black & White is already on combines both in one call", (tester) async {
-    final wallpaperService = MockWallpaperService();
-    await _pumpWithControlBar(tester, wallpaperService, MockAppsService(), grayscale: true);
+  testWidgets(
+    "toggling Blur while Black & White is already on combines both in one call",
+    (tester) async {
+      final wallpaperService = MockWallpaperService();
+      await _pumpWithControlBar(
+        tester,
+        wallpaperService,
+        MockAppsService(),
+        grayscale: true,
+      );
 
-    await tester.tap(find.byType(Switch).at(1)); // Blur is the second switch
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch).at(1)); // Blur is the second switch
+      await tester.pumpAndSettle();
 
-    verify(wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4));
-  });
+      verify(wallpaperService.reapplyPicsumFilters(grayscale: true, blur: 4));
+    },
+  );
 
-  testWidgets("Back closes only the control bar, not the launcher", (tester) async {
+  testWidgets("Back closes only the control bar, not the launcher", (
+    tester,
+  ) async {
     final wallpaperService = MockWallpaperService();
     final appsService = MockAppsService();
     when(appsService.isDefaultLauncher()).thenAnswer((_) => Future.value(true));
@@ -110,14 +139,24 @@ void main() {
     verifyNever(appsService.isDefaultLauncher());
   });
 
-  testWidgets("Black & White and Blur are disabled before any photo has been fetched", (tester) async {
-    final wallpaperService = MockWallpaperService();
-    await _pumpWithControlBar(tester, wallpaperService, MockAppsService(), hasCurrentPicsumPhoto: false);
+  testWidgets(
+    "Black & White and Blur are disabled before any photo has been fetched",
+    (tester) async {
+      final wallpaperService = MockWallpaperService();
+      await _pumpWithControlBar(
+        tester,
+        wallpaperService,
+        MockAppsService(),
+        hasCurrentPicsumPhoto: false,
+      );
 
-    for (final switchWidget in tester.widgetList<Switch>(find.byType(Switch))) {
-      expect(switchWidget.onChanged, isNull);
-    }
-  });
+      for (final switchWidget in tester.widgetList<Switch>(
+        find.byType(Switch),
+      )) {
+        expect(switchWidget.onChanged, isNull);
+      }
+    },
+  );
 }
 
 Future<void> _pumpWithControlBar(
@@ -128,7 +167,9 @@ Future<void> _pumpWithControlBar(
   bool grayscale = false,
   bool blurEnabled = false,
 }) async {
-  when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(hasCurrentPicsumPhoto);
+  when(
+    wallpaperService.hasCurrentPicsumPhoto,
+  ).thenReturn(hasCurrentPicsumPhoto);
   when(wallpaperService.picsumGrayscale).thenReturn(grayscale);
   when(wallpaperService.picsumBlurEnabled).thenReturn(blurEnabled);
   // Replicates flauncher_app.dart's real root BackIntent binding (remote's back-equivalent key ->
@@ -143,10 +184,9 @@ Future<void> _pumpWithControlBar(
       builder: (_, _) => MaterialApp(
         shortcuts: {
           ...WidgetsApp.defaultShortcuts,
-          SingleActivator(LogicalKeyboardKey.gameButtonB): PrioritizedIntents(orderedIntents: [
-            DismissIntent(),
-            BackIntent(),
-          ]),
+          SingleActivator(LogicalKeyboardKey.gameButtonB): PrioritizedIntents(
+            orderedIntents: [DismissIntent(), BackIntent()],
+          ),
         },
         home: Builder(
           builder: (context) => Actions(
@@ -158,6 +198,11 @@ Future<void> _pumpWithControlBar(
     ),
   );
   final homeContext = tester.element(find.byKey(Key("Home")));
-  unawaited(Navigator.of(homeContext, rootNavigator: true).push(WallpaperControlBar.route()));
+  unawaited(
+    Navigator.of(
+      homeContext,
+      rootNavigator: true,
+    ).push(WallpaperControlBar.route()),
+  );
   await tester.pumpAndSettle();
 }

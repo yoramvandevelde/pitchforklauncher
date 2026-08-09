@@ -38,7 +38,13 @@ void main() {
     Color defaultColor = Colors.red;
 
     // then
-    expect(() => computeBorderColor(badTick1, defaultColor), throwsAssertionError);
-    expect(() => computeBorderColor(badTick2, defaultColor), throwsAssertionError);
+    expect(
+      () => computeBorderColor(badTick1, defaultColor),
+      throwsAssertionError,
+    );
+    expect(
+      () => computeBorderColor(badTick2, defaultColor),
+      throwsAssertionError,
+    );
   });
 }

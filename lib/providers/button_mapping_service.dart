@@ -42,14 +42,21 @@ class ButtonMappingService extends ChangeNotifier {
   Future<void> _refresh() async {
     final raw = await _fLauncherChannel.getButtonMappings();
     _mappings = raw
-        .map((e) => ButtonMapping(e["keyCode"] as int, e["label"] as String, e["packageName"] as String))
+        .map(
+          (e) => ButtonMapping(
+            e["keyCode"] as int,
+            e["label"] as String,
+            e["packageName"] as String,
+          ),
+        )
         .toList();
     notifyListeners();
   }
 
   /// Emits the keycode/label of the next remote button press, for the "press a button to map
   /// it" capture flow. See `HomeButtonAccessibilityService`/`ButtonCapture` on the native side.
-  Stream<Map<dynamic, dynamic>> captureNextButton() => _fLauncherChannel.captureNextButton();
+  Stream<Map<dynamic, dynamic>> captureNextButton() =>
+      _fLauncherChannel.captureNextButton();
 
   Future<void> setMapping(int keyCode, String packageName) async {
     await _fLauncherChannel.setButtonMapping(keyCode, packageName);

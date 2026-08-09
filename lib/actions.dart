@@ -60,4 +60,5 @@ class BackIntent extends Intent {
   const BackIntent();
 }
 
-Future<bool> shouldPopScope(BuildContext context) async => !await context.read<AppsService>().isDefaultLauncher();
+Future<bool> shouldPopScope(BuildContext context) async =>
+    !await context.read<AppsService>().isDefaultLauncher();

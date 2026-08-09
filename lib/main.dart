@@ -44,10 +44,9 @@ Future<void> main() async {
   // Not required by the Unsplash License (free to use, attribution merely appreciated), but
   // credited anyway per house convention for bundled assets.
   LicenseRegistry.addLicense(() async* {
-    yield LicenseEntryWithLineBreaks(
-      ['Default wallpaper'],
-      'Photo by Wilhelm Gunkel, used under the Unsplash License.',
-    );
+    yield LicenseEntryWithLineBreaks([
+      'Default wallpaper',
+    ], 'Photo by Wilhelm Gunkel, used under the Unsplash License.');
   });
 
   runZonedGuarded<void>(() async {

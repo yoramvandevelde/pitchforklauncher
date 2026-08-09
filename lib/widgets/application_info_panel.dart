@@ -27,146 +27,160 @@ class ApplicationInfoPanel extends StatelessWidget {
   final Category? category;
   final App application;
 
-  ApplicationInfoPanel({
-    required this.category,
-    required this.application,
-  });
+  ApplicationInfoPanel({required this.category, required this.application});
 
   @override
   Widget build(BuildContext context) => RightPanelDialog(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Row(
+            if (application.icon != null)
+              Image.memory(application.icon!, width: 50),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                application.name,
+                style: Theme.of(context).textTheme.titleLarge,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8),
+        Text(
+          application.packageName,
+          style: Theme.of(context).textTheme.bodySmall,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          "v${application.version}",
+          style: Theme.of(context).textTheme.bodySmall,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Divider(),
+        TextButton(
+          child: Row(
+            children: [
+              Icon(Icons.open_in_new),
+              Container(width: 8),
+              Text("Open", style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+          onPressed: () async {
+            await context.read<AppsService>().launchApp(application);
+            if (!context.mounted) return;
+            Navigator.of(context).pop(ApplicationInfoPanelResult.none);
+          },
+        ),
+        if (category?.sort == CategorySort.manual)
+          TextButton(
+            child: Row(
               children: [
-                if (application.icon != null) Image.memory(application.icon!, width: 50),
-                SizedBox(width: 8),
+                Icon(Icons.open_with),
+                Container(width: 8),
+                Text("Reorder", style: Theme.of(context).textTheme.bodyMedium),
+              ],
+            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(ApplicationInfoPanelResult.reorderApp),
+          ),
+        TextButton(
+          child: Row(
+            children: [
+              Icon(
+                application.hidden
+                    ? Icons.visibility
+                    : Icons.visibility_off_outlined,
+              ),
+              Container(width: 8),
+              Text(
+                application.hidden ? "Unhide" : "Hide",
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          onPressed: () async {
+            if (application.hidden) {
+              await context.read<AppsService>().unHideApplication(application);
+            } else {
+              await context.read<AppsService>().hideApplication(application);
+            }
+            if (!context.mounted) return;
+            Navigator.of(context).pop(ApplicationInfoPanelResult.none);
+          },
+        ),
+        if (category != null)
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.drive_file_move_outlined),
+                Container(width: 8),
+                Text(
+                  "Move to...",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+            onPressed: () =>
+                Navigator.of(context).pop(ApplicationInfoPanelResult.moveApp),
+          ),
+        if (category != null)
+          TextButton(
+            child: Row(
+              children: [
+                Icon(Icons.delete_sweep_outlined),
+                Container(width: 8),
                 Flexible(
                   child: Text(
-                    application.name,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    "Remove from ${category!.name}",
+                    style: Theme.of(context).textTheme.bodyMedium,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            Text(
-              application.packageName,
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              "v${application.version}",
-              style: Theme.of(context).textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Divider(),
-            TextButton(
-              child: Row(
-                children: [
-                  Icon(Icons.open_in_new),
-                  Container(width: 8),
-                  Text("Open", style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-              onPressed: () async {
-                await context.read<AppsService>().launchApp(application);
-                if (!context.mounted) return;
-                Navigator.of(context).pop(ApplicationInfoPanelResult.none);
-              },
-            ),
-            if (category?.sort == CategorySort.manual)
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.open_with),
-                    Container(width: 8),
-                    Text("Reorder", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => Navigator.of(context).pop(ApplicationInfoPanelResult.reorderApp),
-              ),
-            TextButton(
-              child: Row(
-                children: [
-                  Icon(application.hidden ? Icons.visibility : Icons.visibility_off_outlined),
-                  Container(width: 8),
-                  Text(application.hidden ? "Unhide" : "Hide", style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-              onPressed: () async {
-                if (application.hidden) {
-                  await context.read<AppsService>().unHideApplication(application);
-                } else {
-                  await context.read<AppsService>().hideApplication(application);
-                }
-                if (!context.mounted) return;
-                Navigator.of(context).pop(ApplicationInfoPanelResult.none);
-              },
-            ),
-            if (category != null)
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.drive_file_move_outlined),
-                    Container(width: 8),
-                    Text("Move to...", style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-                onPressed: () => Navigator.of(context).pop(ApplicationInfoPanelResult.moveApp),
-              ),
-            if (category != null)
-              TextButton(
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_sweep_outlined),
-                    Container(width: 8),
-                    Flexible(
-                      child: Text(
-                        "Remove from ${category!.name}",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                onPressed: () async {
-                  await context.read<AppsService>().removeFromCategory(application, category!);
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop(ApplicationInfoPanelResult.none);
-                },
-              ),
-            Divider(),
-            TextButton(
-              child: Row(
-                children: [
-                  Icon(Icons.info_outlined),
-                  Container(width: 8),
-                  Text("App info", style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-              onPressed: () => context.read<AppsService>().openAppInfo(application),
-            ),
-            TextButton(
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outlined),
-                  Container(width: 8),
-                  Text("Uninstall", style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-              onPressed: () async {
-                await context.read<AppsService>().uninstallApp(application);
-                if (!context.mounted) return;
-                Navigator.of(context).pop(ApplicationInfoPanelResult.none);
-              },
-            ),
-          ],
+            onPressed: () async {
+              await context.read<AppsService>().removeFromCategory(
+                application,
+                category!,
+              );
+              if (!context.mounted) return;
+              Navigator.of(context).pop(ApplicationInfoPanelResult.none);
+            },
+          ),
+        Divider(),
+        TextButton(
+          child: Row(
+            children: [
+              Icon(Icons.info_outlined),
+              Container(width: 8),
+              Text("App info", style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+          onPressed: () => context.read<AppsService>().openAppInfo(application),
         ),
-      );
+        TextButton(
+          child: Row(
+            children: [
+              Icon(Icons.delete_outlined),
+              Container(width: 8),
+              Text("Uninstall", style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+          onPressed: () async {
+            await context.read<AppsService>().uninstallApp(application);
+            if (!context.mounted) return;
+            Navigator.of(context).pop(ApplicationInfoPanelResult.none);
+          },
+        ),
+      ],
+    ),
+  );
 }
 
 enum ApplicationInfoPanelResult { none, reorderApp, moveApp }

@@ -28,72 +28,76 @@ class WallpaperPanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: [
-          Text("Wallpaper", style: Theme.of(context).textTheme.titleLarge),
-          Divider(),
-          TextButton(
-            autofocus: true,
-            child: Row(
-              children: [
-                Icon(Icons.shuffle),
-                Container(width: 8),
-                Text("Random photo", style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            onPressed: () {
-              final rootNavigator = Navigator.of(context, rootNavigator: true);
-              rootNavigator.pop();
-              rootNavigator.push(WallpaperControlBar.route());
-            },
-          ),
-          TextButton(
-            child: Row(
-              children: [
-                Icon(Icons.gradient),
-                Container(width: 8),
-                Text("Gradient", style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            onPressed: () => Navigator.of(context).pushNamed(GradientPanelPage.routeName),
-          ),
-          TextButton(
-            child: Row(
-              children: [
-                Icon(Icons.insert_drive_file_outlined),
-                Container(width: 8),
-                Text("Custom", style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            onPressed: () async {
-              try {
-                await context.read<WallpaperService>().pickWallpaper();
-              } on NoFileExplorerException {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    duration: Duration(seconds: 8),
-                    content: Row(
-                      children: [
-                        Icon(Icons.error_outline, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text("Please install a file explorer in order to pick an image.")
-                      ],
+    children: [
+      Text("Wallpaper", style: Theme.of(context).textTheme.titleLarge),
+      Divider(),
+      TextButton(
+        autofocus: true,
+        child: Row(
+          children: [
+            Icon(Icons.shuffle),
+            Container(width: 8),
+            Text("Random photo", style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+        onPressed: () {
+          final rootNavigator = Navigator.of(context, rootNavigator: true);
+          rootNavigator.pop();
+          rootNavigator.push(WallpaperControlBar.route());
+        },
+      ),
+      TextButton(
+        child: Row(
+          children: [
+            Icon(Icons.gradient),
+            Container(width: 8),
+            Text("Gradient", style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+        onPressed: () =>
+            Navigator.of(context).pushNamed(GradientPanelPage.routeName),
+      ),
+      TextButton(
+        child: Row(
+          children: [
+            Icon(Icons.insert_drive_file_outlined),
+            Container(width: 8),
+            Text("Custom", style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+        onPressed: () async {
+          try {
+            await context.read<WallpaperService>().pickWallpaper();
+          } on NoFileExplorerException {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                duration: Duration(seconds: 8),
+                content: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text(
+                      "Please install a file explorer in order to pick an image.",
                     ),
-                  ),
-                );
-              }
-            },
-          ),
-          TextButton(
-            child: Row(
-              children: [
-                Icon(Icons.restore),
-                Container(width: 8),
-                Text("Default", style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
-            onPressed: () async => await context.read<WallpaperService>().resetToDefaultWallpaper(),
-          ),
-        ],
-      );
+                  ],
+                ),
+              ),
+            );
+          }
+        },
+      ),
+      TextButton(
+        child: Row(
+          children: [
+            Icon(Icons.restore),
+            Container(width: 8),
+            Text("Default", style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+        onPressed: () async =>
+            await context.read<WallpaperService>().resetToDefaultWallpaper(),
+      ),
+    ],
+  );
 }

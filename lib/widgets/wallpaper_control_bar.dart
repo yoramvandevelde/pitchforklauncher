@@ -27,27 +27,29 @@ class WallpaperControlBar extends StatelessWidget {
   const WallpaperControlBar({super.key});
 
   static Route<void> route() => PageRouteBuilder<void>(
-        opaque: false,
-        barrierDismissible: false,
-        transitionDuration: const Duration(milliseconds: 180),
-        reverseTransitionDuration: const Duration(milliseconds: 180),
-        pageBuilder: (context, animation, secondaryAnimation) => Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: UnconstrainedBox(
-              child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                    .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-                child: Actions(
-                  actions: {BackIntent: BackAction(context)},
-                  child: const WallpaperControlBar(),
+    opaque: false,
+    barrierDismissible: false,
+    transitionDuration: const Duration(milliseconds: 180),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (context, animation, secondaryAnimation) => Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: UnconstrainedBox(
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
                 ),
-              ),
+            child: Actions(
+              actions: {BackIntent: BackAction(context)},
+              child: const WallpaperControlBar(),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   Future<void> _onGrayscaleChanged(BuildContext context, bool value) {
     final wallpaperService = context.read<WallpaperService>();
@@ -79,7 +81,8 @@ class WallpaperControlBar extends StatelessWidget {
           children: [
             TextButton(
               autofocus: true,
-              onPressed: () => context.read<WallpaperService>().randomFromPicsum(),
+              onPressed: () =>
+                  context.read<WallpaperService>().randomFromPicsum(),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -94,14 +97,18 @@ class WallpaperControlBar extends StatelessWidget {
               icon: Icons.filter_b_and_w,
               label: "B/W",
               value: wallpaperService.picsumGrayscale,
-              onChanged: hasPhoto ? (value) => _onGrayscaleChanged(context, value) : null,
+              onChanged: hasPhoto
+                  ? (value) => _onGrayscaleChanged(context, value)
+                  : null,
             ),
             SizedBox(width: 32),
             _FilterToggle(
               icon: Icons.blur_on,
               label: "Blur",
               value: wallpaperService.picsumBlurEnabled,
-              onChanged: hasPhoto ? (value) => _onBlurChanged(context, value) : null,
+              onChanged: hasPhoto
+                  ? (value) => _onBlurChanged(context, value)
+                  : null,
             ),
           ],
         ),
@@ -116,7 +123,12 @@ class _FilterToggle extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
-  const _FilterToggle({required this.icon, required this.label, required this.value, required this.onChanged});
+  const _FilterToggle({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +138,10 @@ class _FilterToggle extends StatelessWidget {
       children: [
         Icon(icon, color: color),
         Container(width: 8),
-        Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color)),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: color),
+        ),
         Container(width: 8),
         Switch(value: value, onChanged: onChanged),
       ],

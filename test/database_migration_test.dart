@@ -41,7 +41,9 @@ void main() {
     final schema = await verifier.schemaAt(1);
 
     final oldDb = v1.DatabaseAtV1(schema.newConnection().executor);
-    await oldDb.into(oldDb.apps).insert(
+    await oldDb
+        .into(oldDb.apps)
+        .insert(
           v1.AppsCompanion.insert(
             packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
@@ -51,11 +53,17 @@ void main() {
             banner: Value(Uint8List.fromList([0x02])),
           ),
         );
-    final categoryId = await oldDb.into(oldDb.categories).insert(
-          v1.CategoriesCompanion.insert(name: "Applications", order: 0),
-        );
-    await oldDb.into(oldDb.appsCategories).insert(
-          v1.AppsCategoriesCompanion.insert(categoryId: categoryId, appPackageName: "io.sifft.pitchforklauncher", order: 0),
+    final categoryId = await oldDb
+        .into(oldDb.categories)
+        .insert(v1.CategoriesCompanion.insert(name: "Applications", order: 0));
+    await oldDb
+        .into(oldDb.appsCategories)
+        .insert(
+          v1.AppsCategoriesCompanion.insert(
+            categoryId: categoryId,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          ),
         );
     await oldDb.close();
 
@@ -64,9 +72,15 @@ void main() {
     await db.close();
 
     final migratedDb = v6.DatabaseAtV6(schema.newConnection().executor);
-    final v6.AppsData app = await migratedDb.select(migratedDb.apps).getSingle();
-    final v6.CategoriesData category = await migratedDb.select(migratedDb.categories).getSingle();
-    final v6.AppsCategoriesData appsCategory = await migratedDb.select(migratedDb.appsCategories).getSingle();
+    final v6.AppsData app = await migratedDb
+        .select(migratedDb.apps)
+        .getSingle();
+    final v6.CategoriesData category = await migratedDb
+        .select(migratedDb.categories)
+        .getSingle();
+    final v6.AppsCategoriesData appsCategory = await migratedDb
+        .select(migratedDb.appsCategories)
+        .getSingle();
     expect(app.packageName, "io.sifft.pitchforklauncher");
     expect(app.name, "FLauncher");
     expect(app.version, "0.0.1");
@@ -92,7 +106,9 @@ void main() {
     final schema = await verifier.schemaAt(2);
 
     final oldDb = v2.DatabaseAtV2(schema.newConnection().executor);
-    await oldDb.into(oldDb.apps).insert(
+    await oldDb
+        .into(oldDb.apps)
+        .insert(
           v2.AppsCompanion.insert(
             packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
@@ -101,11 +117,17 @@ void main() {
             banner: Value(Uint8List.fromList([0x02])),
           ),
         );
-    final categoryId = await oldDb.into(oldDb.categories).insert(
-          v2.CategoriesCompanion.insert(name: "Applications", order: 0),
-        );
-    await oldDb.into(oldDb.appsCategories).insert(
-          v2.AppsCategoriesCompanion.insert(categoryId: categoryId, appPackageName: "io.sifft.pitchforklauncher", order: 0),
+    final categoryId = await oldDb
+        .into(oldDb.categories)
+        .insert(v2.CategoriesCompanion.insert(name: "Applications", order: 0));
+    await oldDb
+        .into(oldDb.appsCategories)
+        .insert(
+          v2.AppsCategoriesCompanion.insert(
+            categoryId: categoryId,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          ),
         );
     await oldDb.close();
 
@@ -114,9 +136,15 @@ void main() {
     await db.close();
 
     final migratedDb = v6.DatabaseAtV6(schema.newConnection().executor);
-    final v6.AppsData app = await migratedDb.select(migratedDb.apps).getSingle();
-    final v6.CategoriesData category = await migratedDb.select(migratedDb.categories).getSingle();
-    final v6.AppsCategoriesData appsCategory = await migratedDb.select(migratedDb.appsCategories).getSingle();
+    final v6.AppsData app = await migratedDb
+        .select(migratedDb.apps)
+        .getSingle();
+    final v6.CategoriesData category = await migratedDb
+        .select(migratedDb.categories)
+        .getSingle();
+    final v6.AppsCategoriesData appsCategory = await migratedDb
+        .select(migratedDb.appsCategories)
+        .getSingle();
     expect(app.packageName, "io.sifft.pitchforklauncher");
     expect(app.name, "FLauncher");
     expect(app.version, "0.0.1");
@@ -142,7 +170,9 @@ void main() {
     final schema = await verifier.schemaAt(3);
 
     final oldDb = v3.DatabaseAtV3(schema.newConnection().executor);
-    await oldDb.into(oldDb.apps).insert(
+    await oldDb
+        .into(oldDb.apps)
+        .insert(
           v3.AppsCompanion.insert(
             packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
@@ -151,11 +181,17 @@ void main() {
             banner: Value(Uint8List.fromList([0x02])),
           ),
         );
-    final categoryId = await oldDb.into(oldDb.categories).insert(
-          v3.CategoriesCompanion.insert(name: "Applications", order: 0),
-        );
-    await oldDb.into(oldDb.appsCategories).insert(
-          v3.AppsCategoriesCompanion.insert(categoryId: categoryId, appPackageName: "io.sifft.pitchforklauncher", order: 0),
+    final categoryId = await oldDb
+        .into(oldDb.categories)
+        .insert(v3.CategoriesCompanion.insert(name: "Applications", order: 0));
+    await oldDb
+        .into(oldDb.appsCategories)
+        .insert(
+          v3.AppsCategoriesCompanion.insert(
+            categoryId: categoryId,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          ),
         );
     await oldDb.close();
 
@@ -164,9 +200,15 @@ void main() {
     await db.close();
 
     final migratedDb = v6.DatabaseAtV6(schema.newConnection().executor);
-    final v6.AppsData app = await migratedDb.select(migratedDb.apps).getSingle();
-    final v6.CategoriesData category = await migratedDb.select(migratedDb.categories).getSingle();
-    final v6.AppsCategoriesData appsCategory = await migratedDb.select(migratedDb.appsCategories).getSingle();
+    final v6.AppsData app = await migratedDb
+        .select(migratedDb.apps)
+        .getSingle();
+    final v6.CategoriesData category = await migratedDb
+        .select(migratedDb.categories)
+        .getSingle();
+    final v6.AppsCategoriesData appsCategory = await migratedDb
+        .select(migratedDb.appsCategories)
+        .getSingle();
     expect(app.packageName, "io.sifft.pitchforklauncher");
     expect(app.name, "FLauncher");
     expect(app.version, "0.0.1");
@@ -192,7 +234,9 @@ void main() {
     final schema = await verifier.schemaAt(4);
 
     final oldDb = v4.DatabaseAtV4(schema.newConnection().executor);
-    await oldDb.into(oldDb.apps).insert(
+    await oldDb
+        .into(oldDb.apps)
+        .insert(
           v4.AppsCompanion.insert(
             packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
@@ -201,11 +245,23 @@ void main() {
             banner: Value(Uint8List.fromList([0x02])),
           ),
         );
-    final categoryId = await oldDb.into(oldDb.categories).insert(
-          v4.CategoriesCompanion.insert(name: "Applications", type: Value(1), order: 0),
+    final categoryId = await oldDb
+        .into(oldDb.categories)
+        .insert(
+          v4.CategoriesCompanion.insert(
+            name: "Applications",
+            type: Value(1),
+            order: 0,
+          ),
         );
-    await oldDb.into(oldDb.appsCategories).insert(
-          v4.AppsCategoriesCompanion.insert(categoryId: categoryId, appPackageName: "io.sifft.pitchforklauncher", order: 0),
+    await oldDb
+        .into(oldDb.appsCategories)
+        .insert(
+          v4.AppsCategoriesCompanion.insert(
+            categoryId: categoryId,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          ),
         );
     await oldDb.close();
 
@@ -214,9 +270,15 @@ void main() {
     await db.close();
 
     final migratedDb = v6.DatabaseAtV6(schema.newConnection().executor);
-    final v6.AppsData app = await migratedDb.select(migratedDb.apps).getSingle();
-    final v6.CategoriesData category = await migratedDb.select(migratedDb.categories).getSingle();
-    final v6.AppsCategoriesData appsCategory = await migratedDb.select(migratedDb.appsCategories).getSingle();
+    final v6.AppsData app = await migratedDb
+        .select(migratedDb.apps)
+        .getSingle();
+    final v6.CategoriesData category = await migratedDb
+        .select(migratedDb.categories)
+        .getSingle();
+    final v6.AppsCategoriesData appsCategory = await migratedDb
+        .select(migratedDb.appsCategories)
+        .getSingle();
     expect(app.packageName, "io.sifft.pitchforklauncher");
     expect(app.name, "FLauncher");
     expect(app.version, "0.0.1");
@@ -242,7 +304,9 @@ void main() {
     final schema = await verifier.schemaAt(5);
 
     final oldDb = v5.DatabaseAtV5(schema.newConnection().executor);
-    await oldDb.into(oldDb.apps).insert(
+    await oldDb
+        .into(oldDb.apps)
+        .insert(
           v5.AppsCompanion.insert(
             packageName: "io.sifft.pitchforklauncher",
             name: "FLauncher",
@@ -251,11 +315,23 @@ void main() {
             banner: Value(Uint8List.fromList([0x02])),
           ),
         );
-    final categoryId = await oldDb.into(oldDb.categories).insert(
-          v5.CategoriesCompanion.insert(name: "Applications", type: Value(1), order: 0),
+    final categoryId = await oldDb
+        .into(oldDb.categories)
+        .insert(
+          v5.CategoriesCompanion.insert(
+            name: "Applications",
+            type: Value(1),
+            order: 0,
+          ),
         );
-    await oldDb.into(oldDb.appsCategories).insert(
-          v5.AppsCategoriesCompanion.insert(categoryId: categoryId, appPackageName: "io.sifft.pitchforklauncher", order: 0),
+    await oldDb
+        .into(oldDb.appsCategories)
+        .insert(
+          v5.AppsCategoriesCompanion.insert(
+            categoryId: categoryId,
+            appPackageName: "io.sifft.pitchforklauncher",
+            order: 0,
+          ),
         );
     await oldDb.close();
 
@@ -264,9 +340,15 @@ void main() {
     await db.close();
 
     final migratedDb = v6.DatabaseAtV6(schema.newConnection().executor);
-    final v6.AppsData app = await migratedDb.select(migratedDb.apps).getSingle();
-    final v6.CategoriesData category = await migratedDb.select(migratedDb.categories).getSingle();
-    final v6.AppsCategoriesData appsCategory = await migratedDb.select(migratedDb.appsCategories).getSingle();
+    final v6.AppsData app = await migratedDb
+        .select(migratedDb.apps)
+        .getSingle();
+    final v6.CategoriesData category = await migratedDb
+        .select(migratedDb.categories)
+        .getSingle();
+    final v6.AppsCategoriesData appsCategory = await migratedDb
+        .select(migratedDb.appsCategories)
+        .getSingle();
     expect(app.packageName, "io.sifft.pitchforklauncher");
     expect(app.name, "FLauncher");
     expect(app.version, "0.0.1");

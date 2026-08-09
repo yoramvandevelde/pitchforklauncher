@@ -91,7 +91,8 @@ class WallpaperService extends ChangeNotifier {
     this._database, {
     Size? Function()? targetWallpaperSize,
   }) : _targetWallpaperSize =
-           targetWallpaperSize ?? (() => PlatformDispatcher.instance.implicitView?.physicalSize) {
+           targetWallpaperSize ??
+           (() => PlatformDispatcher.instance.implicitView?.physicalSize) {
     _init();
   }
 
@@ -150,7 +151,10 @@ class WallpaperService extends ChangeNotifier {
       final codec = await instantiateImageCodec(bytes);
       image = (await codec.getNextFrame()).image;
     } catch (e, st) {
-      AppLog.instance.log("Wallpaper", "Could not decode image to resize it, storing as-is: $e\n$st");
+      AppLog.instance.log(
+        "Wallpaper",
+        "Could not decode image to resize it, storing as-is: $e\n$st",
+      );
       return bytes;
     }
     if (image.width <= targetWidth && image.height <= targetHeight) {
@@ -158,7 +162,10 @@ class WallpaperService extends ChangeNotifier {
     }
     // Replicates BoxFit.cover's crop math: scale so the image's shorter (relative) dimension
     // exactly fills the target, then crop the overflow on the other axis, centered.
-    final scale = math.max(targetWidth / image.width, targetHeight / image.height);
+    final scale = math.max(
+      targetWidth / image.width,
+      targetHeight / image.height,
+    );
     final srcWidth = targetWidth / scale;
     final srcHeight = targetHeight / scale;
     final srcRect = Rect.fromLTWH(
@@ -167,14 +174,27 @@ class WallpaperService extends ChangeNotifier {
       srcWidth,
       srcHeight,
     );
-    final dstRect = Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble());
+    final dstRect = Rect.fromLTWH(
+      0,
+      0,
+      targetWidth.toDouble(),
+      targetHeight.toDouble(),
+    );
     final recorder = PictureRecorder();
     // Default Paint() is FilterQuality.none (nearest-neighbor) -- fine for the solid-color test
     // fixtures this path is mostly exercised with, but visibly aliased/moiré on an actual detailed
     // photo. This is a one-time bake, not a per-frame cost, so the pricier bilinear filter is free
     // to use here.
-    Canvas(recorder, dstRect).drawImageRect(image, srcRect, dstRect, Paint()..filterQuality = FilterQuality.high);
-    final resizedImage = await recorder.endRecording().toImage(targetWidth, targetHeight);
+    Canvas(recorder, dstRect).drawImageRect(
+      image,
+      srcRect,
+      dstRect,
+      Paint()..filterQuality = FilterQuality.high,
+    );
+    final resizedImage = await recorder.endRecording().toImage(
+      targetWidth,
+      targetHeight,
+    );
     // Uint8List.sublistView(), not `.buffer.asUint8List()` -- see _loadDefaultWallpaperBytes's
     // comment above for why the latter can silently return the wrong bytes.
     final byteData = await resizedImage.toByteData(format: ImageByteFormat.png);

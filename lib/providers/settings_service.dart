@@ -30,15 +30,18 @@ const _picsumBlurKey = "picsum_blur";
 class SettingsService extends ChangeNotifier {
   final SharedPreferences _sharedPreferences;
 
-  bool get use24HourTimeFormat => _sharedPreferences.getBool(_use24HourTimeFormatKey) ?? true;
+  bool get use24HourTimeFormat =>
+      _sharedPreferences.getBool(_use24HourTimeFormatKey) ?? true;
 
-  bool get appHighlightAnimationEnabled => _sharedPreferences.getBool(_appHighlightAnimationEnabledKey) ?? true;
+  bool get appHighlightAnimationEnabled =>
+      _sharedPreferences.getBool(_appHighlightAnimationEnabledKey) ?? true;
 
   String? get gradientUuid => _sharedPreferences.getString(_gradientUuidKey);
 
   int? get picsumPhotoId => _sharedPreferences.getInt(_picsumPhotoIdKey);
 
-  bool get picsumGrayscale => _sharedPreferences.getBool(_picsumGrayscaleKey) ?? false;
+  bool get picsumGrayscale =>
+      _sharedPreferences.getBool(_picsumGrayscaleKey) ?? false;
 
   int? get picsumBlur => _sharedPreferences.getInt(_picsumBlurKey);
 

@@ -40,25 +40,27 @@ void main() {
     binding.platformDispatcher.textScaleFactorTestValue = 0.8;
   });
 
-  testWidgets("'Random photo' closes the panel and shows the control bar without fetching a photo yet",
-      (tester) async {
-    final wallpaperService = MockWallpaperService();
-    when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(false);
-    when(wallpaperService.picsumGrayscale).thenReturn(false);
-    when(wallpaperService.picsumBlurEnabled).thenReturn(false);
+  testWidgets(
+    "'Random photo' closes the panel and shows the control bar without fetching a photo yet",
+    (tester) async {
+      final wallpaperService = MockWallpaperService();
+      when(wallpaperService.hasCurrentPicsumPhoto).thenReturn(false);
+      when(wallpaperService.picsumGrayscale).thenReturn(false);
+      when(wallpaperService.picsumBlurEnabled).thenReturn(false);
 
-    await _pumpWidgetWithProviders(tester, wallpaperService);
+      await _pumpWidgetWithProviders(tester, wallpaperService);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
 
-    // The bar itself is responsible for the first fetch (its "Random" control) -- opening it
-    // shouldn't have already rolled a photo, since that used to race with the panel-close
-    // animation when the first network request happened to be slow.
-    verifyNever(wallpaperService.randomFromPicsum());
-    expect(find.byType(WallpaperPanelPage), findsNothing);
-    expect(find.byType(WallpaperControlBar), findsOneWidget);
-  });
+      // The bar itself is responsible for the first fetch (its "Random" control) -- opening it
+      // shouldn't have already rolled a photo, since that used to race with the panel-close
+      // animation when the first network request happened to be slow.
+      verifyNever(wallpaperService.randomFromPicsum());
+      expect(find.byType(WallpaperPanelPage), findsNothing);
+      expect(find.byType(WallpaperControlBar), findsOneWidget);
+    },
+  );
 
   testWidgets("'Gradient' navigates to GradientPanelPage", (tester) async {
     final wallpaperService = MockWallpaperService();
@@ -84,9 +86,13 @@ void main() {
       verify(wallpaperService.pickWallpaper());
     });
 
-    testWidgets("shows snack bar if not file explorer available", (tester) async {
+    testWidgets("shows snack bar if not file explorer available", (
+      tester,
+    ) async {
       final wallpaperService = MockWallpaperService();
-      when(wallpaperService.pickWallpaper()).thenThrow(NoFileExplorerException());
+      when(
+        wallpaperService.pickWallpaper(),
+      ).thenThrow(NoFileExplorerException());
 
       await _pumpWidgetWithProviders(tester, wallpaperService);
 
@@ -95,13 +101,20 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(find.byType(SnackBar), findsOneWidget);
-      expect(find.text("Please install a file explorer in order to pick an image."), findsOneWidget);
+      expect(
+        find.text("Please install a file explorer in order to pick an image."),
+        findsOneWidget,
+      );
     });
   });
 
-  testWidgets("'Default' resets the wallpaper to the bundled default", (tester) async {
+  testWidgets("'Default' resets the wallpaper to the bundled default", (
+    tester,
+  ) async {
     final wallpaperService = MockWallpaperService();
-    when(wallpaperService.resetToDefaultWallpaper()).thenAnswer((_) => Future.value());
+    when(
+      wallpaperService.resetToDefaultWallpaper(),
+    ).thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(tester, wallpaperService);
 
@@ -128,13 +141,18 @@ Future<void> _pumpWidgetWithProviders(
       ],
       builder: (_, _) => MaterialApp(
         routes: {
-          GradientPanelPage.routeName: (_) => Container(key: Key("GradientPanelPage")),
+          GradientPanelPage.routeName: (_) =>
+              Container(key: Key("GradientPanelPage")),
         },
         home: Scaffold(body: Container(key: Key("Home"))),
       ),
     ),
   );
   final homeContext = tester.element(find.byKey(Key("Home")));
-  unawaited(Navigator.of(homeContext).push(MaterialPageRoute(builder: (_) => Scaffold(body: WallpaperPanelPage()))));
+  unawaited(
+    Navigator.of(homeContext).push(
+      MaterialPageRoute(builder: (_) => Scaffold(body: WallpaperPanelPage())),
+    ),
+  );
   await tester.pumpAndSettle();
 }

@@ -27,17 +27,17 @@ class EnsureVisible extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Focus(
-        canRequestFocus: false,
-        onFocusChange: (focused) {
-          if (focused) {
-            Scrollable.ensureVisible(
-              context,
-              alignment: alignment,
-              duration: Duration(milliseconds: 100),
-              curve: Curves.easeInOut,
-            );
-          }
-        },
-        child: child,
-      );
+    canRequestFocus: false,
+    onFocusChange: (focused) {
+      if (focused) {
+        Scrollable.ensureVisible(
+          context,
+          alignment: alignment,
+          duration: Duration(milliseconds: 100),
+          curve: Curves.easeInOut,
+        );
+      }
+    },
+    child: child,
+  );
 }

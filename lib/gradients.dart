@@ -32,17 +32,26 @@ mixin FLauncherGradients {
   static final greatWhale = FLauncherGradient(
     "8bbdc190-ff6c-496e-8033-3c217e78da36",
     "Great Whale",
-    LinearGradient(colors: [Color(0xFF6991C7), Color(0xFFA3BDED)], transform: GradientRotation(5.6)),
+    LinearGradient(
+      colors: [Color(0xFF6991C7), Color(0xFFA3BDED)],
+      transform: GradientRotation(5.6),
+    ),
   );
   static final viciousStance = FLauncherGradient(
     "e89f29f3-a0a3-4ee6-a363-5e9df2a124fd",
     "Vicious Stance",
-    LinearGradient(colors: [Color(0xFF29323C), Color(0xFF485563)], transform: GradientRotation(1.6)),
+    LinearGradient(
+      colors: [Color(0xFF29323C), Color(0xFF485563)],
+      transform: GradientRotation(1.6),
+    ),
   );
   static final teenNotebook = FLauncherGradient(
     "027e7848-104c-42eb-94ce-d25762d426c1",
     "Teen Notebook",
-    LinearGradient(colors: [Color(0xFF9795F0), Color(0xFFFBC8D4)], transform: GradientRotation(pi / 2)),
+    LinearGradient(
+      colors: [Color(0xFF9795F0), Color(0xFFFBC8D4)],
+      transform: GradientRotation(pi / 2),
+    ),
   );
   static final oldHat = FLauncherGradient(
     "8458ae14-7a5a-461d-bb14-154a04a9f6d2",
@@ -57,22 +66,34 @@ mixin FLauncherGradients {
   static final desertHump = FLauncherGradient(
     "34acee0a-788f-41ea-8d3c-3b7c02ea7b52",
     "Desert Hump",
-    LinearGradient(colors: [Color(0xFFC79081), Color(0xFFDFA579)], transform: GradientRotation(pi / 2)),
+    LinearGradient(
+      colors: [Color(0xFFC79081), Color(0xFFDFA579)],
+      transform: GradientRotation(pi / 2),
+    ),
   );
   static final farawayRiver = FLauncherGradient(
     "7d34faa2-104a-49b7-bea5-ad48f4ccbd9c",
     "Faraway River",
-    LinearGradient(colors: [Color(0xFF6E45E2), Color(0xFF88D3CE)], transform: GradientRotation(7.5)),
+    LinearGradient(
+      colors: [Color(0xFF6E45E2), Color(0xFF88D3CE)],
+      transform: GradientRotation(7.5),
+    ),
   );
   static final saintPetersburg = FLauncherGradient(
     "1312c885-af8a-4904-a2cb-f3afa05cdd20",
     "Saint Petersburg",
-    LinearGradient(colors: [Color(0xFFF5F7FA), Color(0xFFC3CFE2)], transform: GradientRotation(7)),
+    LinearGradient(
+      colors: [Color(0xFFF5F7FA), Color(0xFFC3CFE2)],
+      transform: GradientRotation(7),
+    ),
   );
   static final africanField = FLauncherGradient(
     "7e1c12aa-3769-4474-957a-e08ef98a93c2",
     "African Field",
-    LinearGradient(colors: [Color(0xFFFF6B95), Color(0xFFFFC796)], transform: GradientRotation(2.3)),
+    LinearGradient(
+      colors: [Color(0xFFFF6B95), Color(0xFFFFC796)],
+      transform: GradientRotation(2.3),
+    ),
   );
   static final grassShampoo = FLauncherGradient(
     "b9041b0b-22e3-43a1-a323-3d851f20464d",
@@ -85,15 +106,15 @@ mixin FLauncherGradients {
   );
 
   static List<FLauncherGradient> get all => [
-        greatWhale,
-        viciousStance,
-        teenNotebook,
-        oldHat,
-        burningSprings,
-        desertHump,
-        farawayRiver,
-        saintPetersburg,
-        africanField,
-        grassShampoo,
-      ];
+    greatWhale,
+    viciousStance,
+    teenNotebook,
+    oldHat,
+    burningSprings,
+    desertHump,
+    farawayRiver,
+    saintPetersburg,
+    africanField,
+    grassShampoo,
+  ];
 }

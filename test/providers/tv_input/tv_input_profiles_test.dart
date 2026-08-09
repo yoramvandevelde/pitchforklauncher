@@ -24,7 +24,11 @@ void main() {
   test("registers every shipped profile keyed by its own id", () {
     expect(tvInputProfiles.keys, containsAll(["samsung_tizen"]));
     for (final entry in tvInputProfiles.entries) {
-      expect(entry.value.id, entry.key, reason: "profile must be keyed by its own id");
+      expect(
+        entry.value.id,
+        entry.key,
+        reason: "profile must be keyed by its own id",
+      );
     }
   });
 

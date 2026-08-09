@@ -100,9 +100,7 @@ class SettingsBackupService {
 
   Future<void> importSettings() async {
     try {
-      final bytes = await _fLauncherChannel.readSettingsBackup(
-        backupFileName,
-      );
+      final bytes = await _fLauncherChannel.readSettingsBackup(backupFileName);
       if (bytes == null) {
         // Null covers three different native-side outcomes (no backup exists yet, a read
         // failure, or -- rarely, since the UI already checks isStorageAvailable() first -- the
@@ -197,7 +195,8 @@ class SettingsBackupService {
       'tvInputs': _tvInputService.inputs
           .map(
             (input) => input.toJson(
-              excludeParamKeys: tvInputProfiles[input.profileId]?.secretParamKeys ?? const {},
+              excludeParamKeys:
+                  tvInputProfiles[input.profileId]?.secretParamKeys ?? const {},
             ),
           )
           .toList(),
@@ -230,9 +229,7 @@ class SettingsBackupService {
         .toSet();
 
     await _settingsService.resetToDefaults();
-    await _settingsService.setUse24HourTimeFormat(
-      backup.use24HourTimeFormat,
-    );
+    await _settingsService.setUse24HourTimeFormat(backup.use24HourTimeFormat);
     await _settingsService.setAppHighlightAnimationEnabled(
       backup.appHighlightAnimationEnabled,
     );
@@ -405,19 +402,20 @@ class _ParsedCategory {
     required this.showName,
   });
 
-  factory _ParsedCategory.fromJson(Map<String, dynamic> json) =>
-      _ParsedCategory(
-        name: json['name'] as String,
-        sort: CategorySort.values.byName(json['sort'] as String),
-        type: CategoryType.values.byName(json['type'] as String),
-        rowHeight: json['rowHeight'] as int,
-        columnsCount: json['columnsCount'] as int,
-        order: json['order'] as int,
-        apps: (json['apps'] as List<dynamic>).cast<String>(),
-        // Absent in backups written before this field existed -- same default as the database
-        // column itself, so an older backup restores exactly like it always has (name shown).
-        showName: json['showName'] as bool? ?? true,
-      );
+  factory _ParsedCategory.fromJson(
+    Map<String, dynamic> json,
+  ) => _ParsedCategory(
+    name: json['name'] as String,
+    sort: CategorySort.values.byName(json['sort'] as String),
+    type: CategoryType.values.byName(json['type'] as String),
+    rowHeight: json['rowHeight'] as int,
+    columnsCount: json['columnsCount'] as int,
+    order: json['order'] as int,
+    apps: (json['apps'] as List<dynamic>).cast<String>(),
+    // Absent in backups written before this field existed -- same default as the database
+    // column itself, so an older backup restores exactly like it always has (name shown).
+    showName: json['showName'] as bool? ?? true,
+  );
 }
 
 class BackupException implements Exception {

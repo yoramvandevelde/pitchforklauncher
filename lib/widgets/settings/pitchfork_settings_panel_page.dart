@@ -149,29 +149,28 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
     }
   }
 
-  Future<bool?> _showBackupConfirmationDialog(
-    BuildContext context,
-  ) => showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text("Back up settings?"),
-      content: Text(
-        "This will overwrite the previous backup in "
-        "Downloads/${SettingsBackupService.backupFileName}.",
-      ),
-      actions: [
-        TextButton(
-          autofocus: true,
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text("Cancel"),
+  Future<bool?> _showBackupConfirmationDialog(BuildContext context) =>
+      showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Back up settings?"),
+          content: Text(
+            "This will overwrite the previous backup in "
+            "Downloads/${SettingsBackupService.backupFileName}.",
+          ),
+          actions: [
+            TextButton(
+              autofocus: true,
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text("Back up"),
+            ),
+          ],
         ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text("Back up"),
-        ),
-      ],
-    ),
-  );
+      );
 
   Future<void> _restore(BuildContext context) async {
     final backupService = context.read<SettingsBackupService>();

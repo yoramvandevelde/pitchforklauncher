@@ -36,33 +36,41 @@ class AddToCategoryDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<Category>>(
-        selector: (_, appsService) => appsService.categoriesWithApps
-            .where((element) => !element.applications.any((app) => app.packageName == application.packageName))
-            .map((categoryWithApps) => categoryWithApps.category)
-            .toList(),
-        builder: (context, categories, _) => SimpleDialog(
-          title: Text(moveFrom != null ? "Move to..." : "Add to..."),
-          contentPadding: EdgeInsets.all(16),
-          children: categories
-              .map(
-                (category) => Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: ListTile(
-                    onTap: () async {
-                      final appsService = context.read<AppsService>();
-                      if (moveFrom != null) {
-                        await appsService.moveToCategory(application, moveFrom!, category);
-                      } else {
-                        await appsService.addToCategory(application, category);
-                      }
-                      if (!context.mounted) return;
-                      Navigator.of(context).pop();
-                    },
-                    title: Text(category.name),
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-      );
+    selector: (_, appsService) => appsService.categoriesWithApps
+        .where(
+          (element) => !element.applications.any(
+            (app) => app.packageName == application.packageName,
+          ),
+        )
+        .map((categoryWithApps) => categoryWithApps.category)
+        .toList(),
+    builder: (context, categories, _) => SimpleDialog(
+      title: Text(moveFrom != null ? "Move to..." : "Add to..."),
+      contentPadding: EdgeInsets.all(16),
+      children: categories
+          .map(
+            (category) => Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListTile(
+                onTap: () async {
+                  final appsService = context.read<AppsService>();
+                  if (moveFrom != null) {
+                    await appsService.moveToCategory(
+                      application,
+                      moveFrom!,
+                      category,
+                    );
+                  } else {
+                    await appsService.addToCategory(application, category);
+                  }
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
+                },
+                title: Text(category.name),
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }

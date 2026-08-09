@@ -37,116 +37,140 @@ class _ApplicationsPanelPageState extends State<ApplicationsPanelPage> {
 
   @override
   Widget build(BuildContext context) => DefaultTabController(
-        length: 3,
-        child: Column(
-          children: [
-            Text(_title, style: Theme.of(context).textTheme.titleLarge),
-            Divider(),
-            Material(
-              type: MaterialType.transparency,
-              child: TabBar(
-                onTap: (index) {
-                  switch (index) {
-                    case 0:
-                      setState(() => _title = "TV Applications");
-                      break;
-                    case 1:
-                      setState(() => _title = "Non-TV Applications");
-                      break;
-                    case 2:
-                      setState(() => _title = "Hidden Applications");
-                      break;
-                    default:
-                      throw ArgumentError.value(index, "index");
-                  }
-                },
-                tabs: [
-                  Tab(icon: Icon(Icons.tv)),
-                  Tab(icon: Icon(Icons.android)),
-                  Tab(icon: Icon(Icons.visibility_off_outlined)),
-                ],
-              ),
-            ),
-            SizedBox(height: 8),
-            Expanded(child: TabBarView(children: [_TVTab(), _SideloadedTab(), _HiddenTab()])),
-          ],
+    length: 3,
+    child: Column(
+      children: [
+        Text(_title, style: Theme.of(context).textTheme.titleLarge),
+        Divider(),
+        Material(
+          type: MaterialType.transparency,
+          child: TabBar(
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  setState(() => _title = "TV Applications");
+                  break;
+                case 1:
+                  setState(() => _title = "Non-TV Applications");
+                  break;
+                case 2:
+                  setState(() => _title = "Hidden Applications");
+                  break;
+                default:
+                  throw ArgumentError.value(index, "index");
+              }
+            },
+            tabs: [
+              Tab(icon: Icon(Icons.tv)),
+              Tab(icon: Icon(Icons.android)),
+              Tab(icon: Icon(Icons.visibility_off_outlined)),
+            ],
+          ),
         ),
-      );
+        SizedBox(height: 8),
+        Expanded(
+          child: TabBarView(
+            children: [_TVTab(), _SideloadedTab(), _HiddenTab()],
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TVTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<App>>(
-        selector: (_, appsService) => appsService.applications.where((app) => !app.sideloaded && !app.hidden).toList(),
-        builder: (context, applications, _) => ListView(
-          children: applications
-              .map((application) => EnsureVisible(alignment: 0.5, child: _appCard(context, application)))
-              .toList(),
-        ),
-      );
+    selector: (_, appsService) => appsService.applications
+        .where((app) => !app.sideloaded && !app.hidden)
+        .toList(),
+    builder: (context, applications, _) => ListView(
+      children: applications
+          .map(
+            (application) => EnsureVisible(
+              alignment: 0.5,
+              child: _appCard(context, application),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }
 
 class _SideloadedTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<App>>(
-        selector: (_, appsService) => appsService.applications.where((app) => app.sideloaded && !app.hidden).toList(),
-        builder: (context, applications, _) => ListView(
-          children: applications
-              .map((application) => EnsureVisible(alignment: 0.5, child: _appCard(context, application)))
-              .toList(),
-        ),
-      );
+    selector: (_, appsService) => appsService.applications
+        .where((app) => app.sideloaded && !app.hidden)
+        .toList(),
+    builder: (context, applications, _) => ListView(
+      children: applications
+          .map(
+            (application) => EnsureVisible(
+              alignment: 0.5,
+              child: _appCard(context, application),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }
 
 class _HiddenTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Selector<AppsService, List<App>>(
-        selector: (_, appsService) => appsService.applications.where((app) => app.hidden).toList(),
-        builder: (context, applications, _) => ListView(
-          children: applications
-              .map((application) => EnsureVisible(alignment: 0.5, child: _appCard(context, application)))
-              .toList(),
-        ),
-      );
+    selector: (_, appsService) =>
+        appsService.applications.where((app) => app.hidden).toList(),
+    builder: (context, applications, _) => ListView(
+      children: applications
+          .map(
+            (application) => EnsureVisible(
+              alignment: 0.5,
+              child: _appCard(context, application),
+            ),
+          )
+          .toList(),
+    ),
+  );
 }
 
 Widget _appCard(BuildContext context, App application) => Card(
-      clipBehavior: Clip.antiAlias,
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 8),
-        title: Text(
-          application.name,
-          style: Theme.of(context).textTheme.bodyMedium,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        leading: application.icon != null ? Image.memory(application.icon!, height: 48) : null,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!application.hidden)
-              IconButton(
-                constraints: BoxConstraints(),
-                splashRadius: 20,
-                icon: Icon(Icons.add_box_outlined),
-                onPressed: () => showDialog<Category>(
-                  context: context,
-                  builder: (_) => AddToCategoryDialog(application),
-                ),
-              ),
-            IconButton(
-              constraints: BoxConstraints(),
-              splashRadius: 20,
-              icon: Icon(Icons.info_outline),
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => ApplicationInfoPanel(
-                  category: null,
-                  application: application,
-                ),
-              ),
+  clipBehavior: Clip.antiAlias,
+  child: ListTile(
+    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+    title: Text(
+      application.name,
+      style: Theme.of(context).textTheme.bodyMedium,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    ),
+    leading: application.icon != null
+        ? Image.memory(application.icon!, height: 48)
+        : null,
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!application.hidden)
+          IconButton(
+            constraints: BoxConstraints(),
+            splashRadius: 20,
+            icon: Icon(Icons.add_box_outlined),
+            onPressed: () => showDialog<Category>(
+              context: context,
+              builder: (_) => AddToCategoryDialog(application),
             ),
-          ],
+          ),
+        IconButton(
+          constraints: BoxConstraints(),
+          splashRadius: 20,
+          icon: Icon(Icons.info_outline),
+          onPressed: () => showDialog(
+            context: context,
+            builder: (context) =>
+                ApplicationInfoPanel(category: null, application: application),
+          ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
