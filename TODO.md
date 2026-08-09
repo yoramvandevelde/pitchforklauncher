@@ -37,13 +37,7 @@
   (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
   through to the foreground app/system while `UP` is hijacked, the classic shape of a
   both-things-fire bug on other firmware even though it works fine on this hardware; standard fix
-  is to also consume `DOWN` for any keycode being claimed, tracked until its matching `UP`. The
-  `AppsService` `EventChannel` listener for `PACKAGE_ADDED`/`PACKAGE_CHANGED` is async and
-  unserialized, so two events arriving close together (an app update) can interleave
-  persist/reload and briefly publish stale state -- self-healing on the next event, but a one-line
-  queue/dirty-flag would close it. `CandidateNode` in `lib/custom_traversal_policy.dart` is a pure
-  ceremony wrapper around `FocusNode` that's immediately unwrapped elsewhere -- would read better
-  as `List<FocusNode>` end to end.
+  is to also consume `DOWN` for any keycode being claimed, tracked until its matching `UP`.
 
 - **`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.** From the
   2026-08-07 Kimi review pass, unverified against the running app: `_refreshState()`'s
@@ -57,6 +51,20 @@
   O(n·m) linear scan that a `Set` of package names would make O(n).
 
 ## Done
+
+~~**`AppsService` `EventChannel` listener for `PACKAGE_ADDED`/`PACKAGE_CHANGED` was async and
+unserialized.**~~ -- fixed (2026-08-09): two events arriving close together (e.g. an app update,
+which fires `PACKAGE_ADDED` then `PACKAGE_CHANGED` in quick succession) could interleave their
+`persist`/reload work and briefly publish a half-updated state. The listener body moved into
+`_handleAppsChangedEvent`, and incoming events are now chained through a `Future`-based queue
+(`_eventQueue = _eventQueue.then((_) => _handleAppsChangedEvent(event))`) so they're always
+processed one at a time, in order, without dropping any. Verified: `flutter analyze` clean, full
+test suite (213 tests) passes.
+
+~~**`CandidateNode` in `lib/custom_traversal_policy.dart` was a pure ceremony wrapper around
+`FocusNode`.**~~ -- fixed (2026-08-09): removed the wrapper class and its two conversion helpers
+(`toCandidateNodes`/`toFocusNodes`); `NodeSearcher` now works with `List<FocusNode>` end to end.
+No behavior change. Verified: `flutter analyze` clean, full test suite (213 tests) passes.
 
 ~~**PitchforkLauncher may list itself.**~~ — fixed (2026-08-09), confirmed on-device first (it did,
 via a mountain-photo banner card matching the app's own `@drawable/banner` exactly). Went through
