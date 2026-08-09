@@ -42,10 +42,18 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayOutputStream
 import java.io.Serializable
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 
 private const val METHOD_CHANNEL = "io.sifft.pitchforklauncher/method"
 private const val EVENT_CHANNEL = "io.sifft.pitchforklauncher/event"
 private const val BUTTON_CAPTURE_EVENT_CHANNEL = "io.sifft.pitchforklauncher/buttonCapture"
+
+// Icons are never displayed larger than 48dp (applications_panel_page.dart); 192 is still
+// 2-4x oversampled at every display site, comfortable headroom for high-density screens without
+// carrying full adaptive-icon resolution (432x432+) through encode, storage and decode for no
+// visual benefit. Banners aren't capped here -- they're legitimately displayed much larger, and
+// Flutter already downscales them at decode time to the actual card size (see AppCard).
+private const val ICON_MAX_PNG_SIZE = 192
 
 class MainActivity : FlutterActivity() {
     private val launcherAppsCallbacks = ArrayList<LauncherApps.Callback>()
@@ -249,7 +257,7 @@ class MainActivity : FlutterActivity() {
             "name" to activityInfo.loadLabel(packageManager).toString(),
             "packageName" to activityInfo.packageName,
             "banner" to if (includeBanner) activityInfo.loadBanner(packageManager)?.let(::drawableToByteArray) else null,
-            "icon" to activityInfo.loadIcon(packageManager)?.let(::drawableToByteArray),
+            "icon" to activityInfo.loadIcon(packageManager)?.let { drawableToByteArray(it, maxSize = ICON_MAX_PNG_SIZE) },
             "version" to packageManager.getPackageInfo(activityInfo.packageName, 0).versionName,
             "sideloaded" to sideloaded,
     )
@@ -324,7 +332,10 @@ class MainActivity : FlutterActivity() {
         false
     }
 
-    private fun drawableToByteArray(drawable: Drawable): ByteArray? {
+    // maxSize bounds the longer side (aspect ratio preserved, never upscaled) before compressing --
+    // see ICON_MAX_PNG_SIZE. Left null for banners, which are legitimately displayed larger and at
+    // a size that varies with the category's own layout settings, not a single fixed bound.
+    private fun drawableToByteArray(drawable: Drawable, maxSize: Int? = null): ByteArray? {
         if (drawable.intrinsicWidth <= 0 || drawable.intrinsicHeight <= 0) {
             return null
         }
@@ -337,7 +348,15 @@ class MainActivity : FlutterActivity() {
             return bitmap
         }
 
-        val bitmap = drawableToBitmap(drawable)
+        var bitmap = drawableToBitmap(drawable)
+        if (maxSize != null) {
+            val scale = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height, 1f)
+            if (scale < 1f) {
+                val scaledWidth = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
+                val scaledHeight = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
+                bitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
+            }
+        }
         val stream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
         return stream.toByteArray()
