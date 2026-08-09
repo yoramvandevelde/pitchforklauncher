@@ -33,17 +33,6 @@
   doing as its own dedicated reformat pass (one big, boring, easy-to-review diff) before adding
   the CI gate on top of it, not bundled into something else. Noted 2026-08-08, not yet done.
 
-- **Downscale icons before PNG-encoding them in `drawableToByteArray`.** Flagged by the same
-  review. `MainActivity.buildAppMap()` encodes `loadIcon()` output at full intrinsic resolution
-  (adaptive icons can be 432x432 or larger) for every installed app on every cold start, even
-  though the largest place an icon is ever displayed is 48 logical px
-  (`applications_panel_page.dart`). Costs: PNG-encode CPU on the background executor at cold
-  start, MethodChannel payload + SQLite blob size (stored forever), and later decode
-  memory/`imageCache` pressure (`Image.memory(icon, height: 48)` decodes at intrinsic size, no
-  `cacheWidth`). Fix: scale the bitmap to a bounded size (e.g. 192x192, still 2-4x oversampled at
-  every display site) inside `drawableToByteArray` before compressing. Biggest remaining
-  cold-start lever per that review.
-
 - **`FilterQuality.high` + codec-side target size in `_resizeToScreen`.** Same method as the
   wallpaper item above, two independent one-line-ish changes: (1) the `Canvas.drawImageRect` call
   uses the default `Paint()` (`FilterQuality.none`, nearest-neighbor), which produces visible
@@ -98,6 +87,23 @@
     `FocusNode` listener) instead. Nit-level; leave as-is if the current shape is deliberate.
 
 ## Done
+
+~~**Downscale icons before PNG-encoding them in `drawableToByteArray`.**~~ — fixed (2026-08-09):
+`MainActivity.buildAppMap()` was encoding `loadIcon()` output at full intrinsic resolution
+(adaptive icons can be 432x432 or larger) for every installed app on every sync, even though the
+largest place an icon is ever displayed is 48 logical px (`applications_panel_page.dart`).
+`drawableToByteArray` now takes an optional `maxSize` (aspect ratio preserved, never upscaled past
+the source), passed as 192 (still 2-4x oversampled at every display site) only for icons -- banners
+are left uncapped, since they're legitimately displayed larger and already downscaled at decode
+time on the Flutter side (see the banner-pop-in fix directly below). Cuts PNG-encode CPU on the
+background executor, `MethodChannel` payload size, SQLite blob size (stored forever), and later
+decode memory pressure. Verified: `flutter analyze --fatal-infos`/`flutter test` (unaffected, no
+Dart-side change), a clean emulator install (`just uninstall` + `just build-install`, needed since
+the emulator had a version-code mismatch from an earlier debug build) with no crashes and banners
+rendering correctly, plus the persisted PNG's own `IHDR` chunk (visible in the debug SQL log)
+confirming the encoded size actually landed within the 192 cap. None of the currently-installed
+test apps have a bannerless (icon-fallback) card to visually re-check, so that specific path is
+verified by code review, not an on-device look.
 
 ~~**App-card banners visibly pop in/"blink" on cold start (~100-250ms, noticeable).**~~ — landed
 (2026-08-09, PR #65) as two independent fixes, after the originally-planned per-card `frameBuilder`
