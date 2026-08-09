@@ -38,7 +38,7 @@ class RowByRowTraversalPolicy extends FocusTraversalPolicy with DirectionalFocus
     }
 
     NodeSearcher searcher = NodeSearcher(direction);
-    List<CandidateNode> candidates = searcher.findCandidates(nodes, currentNode);
+    List<FocusNode> candidates = searcher.findCandidates(nodes, currentNode);
     if (candidates.isEmpty && direction == TraversalDirection.right) {
       // Reached the end of the row. This usually means "stay put" (e.g. the last item of a
       // long row that already reaches the edge of the screen has nothing further right at all)
@@ -68,7 +68,7 @@ class NodeSearcher {
   NodeSearcher(this.directionToSearch);
 
   /// should be called first
-  List<CandidateNode> findCandidates(List<FocusNode> nodes, FocusNode from) {
+  List<FocusNode> findCandidates(List<FocusNode> nodes, FocusNode from) {
     List<FocusNode> copy = List.from(nodes, growable: true);
 
     switch (directionToSearch) {
@@ -85,13 +85,13 @@ class NodeSearcher {
         copy.removeWhere((element) => element.isRightToOrEquals(from) || !element.isOnTheSameRow(from));
         break;
     }
-    return toCandidateNodes(copy);
+    return copy;
   }
 
   /// Used as a fallback when [findCandidates] finds nothing further right along the row: looks
   /// for a node that is both above `from` and still to the right of it, e.g. the header's
   /// settings icon reachable from the end of the topmost app row.
-  List<CandidateNode> findCandidatesAboveOnSameSide(List<FocusNode> nodes, FocusNode from) {
+  List<FocusNode> findCandidatesAboveOnSameSide(List<FocusNode> nodes, FocusNode from) {
     final copy = List<FocusNode>.from(nodes, growable: true);
     copy.removeWhere((element) => element.isBelowOrEquals(from) || element.isLeftToOrEquals(from));
     // With 3+ rows, "above and to the right" can also match app cards in a row that's merely
@@ -102,12 +102,10 @@ class NodeSearcher {
       final minDy = copy.map((node) => node.rect.center.dy.round()).reduce(min);
       copy.removeWhere((node) => node.rect.center.dy.round() != minDy);
     }
-    return toCandidateNodes(copy);
+    return copy;
   }
 
-  FocusNode findBestFocusNode(List<CandidateNode> nodes, FocusNode from) {
-    List<FocusNode> candidates = toFocusNodes(nodes);
-
+  FocusNode findBestFocusNode(List<FocusNode> candidates, FocusNode from) {
     return candidates.reduce((bestNode, challenger) {
       if (directionToSearch == TraversalDirection.down && challenger.isAbove(bestNode)) {
         return challenger;
@@ -126,18 +124,6 @@ class NodeSearcher {
     });
   }
 }
-
-/// An internal object to use the [NodeSearcher] class as expected
-class CandidateNode {
-  final FocusNode node;
-
-  CandidateNode(this.node);
-}
-
-/// Some conversion utilities used internally
-List<CandidateNode> toCandidateNodes(List<FocusNode> nodes) => nodes.map((e) => CandidateNode(e)).toList();
-
-List<FocusNode> toFocusNodes(List<CandidateNode> nodes) => nodes.map((e) => e.node).toList();
 
 /// A few extension methods to the [FocusNode] to be able to compare their
 /// respective position easily.
