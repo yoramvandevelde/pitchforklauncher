@@ -169,7 +169,11 @@ class WallpaperService extends ChangeNotifier {
     );
     final dstRect = Rect.fromLTWH(0, 0, targetWidth.toDouble(), targetHeight.toDouble());
     final recorder = PictureRecorder();
-    Canvas(recorder, dstRect).drawImageRect(image, srcRect, dstRect, Paint());
+    // Default Paint() is FilterQuality.none (nearest-neighbor) -- fine for the solid-color test
+    // fixtures this path is mostly exercised with, but visibly aliased/moiré on an actual detailed
+    // photo. This is a one-time bake, not a per-frame cost, so the pricier bilinear filter is free
+    // to use here.
+    Canvas(recorder, dstRect).drawImageRect(image, srcRect, dstRect, Paint()..filterQuality = FilterQuality.high);
     final resizedImage = await recorder.endRecording().toImage(targetWidth, targetHeight);
     // Uint8List.sublistView(), not `.buffer.asUint8List()` -- see _loadDefaultWallpaperBytes's
     // comment above for why the latter can silently return the wrong bytes.
