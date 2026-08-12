@@ -20,18 +20,25 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.** From the
-  2026-08-07 Kimi review pass, unverified against the running app: `_refreshState()`'s
-  `Future.forEach` over `appsRemovedFromSystem`'s `applicationExists` checks runs one
-  platform-channel round-trip at a time (list is almost always empty, but `Future.wait` would
-  collapse the round-trips when it isn't); `categoriesWithApps` allocates a fresh list +
-  `UnmodifiableListView` per category on every access, so `Selector`s reading it
-  (`categories_panel_page.dart`, `add_to_category_dialog.dart`) always see a new instance and
-  rebuild on every notification regardless of whether anything relevant changed -- a cached wrapper
-  invalidated on mutation would make them properly selective; the system-vs-database diff is an
-  O(n·m) linear scan that a `Set` of package names would make O(n).
-
 ## Done
+
+~~**`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.**~~ --
+decided (2026-08-12): not doing this. From the 2026-08-07 Kimi review pass, unverified against the
+running app: `_refreshState()`'s `Future.forEach` over `appsRemovedFromSystem`'s
+`applicationExists` checks runs one platform-channel round-trip at a time (list is almost always
+empty, but `Future.wait` would collapse the round-trips when it isn't); `categoriesWithApps`
+allocates a fresh list + `UnmodifiableListView` per category on every access, so `Selector`s
+reading it (`categories_panel_page.dart`, `add_to_category_dialog.dart`) always see a new instance
+and rebuild on every notification regardless of whether anything relevant changed -- a cached
+wrapper invalidated on mutation would make them properly selective; the system-vs-database diff is
+an O(n·m) linear scan that a `Set` of package names would make O(n). All three are genuine
+theoretical inefficiencies but none are felt in practice at this app's actual scale (a personal
+launcher, a few dozen installed apps at most) -- `Future.forEach` only runs over an
+almost-always-empty list, the `Selector` rebuild cost is unmeasurable at this size, and O(n·m) is
+irrelevant well below the item counts where it'd start to matter. None of these are code-level
+ugliness (idiomatic Dart as written, not sloppy), just unmeasured performance nitpicks from an AI
+review pass -- revisit only if the app's data sizes ever actually grow enough for one of these to
+become felt.
 
 ~~**The accessibility service only consumed `ACTION_UP`.**~~ -- fixed (2026-08-12):
 `HomeButtonAccessibilityService.kt` now also consumes `ACTION_DOWN` for any keycode it's actually
