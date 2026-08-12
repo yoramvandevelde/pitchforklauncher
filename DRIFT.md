@@ -242,10 +242,10 @@ instead of leaving the wallpaper picker looking frozen.
 
 ## TV input switcher
 
-Holding D-pad Up for 2 seconds on the home screen (`TvInputTrigger`) opens `TvInputBar`, letting
+Holding D-pad Up for 1 second on the home screen (`TvInputTrigger`) opens `TvInputBar`, letting
 the user switch the physical TV to a configured input (Xbox, cable box, etc.) directly from the
 launcher, without touching the TV's own remote or input-select menu. Every key event below the
-2-second threshold is ignored and falls through to normal `DirectionalFocusIntent` handling
+1-second threshold is ignored and falls through to normal `DirectionalFocusIntent` handling
 untouched, so ordinary Up presses/holds behave exactly as they did before this existed; the trigger
 also opens (to a shortcut into `TvInputsPanelPage`) even with zero inputs configured yet, so the
 gesture doubles as its own discovery path. Configured via Settings → Pitchfork Settings → TV Inputs.

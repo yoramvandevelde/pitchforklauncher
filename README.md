@@ -16,7 +16,7 @@ others find it useful.
   trade off, see "Set as default launcher" below.
 - **Remote button remapping**: map any other physical remote button to launch an app of your
   choice (Settings > Pitchfork Settings > Remote buttons).
-- **TV input switching**: hold D-pad Up for 2 seconds to switch the physical TV to a configured
+- **TV input switching**: hold D-pad Up for 1 second to switch the physical TV to a configured
   input (game console, cable box, etc.) straight from the launcher — no CEC dongle, no root.
   Ships with a Samsung Tizen profile, pluggable for other brands (Settings > Pitchfork Settings >
   TV Inputs).

@@ -64,35 +64,73 @@ class HomeButtonAccessibilityService : AccessibilityService() {
         )
     }
 
+    // Keycodes whose ACTION_DOWN this service has swallowed, so the matching ACTION_UP is
+    // swallowed too even if the claim check below would (rarely, e.g. mid-press mapping change)
+    // disagree by then. See onKeyEvent's doc comment for why DOWN needs to be consumed at all.
+    private val consumedKeyCodes = mutableSetOf<Int>()
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
 
     override fun onInterrupt() {}
 
+    /**
+     * Only consuming ACTION_UP (the pre-existing behavior below `handleKeyUp`) leaves
+     * ACTION_DOWN for the same key press to fall through to whatever's underneath — the
+     * foreground app, or the system. That's the classic shape of a both-things-fire bug: this
+     * hardware happens to ignore the stray DOWN, but other firmware may act on it (e.g. treat it
+     * as its own distinct press), racing against this service's UP-triggered launch. So any
+     * keycode this service is actually going to act on has both its DOWN and UP consumed —
+     * [isClaimedKeyCode] below mirrors the same conditions `handleKeyUp` checks, and
+     * [consumedKeyCodes] carries that DOWN-time decision forward to the matching UP.
+     */
     override fun onKeyEvent(event: KeyEvent): Boolean {
-        if (event.action != KeyEvent.ACTION_UP) {
-            return super.onKeyEvent(event)
+        if (event.action == KeyEvent.ACTION_UP) {
+            return handleKeyUp(event)
         }
+        if (isClaimedKeyCode(event.keyCode)) {
+            consumedKeyCodes.add(event.keyCode)
+            return true
+        }
+        return super.onKeyEvent(event)
+    }
 
-        if (ButtonCapture.active && event.keyCode !in RESERVED_KEYCODES) {
-            ButtonCapture.onCaptured?.invoke(event.keyCode)
+    private fun isClaimedKeyCode(keyCode: Int): Boolean {
+        if (ButtonCapture.active && keyCode !in RESERVED_KEYCODES) return true
+        if (keyCode == KeyEvent.KEYCODE_HOME) return true
+        // RESERVED_KEYCODES (other than Home, handled above) can never have a ButtonMappings
+        // entry — the capture dialog itself excludes them as a target — so skip straight past
+        // the SharedPreferences/PackageManager lookup below for the highest-traffic keys
+        // (D-pad navigation) this service sees.
+        if (keyCode in RESERVED_KEYCODES) return false
+        val packageName = ButtonMappings.get(this, keyCode) ?: return false
+        return packageManager.resolveLaunchIntent(packageName)?.intent != null
+    }
+
+    private fun handleKeyUp(event: KeyEvent): Boolean {
+        val keyCode = event.keyCode
+        val downWasConsumed = consumedKeyCodes.remove(keyCode)
+
+        if (ButtonCapture.active && keyCode !in RESERVED_KEYCODES) {
+            ButtonCapture.onCaptured?.invoke(keyCode)
             ButtonCapture.onCaptured = null
             return true
         }
 
-        if (event.keyCode == KeyEvent.KEYCODE_HOME) {
+        if (keyCode == KeyEvent.KEYCODE_HOME) {
             startActivity(Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             })
             return true
         }
 
-        ButtonMappings.get(this, event.keyCode)?.let { packageName ->
+        ButtonMappings.get(this, keyCode)?.let { packageName ->
             val launchIntent = packageManager.resolveLaunchIntent(packageName)?.intent
-                ?: return super.onKeyEvent(event)
-            startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-            return true
+            if (launchIntent != null) {
+                startActivity(launchIntent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+                return true
+            }
         }
 
-        return super.onKeyEvent(event)
+        return if (downWasConsumed) true else super.onKeyEvent(event)
     }
 }
