@@ -20,7 +20,7 @@ import 'package:flauncher/widgets/tv_input_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-const _holdDuration = Duration(seconds: 2);
+const _holdDuration = Duration(seconds: 1);
 
 /// Wraps the homescreen so holding D-pad Up for [_holdDuration] opens [TvInputBar]. Below the
 /// threshold every event is ignored, so it bubbles up to the normal DirectionalFocusIntent

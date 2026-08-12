@@ -32,7 +32,7 @@ class TvInputsPanelPage extends StatelessWidget {
         Text("TV Inputs", style: Theme.of(context).textTheme.titleLarge),
         Divider(),
         Text(
-          "Hold Up for 2 seconds on the homescreen to bring up a bar that switches the TV to "
+          "Hold Up for 1 second on the homescreen to bring up a bar that switches the TV to "
           "one of these inputs.",
           style: Theme.of(context).textTheme.bodySmall,
         ),

@@ -20,12 +20,6 @@
   beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
   schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
 
-- **At leisure, from the same review:** the accessibility service only consumes `ACTION_UP`
-  (`HomeButtonAccessibilityService.kt`) -- for Home and mapped buttons the `ACTION_DOWN` falls
-  through to the foreground app/system while `UP` is hijacked, the classic shape of a
-  both-things-fire bug on other firmware even though it works fine on this hardware; standard fix
-  is to also consume `DOWN` for any keycode being claimed, tracked until its matching `UP`.
-
 - **`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.** From the
   2026-08-07 Kimi review pass, unverified against the running app: `_refreshState()`'s
   `Future.forEach` over `appsRemovedFromSystem`'s `applicationExists` checks runs one
@@ -38,6 +32,29 @@
   O(n·m) linear scan that a `Set` of package names would make O(n).
 
 ## Done
+
+~~**The accessibility service only consumed `ACTION_UP`.**~~ -- fixed (2026-08-12):
+`HomeButtonAccessibilityService.kt` now also consumes `ACTION_DOWN` for any keycode it's actually
+going to act on (Home, an active button-capture target, or a keycode with a resolvable
+`ButtonMappings` entry) -- previously only the matching `UP` was hijacked, so the `DOWN` fell
+through to the foreground app/system, the classic shape of a both-things-fire bug on firmware that
+(unlike this hardware) reacts to it. `isClaimedKeyCode` mirrors the same conditions
+`handleKeyUp` checks, and a small `consumedKeyCodes` set carries that `DOWN`-time decision forward
+to the matching `UP` (per the standard fix this item described: consume `DOWN` for any keycode
+being claimed, tracked until its matching `UP`). Deliberately fast-paths past the
+`ButtonMappings`/`PackageManager` lookup for `RESERVED_KEYCODES` other than Home, since the capture
+dialog itself guarantees those can never have a mapping -- avoids adding a
+`SharedPreferences` read to the highest-traffic keys (D-pad navigation) this system-wide service
+sees on every press. Verified: `flutter analyze --fatal-infos`/`flutter test` (213 tests, unaffected
+-- Kotlin-only change), a clean debug build, and a manual check on the `GoogleTV_API34` emulator
+(Home button and plain D-pad navigation both behave exactly as before -- the emulator has no
+physical remote to test button-mapping launches against; that part is deferred to the next release
+on the real Streamer).
+
+  **Also done in the same pass, unrelated but requested alongside it:** shortened
+  `TvInputTrigger`'s hold-Up-to-open-`TvInputBar` threshold from 2 seconds to 1
+  (`lib/widgets/tv_input_trigger.dart`), with `README.md`, `DRIFT.md`, and
+  `TvInputsPanelPage`'s in-app hint text updated to match.
 
 ~~**Add `dart format --set-exit-if-changed` as a CI gate.**~~ -- done (2026-08-09), in two steps.
 **Reformat first:** running the format check that day would have failed on 61 files, mostly tests,
