@@ -49,7 +49,7 @@ class FLauncher extends StatelessWidget {
         children: [
           Consumer<WallpaperService>(
             builder: (_, wallpaper, _) => AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 500),
               // A plain linear cross-fade has both layers partially transparent around the
               // midpoint, letting the dark canvas beneath bleed through as a brightness dip.
               // Confining each curve to the first half of its own [0,1] range means the
