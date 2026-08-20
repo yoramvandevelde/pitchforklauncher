@@ -1,0 +1,15 @@
+# Commits to skip when running `git blame`, so bulk mechanical rewrites don't take credit for
+# lines they only reindented. Add a commit here only if it changed *no* behaviour -- formatter
+# runs, whitespace normalisation, repo-wide header rebrands and the like.
+#
+# GitHub's blame view reads this file automatically. Locally it needs to be enabled once:
+#
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Full 40-character SHAs only; git rejects abbreviated ones.
+
+# Reformat with dart format (tall style) + add it as a CI gate (#71)
+839333c279339a4c1f6af8ca5c7ef4f97ae4b462
+
+# Reformat with dart format on Dart 3.13, after the Flutter 3.47 bump
+ef985cdeb943ca5779ac771816a2853ac57fa3bd

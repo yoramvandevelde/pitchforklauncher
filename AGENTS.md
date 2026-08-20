@@ -76,6 +76,21 @@ it's the gate new work gets weighed against, not just this project's history. Th
   **GitLab** (`https://gitlab.com/flauncher/flauncher.git`), not the GitHub mirror some search
   results point to — the GitHub mirror lags behind GitLab.
 - This repo's commit convention: no AI co-author trailers in commit messages.
+- **Bulk mechanical commits go in `.git-blame-ignore-revs`.** Formatter runs, whitespace
+  normalisation, repo-wide header rebrands, anything that changed no behaviour, should be its
+  own commit, with its full 40-character SHA appended to that file, so `git blame` credits the
+  line to whoever last changed it for a reason. GitHub's blame view honours the file
+  automatically; locally it has to be enabled once per clone:
+  ```shell
+  git config blame.ignoreRevsFile .git-blame-ignore-revs
+  ```
+- **Run the CI gates before pushing**, not just the tests. `dart format` is a gate too, and a
+  Dart minor bump can reformat the whole tree:
+  ```shell
+  fvm dart format --output=none --set-exit-if-changed .
+  fvm flutter analyze --fatal-infos
+  fvm flutter test
+  ```
 
 ## Releases
 
