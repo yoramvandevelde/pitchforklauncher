@@ -90,9 +90,8 @@ void main() {
       tester,
     ) async {
       final wallpaperService = MockWallpaperService();
-      when(
-        wallpaperService.pickWallpaper(),
-      ).thenThrow(NoFileExplorerException());
+      when(wallpaperService.pickWallpaper())
+          .thenThrow(NoFileExplorerException());
 
       await _pumpWidgetWithProviders(tester, wallpaperService);
 
@@ -112,9 +111,8 @@ void main() {
     tester,
   ) async {
     final wallpaperService = MockWallpaperService();
-    when(
-      wallpaperService.resetToDefaultWallpaper(),
-    ).thenAnswer((_) => Future.value());
+    when(wallpaperService.resetToDefaultWallpaper())
+        .thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(tester, wallpaperService);
 

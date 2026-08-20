@@ -50,9 +50,8 @@ void main() {
 
   test("setMapping persists and refreshes", () async {
     final fLauncherChannel = MockFLauncherChannel();
-    when(
-      fLauncherChannel.getButtonMappings(),
-    ).thenAnswer((_) => Future.value([]));
+    when(fLauncherChannel.getButtonMappings())
+        .thenAnswer((_) => Future.value([]));
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
     await untilCalled(fLauncherChannel.getButtonMappings());
     when(fLauncherChannel.getButtonMappings()).thenAnswer(
@@ -87,9 +86,8 @@ void main() {
     );
     final buttonMappingService = ButtonMappingService(fLauncherChannel);
     await untilCalled(fLauncherChannel.getButtonMappings());
-    when(
-      fLauncherChannel.getButtonMappings(),
-    ).thenAnswer((_) => Future.value([]));
+    when(fLauncherChannel.getButtonMappings())
+        .thenAnswer((_) => Future.value([]));
 
     await buttonMappingService.removeMapping(190);
 
@@ -99,9 +97,8 @@ void main() {
 
   test("captureNextButton delegates to the channel", () {
     final fLauncherChannel = MockFLauncherChannel();
-    when(
-      fLauncherChannel.getButtonMappings(),
-    ).thenAnswer((_) => Future.value([]));
+    when(fLauncherChannel.getButtonMappings())
+        .thenAnswer((_) => Future.value([]));
     when(
       fLauncherChannel.captureNextButton(),
     ).thenAnswer((_) => Stream.value({"keyCode": 4, "label": "KEYCODE_BACK"}));

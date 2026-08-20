@@ -113,9 +113,8 @@ void main() {
     final appsService = MockAppsService();
     when(buttonMappingService.mappings).thenReturn([]);
     when(appsService.applications).thenReturn([]);
-    when(
-      buttonMappingService.captureNextButton(),
-    ).thenAnswer((_) => const Stream.empty());
+    when(buttonMappingService.captureNextButton())
+        .thenAnswer((_) => const Stream.empty());
 
     await _pumpWidgetWithProviders(tester, buttonMappingService, appsService);
     await tester.tap(find.text("Add mapping"));

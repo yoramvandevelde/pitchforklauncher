@@ -204,9 +204,8 @@ void main() {
       CategoryWithApps(favoritesCategory, []),
       CategoryWithApps(fakeCategory(name: "Applications"), []),
     ]);
-    when(
-      appsService.setCategoryShowName(favoritesCategory, false),
-    ).thenAnswer((_) => Future.value());
+    when(appsService.setCategoryShowName(favoritesCategory, false))
+        .thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(tester, appsService, favoritesCategory.id);
 

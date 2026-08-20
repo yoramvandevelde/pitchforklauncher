@@ -138,9 +138,9 @@ class CategoryPanelPage extends StatelessWidget {
                                   value: value,
                                   child: Text(
                                     value.toString(),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
                                   ),
                                 ),
                               )
@@ -169,9 +169,9 @@ class CategoryPanelPage extends StatelessWidget {
                                   value: value,
                                   child: Text(
                                     value.toString(),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
                                   ),
                                 ),
                               )

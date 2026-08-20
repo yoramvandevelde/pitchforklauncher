@@ -132,9 +132,8 @@ void main() {
     final backupService = MockSettingsBackupService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-    when(
-      backupService.isStorageAvailable(),
-    ).thenAnswer((_) => Future.value(true));
+    when(backupService.isStorageAvailable())
+        .thenAnswer((_) => Future.value(true));
     when(backupService.exportSettings()).thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(
@@ -171,9 +170,8 @@ void main() {
     final backupService = MockSettingsBackupService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-    when(
-      backupService.isStorageAvailable(),
-    ).thenAnswer((_) => Future.value(true));
+    when(backupService.isStorageAvailable())
+        .thenAnswer((_) => Future.value(true));
     when(backupService.exportSettings()).thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(
@@ -210,9 +208,8 @@ void main() {
     final backupService = MockSettingsBackupService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-    when(
-      backupService.isStorageAvailable(),
-    ).thenAnswer((_) => Future.value(true));
+    when(backupService.isStorageAvailable())
+        .thenAnswer((_) => Future.value(true));
     when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(
@@ -250,9 +247,8 @@ void main() {
     final backupService = MockSettingsBackupService();
     when(settingsService.use24HourTimeFormat).thenReturn(false);
     when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-    when(
-      backupService.isStorageAvailable(),
-    ).thenAnswer((_) => Future.value(true));
+    when(backupService.isStorageAvailable())
+        .thenAnswer((_) => Future.value(true));
     when(backupService.importSettings()).thenAnswer((_) => Future.value());
 
     await _pumpWidgetWithProviders(
@@ -291,15 +287,12 @@ void main() {
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(false));
-      when(
-        backupService.isStorageSupported(),
-      ).thenAnswer((_) => Future.value(true));
-      when(
-        backupService.openStoragePermissionSettings(),
-      ).thenAnswer((_) => Future.value(true));
+      when(backupService.isStorageAvailable())
+          .thenAnswer((_) => Future.value(false));
+      when(backupService.isStorageSupported())
+          .thenAnswer((_) => Future.value(true));
+      when(backupService.openStoragePermissionSettings())
+          .thenAnswer((_) => Future.value(true));
 
       await _pumpWidgetWithProviders(
         tester,
@@ -338,12 +331,10 @@ void main() {
       final backupService = MockSettingsBackupService();
       when(settingsService.use24HourTimeFormat).thenReturn(false);
       when(settingsService.appHighlightAnimationEnabled).thenReturn(true);
-      when(
-        backupService.isStorageAvailable(),
-      ).thenAnswer((_) => Future.value(false));
-      when(
-        backupService.isStorageSupported(),
-      ).thenAnswer((_) => Future.value(false));
+      when(backupService.isStorageAvailable())
+          .thenAnswer((_) => Future.value(false));
+      when(backupService.isStorageSupported())
+          .thenAnswer((_) => Future.value(false));
 
       await _pumpWidgetWithProviders(
         tester,

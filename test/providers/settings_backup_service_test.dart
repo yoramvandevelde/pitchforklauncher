@@ -39,13 +39,12 @@ void main() {
   setUp(() {
     fakeDownloads = {};
     fLauncherChannel = MockFLauncherChannel();
-    when(fLauncherChannel.writeSettingsBackup(any, any)).thenAnswer((
-      invocation,
-    ) {
-      fakeDownloads[invocation.positionalArguments[0] as String] =
-          invocation.positionalArguments[1] as Uint8List;
-      return Future.value(true);
-    });
+    when(fLauncherChannel.writeSettingsBackup(any, any))
+        .thenAnswer((invocation) {
+          fakeDownloads[invocation.positionalArguments[0] as String] =
+              invocation.positionalArguments[1] as Uint8List;
+          return Future.value(true);
+        });
     when(fLauncherChannel.readSettingsBackup(any)).thenAnswer(
       (invocation) => Future.value(
         fakeDownloads[invocation.positionalArguments[0] as String],
@@ -53,194 +52,186 @@ void main() {
     );
   });
 
-  test(
-    "export and import roundtrip restores settings, categories, mappings and wallpaper",
-    () async {
-      final database = FLauncherDatabase.inMemory();
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
-      final wallpaperService = MockWallpaperService();
-      final tvInputService = MockTvInputService();
-      final appsService = MockAppsService();
-      final buttonMappingService = MockButtonMappingService();
+  test("export and import roundtrip restores settings, categories, mappings and wallpaper", () async {
+    final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+    final wallpaperService = MockWallpaperService();
+    final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
 
-      await database.persistApps([
-        AppsCompanion.insert(
-          packageName: 'com.app.one',
-          name: 'App One',
-          version: '1',
-        ),
-        AppsCompanion.insert(
-          packageName: 'com.app.two',
-          name: 'App Two',
-          version: '1',
-        ),
-        AppsCompanion.insert(
-          packageName: 'com.hidden.app',
-          name: 'Hidden App',
-          version: '1',
-        ),
-        AppsCompanion.insert(
-          packageName: 'com.google.android.youtube',
-          name: 'YouTube',
-          version: '1',
-        ),
-      ]);
-      await database.updateApp(
-        'com.hidden.app',
-        const AppsCompanion(hidden: Value(true)),
-      );
+    await database.persistApps([
+      AppsCompanion.insert(
+        packageName: 'com.app.one',
+        name: 'App One',
+        version: '1',
+      ),
+      AppsCompanion.insert(
+        packageName: 'com.app.two',
+        name: 'App Two',
+        version: '1',
+      ),
+      AppsCompanion.insert(
+        packageName: 'com.hidden.app',
+        name: 'Hidden App',
+        version: '1',
+      ),
+      AppsCompanion.insert(
+        packageName: 'com.google.android.youtube',
+        name: 'YouTube',
+        version: '1',
+      ),
+    ]);
+    await database.updateApp(
+      'com.hidden.app',
+      const AppsCompanion(hidden: Value(true)),
+    );
 
-      await database.insertCategory(
-        CategoriesCompanion.insert(
-          name: 'Streaming',
-          type: Value(CategoryType.grid),
-          order: 0,
-          showName: Value(false),
-        ),
-      );
-      final category = await (database.select(
-        database.categories,
-      )..where((c) => c.name.equals('Streaming'))).getSingle();
-      await database.insertAppsCategories([
-        AppsCategoriesCompanion.insert(
-          categoryId: category.id,
-          appPackageName: 'com.app.one',
-          order: 0,
-        ),
-        AppsCategoriesCompanion.insert(
-          categoryId: category.id,
-          appPackageName: 'com.app.two',
-          order: 1,
-        ),
-      ]);
+    await database.insertCategory(
+      CategoriesCompanion.insert(
+        name: 'Streaming',
+        type: Value(CategoryType.grid),
+        order: 0,
+        showName: Value(false),
+      ),
+    );
+    final category = await (database.select(
+      database.categories,
+    )..where((c) => c.name.equals('Streaming'))).getSingle();
+    await database.insertAppsCategories([
+      AppsCategoriesCompanion.insert(
+        categoryId: category.id,
+        appPackageName: 'com.app.one',
+        order: 0,
+      ),
+      AppsCategoriesCompanion.insert(
+        categoryId: category.id,
+        appPackageName: 'com.app.two',
+        order: 1,
+      ),
+    ]);
 
-      await settingsService.setUse24HourTimeFormat(false);
-      await settingsService.setAppHighlightAnimationEnabled(false);
-      await settingsService.setGradientUuid('gradient-uuid');
+    await settingsService.setUse24HourTimeFormat(false);
+    await settingsService.setAppHighlightAnimationEnabled(false);
+    await settingsService.setGradientUuid('gradient-uuid');
 
-      when(
-        wallpaperService.wallpaperBytes,
-      ).thenReturn(Uint8List.fromList([0x01, 0x02, 0x03]));
-      when(buttonMappingService.mappings).thenReturn([
-        ButtonMapping(190, 'YouTube', 'com.google.android.youtube'),
-      ]);
-      when(tvInputService.inputs).thenReturn([
-        const TvInputConfig(
-          id: 'tv1',
-          label: 'Xbox',
-          profileId: 'generic',
-          params: {'host': '192.168.1.50'},
-        ),
-      ]);
+    when(wallpaperService.wallpaperBytes)
+        .thenReturn(Uint8List.fromList([0x01, 0x02, 0x03]));
+    when(
+      buttonMappingService.mappings,
+    ).thenReturn([ButtonMapping(190, 'YouTube', 'com.google.android.youtube')]);
+    when(tvInputService.inputs).thenReturn([
+      const TvInputConfig(
+        id: 'tv1',
+        label: 'Xbox',
+        profileId: 'generic',
+        params: {'host': '192.168.1.50'},
+      ),
+    ]);
 
-      final backupService = SettingsBackupService(
-        database,
-        settingsService,
-        wallpaperService,
-        tvInputService,
-        appsService,
-        buttonMappingService,
-        fLauncherChannel,
-      );
+    final backupService = SettingsBackupService(
+      database,
+      settingsService,
+      wallpaperService,
+      tvInputService,
+      appsService,
+      buttonMappingService,
+      fLauncherChannel,
+    );
 
-      await backupService.exportSettings();
+    await backupService.exportSettings();
 
-      expect(fakeDownloads[SettingsBackupService.backupFileName], isNotNull);
+    expect(fakeDownloads[SettingsBackupService.backupFileName], isNotNull);
 
-      // Mutate everything before importing.
-      await database.delete(database.categories).go();
-      await database.insertCategory(
-        CategoriesCompanion.insert(name: 'Other', order: 0),
-      );
-      await database.updateApp(
-        'com.hidden.app',
-        const AppsCompanion(hidden: Value(false)),
-      );
-      await settingsService.setUse24HourTimeFormat(true);
-      await settingsService.setAppHighlightAnimationEnabled(true);
-      await settingsService.setGradientUuid('other-gradient');
-      when(
-        wallpaperService.wallpaperBytes,
-      ).thenReturn(Uint8List.fromList([0xFF]));
+    // Mutate everything before importing.
+    await database.delete(database.categories).go();
+    await database.insertCategory(
+      CategoriesCompanion.insert(name: 'Other', order: 0),
+    );
+    await database.updateApp(
+      'com.hidden.app',
+      const AppsCompanion(hidden: Value(false)),
+    );
+    await settingsService.setUse24HourTimeFormat(true);
+    await settingsService.setAppHighlightAnimationEnabled(true);
+    await settingsService.setGradientUuid('other-gradient');
+    when(wallpaperService.wallpaperBytes)
+        .thenReturn(Uint8List.fromList([0xFF]));
 
-      final capturedMappings = <Map<String, dynamic>>[];
-      final removedKeyCodes = <int>[];
-      when(
-        buttonMappingService.mappings,
-      ).thenReturn([ButtonMapping(999, 'Old', 'com.old')]);
-      when(buttonMappingService.removeMapping(any)).thenAnswer((invocation) {
-        removedKeyCodes.add(invocation.positionalArguments[0] as int);
-        return Future.value();
+    final capturedMappings = <Map<String, dynamic>>[];
+    final removedKeyCodes = <int>[];
+    when(buttonMappingService.mappings)
+        .thenReturn([ButtonMapping(999, 'Old', 'com.old')]);
+    when(buttonMappingService.removeMapping(any)).thenAnswer((invocation) {
+      removedKeyCodes.add(invocation.positionalArguments[0] as int);
+      return Future.value();
+    });
+    when(buttonMappingService.setMapping(any, any)).thenAnswer((invocation) {
+      capturedMappings.add({
+        'keyCode': invocation.positionalArguments[0] as int,
+        'packageName': invocation.positionalArguments[1] as String,
       });
-      when(buttonMappingService.setMapping(any, any)).thenAnswer((invocation) {
-        capturedMappings.add({
-          'keyCode': invocation.positionalArguments[0] as int,
-          'packageName': invocation.positionalArguments[1] as String,
-        });
-        return Future.value();
-      });
+      return Future.value();
+    });
 
-      Uint8List? restoredWallpaper;
-      when(wallpaperService.restoreWallpaper(any)).thenAnswer((invocation) {
-        restoredWallpaper = invocation.positionalArguments[0] as Uint8List?;
-        return Future.value();
-      });
-      List<TvInputConfig>? restoredTvInputs;
-      when(tvInputService.replaceAll(any)).thenAnswer((invocation) {
-        restoredTvInputs =
-            invocation.positionalArguments[0] as List<TvInputConfig>;
-        return Future.value();
-      });
-      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
+    Uint8List? restoredWallpaper;
+    when(wallpaperService.restoreWallpaper(any)).thenAnswer((invocation) {
+      restoredWallpaper = invocation.positionalArguments[0] as Uint8List?;
+      return Future.value();
+    });
+    List<TvInputConfig>? restoredTvInputs;
+    when(tvInputService.replaceAll(any)).thenAnswer((invocation) {
+      restoredTvInputs =
+          invocation.positionalArguments[0] as List<TvInputConfig>;
+      return Future.value();
+    });
+    when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
 
-      await backupService.importSettings();
+    await backupService.importSettings();
 
-      final restoredCategories = await database
-          .select(database.categories)
-          .get();
-      expect(restoredCategories.length, 1);
-      expect(restoredCategories.first.name, 'Streaming');
-      expect(restoredCategories.first.type, CategoryType.grid);
-      expect(restoredCategories.first.showName, false);
+    final restoredCategories = await database.select(database.categories).get();
+    expect(restoredCategories.length, 1);
+    expect(restoredCategories.first.name, 'Streaming');
+    expect(restoredCategories.first.type, CategoryType.grid);
+    expect(restoredCategories.first.showName, false);
 
-      final restoredAssignments = await database
-          .select(database.appsCategories)
-          .get();
-      expect(restoredAssignments.length, 2);
-      expect(restoredAssignments.map((a) => a.appPackageName).toList(), [
-        'com.app.one',
-        'com.app.two',
-      ]);
+    final restoredAssignments = await database
+        .select(database.appsCategories)
+        .get();
+    expect(restoredAssignments.length, 2);
+    expect(restoredAssignments.map((a) => a.appPackageName).toList(), [
+      'com.app.one',
+      'com.app.two',
+    ]);
 
-      final hiddenApp = await (database.select(
-        database.apps,
-      )..where((a) => a.packageName.equals('com.hidden.app'))).getSingle();
-      expect(hiddenApp.hidden, isTrue);
+    final hiddenApp = await (database.select(
+      database.apps,
+    )..where((a) => a.packageName.equals('com.hidden.app'))).getSingle();
+    expect(hiddenApp.hidden, isTrue);
 
-      expect(settingsService.use24HourTimeFormat, isFalse);
-      expect(settingsService.appHighlightAnimationEnabled, isFalse);
-      expect(settingsService.gradientUuid, 'gradient-uuid');
+    expect(settingsService.use24HourTimeFormat, isFalse);
+    expect(settingsService.appHighlightAnimationEnabled, isFalse);
+    expect(settingsService.gradientUuid, 'gradient-uuid');
 
-      expect(removedKeyCodes, [999]);
-      expect(capturedMappings, [
-        {'keyCode': 190, 'packageName': 'com.google.android.youtube'},
-      ]);
+    expect(removedKeyCodes, [999]);
+    expect(capturedMappings, [
+      {'keyCode': 190, 'packageName': 'com.google.android.youtube'},
+    ]);
 
-      expect(restoredWallpaper, Uint8List.fromList([0x01, 0x02, 0x03]));
+    expect(restoredWallpaper, Uint8List.fromList([0x01, 0x02, 0x03]));
 
-      expect(restoredTvInputs, hasLength(1));
-      expect(restoredTvInputs!.first.id, 'tv1');
-      expect(restoredTvInputs!.first.label, 'Xbox');
-      expect(restoredTvInputs!.first.profileId, 'generic');
-      expect(restoredTvInputs!.first.params, {'host': '192.168.1.50'});
+    expect(restoredTvInputs, hasLength(1));
+    expect(restoredTvInputs!.first.id, 'tv1');
+    expect(restoredTvInputs!.first.label, 'Xbox');
+    expect(restoredTvInputs!.first.profileId, 'generic');
+    expect(restoredTvInputs!.first.params, {'host': '192.168.1.50'});
 
-      verify(appsService.reloadFromDatabase());
+    verify(appsService.reloadFromDatabase());
 
-      await database.close();
-    },
-  );
+    await database.close();
+  });
 
   test("import without wallpaper restores gradient wallpaper", () async {
     final database = FLauncherDatabase.inMemory();
@@ -264,12 +255,10 @@ void main() {
 
     when(wallpaperService.wallpaperBytes).thenReturn(null);
     when(buttonMappingService.mappings).thenReturn([]);
-    when(
-      buttonMappingService.removeMapping(any),
-    ).thenAnswer((_) => Future.value());
-    when(
-      buttonMappingService.setMapping(any, any),
-    ).thenAnswer((_) => Future.value());
+    when(buttonMappingService.removeMapping(any))
+        .thenAnswer((_) => Future.value());
+    when(buttonMappingService.setMapping(any, any))
+        .thenAnswer((_) => Future.value());
     when(tvInputService.inputs).thenReturn([]);
     when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
     when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -396,15 +385,12 @@ void main() {
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
       when(buttonMappingService.mappings).thenReturn([]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        buttonMappingService.setMapping(any, any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
+      when(buttonMappingService.removeMapping(any))
+          .thenAnswer((_) => Future.value());
+      when(buttonMappingService.setMapping(any, any))
+          .thenAnswer((_) => Future.value());
+      when(wallpaperService.restoreWallpaper(any))
+          .thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
       when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
       when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -456,15 +442,12 @@ void main() {
 
     when(wallpaperService.wallpaperBytes).thenReturn(null);
     when(buttonMappingService.mappings).thenReturn([]);
-    when(
-      buttonMappingService.removeMapping(any),
-    ).thenAnswer((_) => Future.value());
-    when(
-      buttonMappingService.setMapping(any, any),
-    ).thenAnswer((_) => Future.value());
-    when(
-      wallpaperService.restoreWallpaper(any),
-    ).thenAnswer((_) => Future.value());
+    when(buttonMappingService.removeMapping(any))
+        .thenAnswer((_) => Future.value());
+    when(buttonMappingService.setMapping(any, any))
+        .thenAnswer((_) => Future.value());
+    when(wallpaperService.restoreWallpaper(any))
+        .thenAnswer((_) => Future.value());
     when(tvInputService.inputs).thenReturn([]);
     when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
     when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -536,15 +519,12 @@ void main() {
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
       when(buttonMappingService.mappings).thenReturn([]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        buttonMappingService.setMapping(any, any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
+      when(buttonMappingService.removeMapping(any))
+          .thenAnswer((_) => Future.value());
+      when(buttonMappingService.setMapping(any, any))
+          .thenAnswer((_) => Future.value());
+      when(wallpaperService.restoreWallpaper(any))
+          .thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
       when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
       when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -602,108 +582,102 @@ void main() {
     await database.close();
   });
 
-  test(
-    "throws BackupException on syntactically valid JSON with the wrong shape",
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final database = FLauncherDatabase.inMemory();
-      // Valid JSON, but missing the 'settings' key entirely -- casting the missing value to
-      // Map<String, dynamic> throws a TypeError, not a FormatException/Exception.
-      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
-        utf8.encode(
-          jsonEncode({
-            'version': 1,
-            'categories': [],
-            'hiddenApps': [],
-            'buttonMappings': [],
-          }),
-        ),
-      );
+  test("throws BackupException on syntactically valid JSON with the wrong shape", () async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final database = FLauncherDatabase.inMemory();
+    // Valid JSON, but missing the 'settings' key entirely -- casting the missing value to
+    // Map<String, dynamic> throws a TypeError, not a FormatException/Exception.
+    fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'version': 1,
+          'categories': [],
+          'hiddenApps': [],
+          'buttonMappings': [],
+        }),
+      ),
+    );
 
-      final backupService = SettingsBackupService(
-        database,
-        SettingsService(sharedPreferences),
-        MockWallpaperService(),
-        MockTvInputService(),
-        MockAppsService(),
-        MockButtonMappingService(),
-        fLauncherChannel,
-      );
+    final backupService = SettingsBackupService(
+      database,
+      SettingsService(sharedPreferences),
+      MockWallpaperService(),
+      MockTvInputService(),
+      MockAppsService(),
+      MockButtonMappingService(),
+      fLauncherChannel,
+    );
 
-      expect(
-        () => backupService.importSettings(),
-        throwsA(isA<BackupException>()),
-      );
+    expect(
+      () => backupService.importSettings(),
+      throwsA(isA<BackupException>()),
+    );
 
-      await database.close();
-    },
-  );
+    await database.close();
+  });
 
-  test(
-    "leaves settings untouched when a category later in the payload has a bad enum value",
-    () async {
-      final database = FLauncherDatabase.inMemory();
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
+  test("leaves settings untouched when a category later in the payload has a bad enum value", () async {
+    final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
 
-      await settingsService.setUse24HourTimeFormat(true);
+    await settingsService.setUse24HourTimeFormat(true);
 
-      // Everything parses fine except the category's 'sort' value, which isn't a real
-      // CategorySort name. Validating the whole payload up front (rather than only once the
-      // database step gets to this category) means the settings restore below should never run.
-      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
-        utf8.encode(
-          jsonEncode({
-            'version': 1,
-            'settings': {
-              'use24HourTimeFormat': false,
-              'appHighlightAnimationEnabled': false,
-              'gradientUuid': null,
-              'picsumPhotoId': null,
-              'picsumGrayscale': false,
-              'picsumBlur': null,
+    // Everything parses fine except the category's 'sort' value, which isn't a real
+    // CategorySort name. Validating the whole payload up front (rather than only once the
+    // database step gets to this category) means the settings restore below should never run.
+    fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'version': 1,
+          'settings': {
+            'use24HourTimeFormat': false,
+            'appHighlightAnimationEnabled': false,
+            'gradientUuid': null,
+            'picsumPhotoId': null,
+            'picsumGrayscale': false,
+            'picsumBlur': null,
+          },
+          'categories': [
+            {
+              'name': 'Streaming',
+              'sort': 'not_a_real_sort_value',
+              'type': 'grid',
+              'rowHeight': 110,
+              'columnsCount': 6,
+              'order': 0,
+              'apps': [],
             },
-            'categories': [
-              {
-                'name': 'Streaming',
-                'sort': 'not_a_real_sort_value',
-                'type': 'grid',
-                'rowHeight': 110,
-                'columnsCount': 6,
-                'order': 0,
-                'apps': [],
-              },
-            ],
-            'hiddenApps': [],
-            'buttonMappings': [],
-            'tvInputs': [],
-            'wallpaperBytesBase64': null,
-          }),
-        ),
-      );
+          ],
+          'hiddenApps': [],
+          'buttonMappings': [],
+          'tvInputs': [],
+          'wallpaperBytesBase64': null,
+        }),
+      ),
+    );
 
-      final backupService = SettingsBackupService(
-        database,
-        settingsService,
-        MockWallpaperService(),
-        MockTvInputService(),
-        MockAppsService(),
-        MockButtonMappingService(),
-        fLauncherChannel,
-      );
+    final backupService = SettingsBackupService(
+      database,
+      settingsService,
+      MockWallpaperService(),
+      MockTvInputService(),
+      MockAppsService(),
+      MockButtonMappingService(),
+      fLauncherChannel,
+    );
 
-      await expectLater(
-        () => backupService.importSettings(),
-        throwsA(isA<BackupException>()),
-      );
+    await expectLater(
+      () => backupService.importSettings(),
+      throwsA(isA<BackupException>()),
+    );
 
-      expect(settingsService.use24HourTimeFormat, isTrue);
+    expect(settingsService.use24HourTimeFormat, isTrue);
 
-      await database.close();
-    },
-  );
+    await database.close();
+  });
 
   test(
     "import skips button mappings pointing at apps that are not installed",
@@ -730,9 +704,8 @@ void main() {
         ButtonMapping(1, 'One', 'com.app.one'),
         ButtonMapping(2, 'Uninstalled', 'com.not.installed'),
       ]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
+      when(buttonMappingService.removeMapping(any))
+          .thenAnswer((_) => Future.value());
       final capturedMappings = <Map<String, dynamic>>[];
       when(buttonMappingService.setMapping(any, any)).thenAnswer((invocation) {
         capturedMappings.add({
@@ -741,9 +714,8 @@ void main() {
         });
         return Future.value();
       });
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
+      when(wallpaperService.restoreWallpaper(any))
+          .thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
       when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
       when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -784,15 +756,12 @@ void main() {
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
       when(buttonMappingService.mappings).thenReturn([]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        buttonMappingService.setMapping(any, any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
+      when(buttonMappingService.removeMapping(any))
+          .thenAnswer((_) => Future.value());
+      when(buttonMappingService.setMapping(any, any))
+          .thenAnswer((_) => Future.value());
+      when(wallpaperService.restoreWallpaper(any))
+          .thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
       when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
       when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
@@ -844,15 +813,12 @@ void main() {
 
       when(wallpaperService.wallpaperBytes).thenReturn(null);
       when(buttonMappingService.mappings).thenReturn([]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        buttonMappingService.setMapping(any, any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
+      when(buttonMappingService.removeMapping(any))
+          .thenAnswer((_) => Future.value());
+      when(buttonMappingService.setMapping(any, any))
+          .thenAnswer((_) => Future.value());
+      when(wallpaperService.restoreWallpaper(any))
+          .thenAnswer((_) => Future.value());
       when(tvInputService.inputs).thenReturn([]);
       when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
 
@@ -869,9 +835,8 @@ void main() {
       await backupService.exportSettings();
 
       // Make the wallpaper-restore step (which runs before the database transaction) fail.
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenThrow(Exception('disk full'));
+      when(wallpaperService.restoreWallpaper(any))
+          .thenThrow(Exception('disk full'));
 
       await expectLater(
         () => backupService.importSettings(),
@@ -902,9 +867,8 @@ void main() {
     when(wallpaperService.wallpaperBytes).thenReturn(null);
     when(buttonMappingService.mappings).thenReturn([]);
     when(tvInputService.inputs).thenReturn([]);
-    when(
-      fLauncherChannel.writeSettingsBackup(any, any),
-    ).thenAnswer((_) => Future.value(false));
+    when(fLauncherChannel.writeSettingsBackup(any, any))
+        .thenAnswer((_) => Future.value(false));
 
     final backupService = SettingsBackupService(
       database,
@@ -924,139 +888,126 @@ void main() {
     await database.close();
   });
 
-  test(
-    "export strips a Samsung TV input's pairing token, keeps the rest of its params",
-    () async {
-      final database = FLauncherDatabase.inMemory();
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
-      final wallpaperService = MockWallpaperService();
-      final tvInputService = MockTvInputService();
-      final appsService = MockAppsService();
-      final buttonMappingService = MockButtonMappingService();
+  test("export strips a Samsung TV input's pairing token, keeps the rest of its params", () async {
+    final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+    final wallpaperService = MockWallpaperService();
+    final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
 
-      when(wallpaperService.wallpaperBytes).thenReturn(null);
-      when(buttonMappingService.mappings).thenReturn([]);
-      when(tvInputService.inputs).thenReturn([
-        const TvInputConfig(
-          id: 'tv1',
-          label: 'Living room TV',
-          profileId: 'samsung_tizen',
-          params: {
-            'host': '192.168.1.50',
-            'key': 'KEY_HDMI',
-            'token': 'has-replay-value-dont-export-me',
+    when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(buttonMappingService.mappings).thenReturn([]);
+    when(tvInputService.inputs).thenReturn([
+      const TvInputConfig(
+        id: 'tv1',
+        label: 'Living room TV',
+        profileId: 'samsung_tizen',
+        params: {
+          'host': '192.168.1.50',
+          'key': 'KEY_HDMI',
+          'token': 'has-replay-value-dont-export-me',
+        },
+      ),
+    ]);
+
+    final backupService = SettingsBackupService(
+      database,
+      settingsService,
+      wallpaperService,
+      tvInputService,
+      appsService,
+      buttonMappingService,
+      fLauncherChannel,
+    );
+
+    await backupService.exportSettings();
+
+    final exported = jsonDecode(
+      utf8.decode(fakeDownloads[SettingsBackupService.backupFileName]!),
+    ) as Map<String, dynamic>;
+    final exportedParams =
+        (exported['tvInputs'] as List)[0]['params'] as Map<String, dynamic>;
+    expect(exportedParams, {'host': '192.168.1.50', 'key': 'KEY_HDMI'});
+    expect(exportedParams.containsKey('token'), isFalse);
+
+    await database.close();
+  });
+
+  test("import defaults a category's showName to true when absent (backup predates the field)", () async {
+    final database = FLauncherDatabase.inMemory();
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final settingsService = SettingsService(sharedPreferences);
+    final wallpaperService = MockWallpaperService();
+    final tvInputService = MockTvInputService();
+    final appsService = MockAppsService();
+    final buttonMappingService = MockButtonMappingService();
+
+    when(wallpaperService.wallpaperBytes).thenReturn(null);
+    when(buttonMappingService.mappings).thenReturn([]);
+    when(buttonMappingService.removeMapping(any))
+        .thenAnswer((_) => Future.value());
+    when(buttonMappingService.setMapping(any, any))
+        .thenAnswer((_) => Future.value());
+    when(wallpaperService.restoreWallpaper(any))
+        .thenAnswer((_) => Future.value());
+    when(tvInputService.inputs).thenReturn([]);
+    when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
+    when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
+
+    fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
+      utf8.encode(
+        jsonEncode({
+          'version': 1,
+          'settings': {
+            'use24HourTimeFormat': false,
+            'appHighlightAnimationEnabled': false,
+            'gradientUuid': null,
+            'picsumPhotoId': null,
+            'picsumGrayscale': false,
+            'picsumBlur': null,
           },
-        ),
-      ]);
-
-      final backupService = SettingsBackupService(
-        database,
-        settingsService,
-        wallpaperService,
-        tvInputService,
-        appsService,
-        buttonMappingService,
-        fLauncherChannel,
-      );
-
-      await backupService.exportSettings();
-
-      final exported =
-          jsonDecode(
-                utf8.decode(
-                  fakeDownloads[SettingsBackupService.backupFileName]!,
-                ),
-              )
-              as Map<String, dynamic>;
-      final exportedParams =
-          (exported['tvInputs'] as List)[0]['params'] as Map<String, dynamic>;
-      expect(exportedParams, {'host': '192.168.1.50', 'key': 'KEY_HDMI'});
-      expect(exportedParams.containsKey('token'), isFalse);
-
-      await database.close();
-    },
-  );
-
-  test(
-    "import defaults a category's showName to true when absent (backup predates the field)",
-    () async {
-      final database = FLauncherDatabase.inMemory();
-      SharedPreferences.setMockInitialValues({});
-      final sharedPreferences = await SharedPreferences.getInstance();
-      final settingsService = SettingsService(sharedPreferences);
-      final wallpaperService = MockWallpaperService();
-      final tvInputService = MockTvInputService();
-      final appsService = MockAppsService();
-      final buttonMappingService = MockButtonMappingService();
-
-      when(wallpaperService.wallpaperBytes).thenReturn(null);
-      when(buttonMappingService.mappings).thenReturn([]);
-      when(
-        buttonMappingService.removeMapping(any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        buttonMappingService.setMapping(any, any),
-      ).thenAnswer((_) => Future.value());
-      when(
-        wallpaperService.restoreWallpaper(any),
-      ).thenAnswer((_) => Future.value());
-      when(tvInputService.inputs).thenReturn([]);
-      when(tvInputService.replaceAll(any)).thenAnswer((_) => Future.value());
-      when(appsService.reloadFromDatabase()).thenAnswer((_) => Future.value());
-
-      fakeDownloads[SettingsBackupService.backupFileName] = Uint8List.fromList(
-        utf8.encode(
-          jsonEncode({
-            'version': 1,
-            'settings': {
-              'use24HourTimeFormat': false,
-              'appHighlightAnimationEnabled': false,
-              'gradientUuid': null,
-              'picsumPhotoId': null,
-              'picsumGrayscale': false,
-              'picsumBlur': null,
+          'categories': [
+            {
+              'name': 'Streaming',
+              'sort': 'manual',
+              'type': 'grid',
+              'rowHeight': 110,
+              'columnsCount': 6,
+              'order': 0,
+              'apps': [],
+              // No 'showName' key -- this is what every backup written before that field
+              // existed looks like.
             },
-            'categories': [
-              {
-                'name': 'Streaming',
-                'sort': 'manual',
-                'type': 'grid',
-                'rowHeight': 110,
-                'columnsCount': 6,
-                'order': 0,
-                'apps': [],
-                // No 'showName' key -- this is what every backup written before that field
-                // existed looks like.
-              },
-            ],
-            'hiddenApps': [],
-            'buttonMappings': [],
-            'tvInputs': [],
-            'wallpaperBytesBase64': null,
-          }),
-        ),
-      );
+          ],
+          'hiddenApps': [],
+          'buttonMappings': [],
+          'tvInputs': [],
+          'wallpaperBytesBase64': null,
+        }),
+      ),
+    );
 
-      final backupService = SettingsBackupService(
-        database,
-        settingsService,
-        wallpaperService,
-        tvInputService,
-        appsService,
-        buttonMappingService,
-        fLauncherChannel,
-      );
+    final backupService = SettingsBackupService(
+      database,
+      settingsService,
+      wallpaperService,
+      tvInputService,
+      appsService,
+      buttonMappingService,
+      fLauncherChannel,
+    );
 
-      await backupService.importSettings();
+    await backupService.importSettings();
 
-      final restoredCategory = await database
-          .select(database.categories)
-          .getSingle();
-      expect(restoredCategory.showName, true);
+    final restoredCategory = await database
+        .select(database.categories)
+        .getSingle();
+    expect(restoredCategory.showName, true);
 
-      await database.close();
-    },
-  );
+    await database.close();
+  });
 }

@@ -116,9 +116,8 @@ void main() {
       icon: kTransparentImage,
     );
     when(appsService.applications).thenReturn([application]);
-    when(
-      appsService.categoriesWithApps,
-    ).thenReturn([CategoryWithApps(fakeCategory(), [])]);
+    when(appsService.categoriesWithApps)
+        .thenReturn([CategoryWithApps(fakeCategory(), [])]);
 
     await _pumpWidgetWithProviders(tester, appsService);
 
@@ -139,9 +138,8 @@ void main() {
       icon: kTransparentImage,
     );
     when(appsService.applications).thenReturn([application]);
-    when(
-      appsService.categoriesWithApps,
-    ).thenReturn([CategoryWithApps(fakeCategory(), [])]);
+    when(appsService.categoriesWithApps)
+        .thenReturn([CategoryWithApps(fakeCategory(), [])]);
 
     await _pumpWidgetWithProviders(tester, appsService);
 

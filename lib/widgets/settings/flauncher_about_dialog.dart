@@ -31,9 +31,8 @@ class FLauncherAboutDialog extends StatelessWidget {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     final underlined = textStyle.copyWith(decoration: TextDecoration.underline);
     final mutedStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: Theme.of(
-        context,
-      ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+      color: Theme.of(context).textTheme.bodySmall?.color
+          ?.withValues(alpha: 0.6),
     );
     return AboutDialog(
       applicationName: packageInfo.appName,

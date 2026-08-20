@@ -402,20 +402,19 @@ class _ParsedCategory {
     required this.showName,
   });
 
-  factory _ParsedCategory.fromJson(
-    Map<String, dynamic> json,
-  ) => _ParsedCategory(
-    name: json['name'] as String,
-    sort: CategorySort.values.byName(json['sort'] as String),
-    type: CategoryType.values.byName(json['type'] as String),
-    rowHeight: json['rowHeight'] as int,
-    columnsCount: json['columnsCount'] as int,
-    order: json['order'] as int,
-    apps: (json['apps'] as List<dynamic>).cast<String>(),
-    // Absent in backups written before this field existed -- same default as the database
-    // column itself, so an older backup restores exactly like it always has (name shown).
-    showName: json['showName'] as bool? ?? true,
-  );
+  factory _ParsedCategory.fromJson(Map<String, dynamic> json) =>
+      _ParsedCategory(
+        name: json['name'] as String,
+        sort: CategorySort.values.byName(json['sort'] as String),
+        type: CategoryType.values.byName(json['type'] as String),
+        rowHeight: json['rowHeight'] as int,
+        columnsCount: json['columnsCount'] as int,
+        order: json['order'] as int,
+        apps: (json['apps'] as List<dynamic>).cast<String>(),
+        // Absent in backups written before this field existed -- same default as the database
+        // column itself, so an older backup restores exactly like it always has (name shown).
+        showName: json['showName'] as bool? ?? true,
+      );
 }
 
 class BackupException implements Exception {

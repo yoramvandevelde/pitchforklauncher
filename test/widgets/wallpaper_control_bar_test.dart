@@ -167,9 +167,8 @@ Future<void> _pumpWithControlBar(
   bool grayscale = false,
   bool blurEnabled = false,
 }) async {
-  when(
-    wallpaperService.hasCurrentPicsumPhoto,
-  ).thenReturn(hasCurrentPicsumPhoto);
+  when(wallpaperService.hasCurrentPicsumPhoto)
+      .thenReturn(hasCurrentPicsumPhoto);
   when(wallpaperService.picsumGrayscale).thenReturn(grayscale);
   when(wallpaperService.picsumBlurEnabled).thenReturn(blurEnabled);
   // Replicates flauncher_app.dart's real root BackIntent binding (remote's back-equivalent key ->
