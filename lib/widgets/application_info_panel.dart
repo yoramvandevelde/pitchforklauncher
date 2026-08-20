@@ -84,9 +84,9 @@ class ApplicationInfoPanel extends StatelessWidget {
                 Text("Reorder", style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
-            onPressed: () => Navigator.of(
-              context,
-            ).pop(ApplicationInfoPanelResult.reorderApp),
+            onPressed: () =>
+                Navigator.of(context)
+                    .pop(ApplicationInfoPanelResult.reorderApp),
           ),
         TextButton(
           child: Row(

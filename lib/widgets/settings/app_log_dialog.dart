@@ -91,9 +91,8 @@ class _AppLogDialogState extends State<AppLogDialog> {
                 controller: _scrollController,
                 child: Text(
                   entries.join("\n\n"),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(fontFamily: "monospace"),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(fontFamily: "monospace"),
                 ),
               ),
             ),

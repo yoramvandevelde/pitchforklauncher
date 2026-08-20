@@ -54,10 +54,8 @@ class _TimeWidgetState extends State<TimeWidget> {
       use24HourTimeFormat
           ? DateFormat.Hm().format(_now)
           : DateFormat.jm().format(_now),
-      style: Theme.of(context).textTheme.titleLarge!.copyWith(
-        fontWeight: FontWeight.bold,
-        shadows: kOverlayTextShadows,
-      ),
+      style: Theme.of(context).textTheme.titleLarge!
+          .copyWith(fontWeight: FontWeight.bold, shadows: kOverlayTextShadows),
       textAlign: TextAlign.end,
     ),
   );

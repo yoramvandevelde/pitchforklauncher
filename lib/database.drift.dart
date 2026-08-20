@@ -1283,28 +1283,26 @@ abstract class _$FLauncherDatabase extends GeneratedDatabase {
   ]);
 }
 
-typedef $$AppsTableCreateCompanionBuilder =
-    AppsCompanion Function({
-      required String packageName,
-      required String name,
-      required String version,
-      Value<Uint8List?> banner,
-      Value<Uint8List?> icon,
-      Value<bool> hidden,
-      Value<bool> sideloaded,
-      Value<int> rowid,
-    });
-typedef $$AppsTableUpdateCompanionBuilder =
-    AppsCompanion Function({
-      Value<String> packageName,
-      Value<String> name,
-      Value<String> version,
-      Value<Uint8List?> banner,
-      Value<Uint8List?> icon,
-      Value<bool> hidden,
-      Value<bool> sideloaded,
-      Value<int> rowid,
-    });
+typedef $$AppsTableCreateCompanionBuilder = AppsCompanion Function({
+  required String packageName,
+  required String name,
+  required String version,
+  Value<Uint8List?> banner,
+  Value<Uint8List?> icon,
+  Value<bool> hidden,
+  Value<bool> sideloaded,
+  Value<int> rowid,
+});
+typedef $$AppsTableUpdateCompanionBuilder = AppsCompanion Function({
+  Value<String> packageName,
+  Value<String> name,
+  Value<String> version,
+  Value<Uint8List?> banner,
+  Value<Uint8List?> icon,
+  Value<bool> hidden,
+  Value<bool> sideloaded,
+  Value<int> rowid,
+});
 
 final class $$AppsTableReferences
     extends BaseReferences<_$FLauncherDatabase, $AppsTable, App> {
@@ -1626,28 +1624,26 @@ typedef $$AppsTableProcessedTableManager =
       App,
       PrefetchHooks Function({bool appsCategoriesRefs})
     >;
-typedef $$CategoriesTableCreateCompanionBuilder =
-    CategoriesCompanion Function({
-      Value<int> id,
-      required String name,
-      Value<CategorySort> sort,
-      Value<CategoryType> type,
-      Value<int> rowHeight,
-      Value<int> columnsCount,
-      required int order,
-      Value<bool> showName,
-    });
-typedef $$CategoriesTableUpdateCompanionBuilder =
-    CategoriesCompanion Function({
-      Value<int> id,
-      Value<String> name,
-      Value<CategorySort> sort,
-      Value<CategoryType> type,
-      Value<int> rowHeight,
-      Value<int> columnsCount,
-      Value<int> order,
-      Value<bool> showName,
-    });
+typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
+  Value<int> id,
+  required String name,
+  Value<CategorySort> sort,
+  Value<CategoryType> type,
+  Value<int> rowHeight,
+  Value<int> columnsCount,
+  required int order,
+  Value<bool> showName,
+});
+typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<CategorySort> sort,
+  Value<CategoryType> type,
+  Value<int> rowHeight,
+  Value<int> columnsCount,
+  Value<int> order,
+  Value<bool> showName,
+});
 
 final class $$CategoriesTableReferences
     extends BaseReferences<_$FLauncherDatabase, $CategoriesTable, Category> {
@@ -2307,34 +2303,26 @@ class $$AppsCategoriesTableTableManager
                         >
                       >(state) {
                         if (categoryId) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.categoryId,
-                                    referencedTable:
-                                        $$AppsCategoriesTableReferences
-                                            ._categoryIdTable(db),
-                                    referencedColumn:
-                                        $$AppsCategoriesTableReferences
-                                            ._categoryIdTable(db)
-                                            .id,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.categoryId,
+                            referencedTable: $$AppsCategoriesTableReferences
+                                ._categoryIdTable(db),
+                            referencedColumn: $$AppsCategoriesTableReferences
+                                ._categoryIdTable(db)
+                                .id,
+                          ) as T;
                         }
                         if (appPackageName) {
-                          state =
-                              state.withJoin(
-                                    currentTable: table,
-                                    currentColumn: table.appPackageName,
-                                    referencedTable:
-                                        $$AppsCategoriesTableReferences
-                                            ._appPackageNameTable(db),
-                                    referencedColumn:
-                                        $$AppsCategoriesTableReferences
-                                            ._appPackageNameTable(db)
-                                            .packageName,
-                                  )
-                                  as T;
+                          state = state.withJoin(
+                            currentTable: table,
+                            currentColumn: table.appPackageName,
+                            referencedTable: $$AppsCategoriesTableReferences
+                                ._appPackageNameTable(db),
+                            referencedColumn: $$AppsCategoriesTableReferences
+                                ._appPackageNameTable(db)
+                                .packageName,
+                          ) as T;
                         }
 
                         return state;

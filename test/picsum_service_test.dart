@@ -92,30 +92,26 @@ void main() {
       );
     });
 
-    test(
-      "throws PicsumException, not a raw FormatException, when the id segment isn't numeric",
-      () async {
-        final client = MockClient((request) async {
-          if (request.url.host == "picsum.photos") {
-            return Response(
-              "",
-              302,
-              headers: {
-                "location":
-                    "https://fastly.picsum.photos/id/not-a-number/300/200.jpg?hmac=abc",
-              },
-            );
-          }
-          return Response.bytes(Uint8List.fromList([0x01]), 200);
-        });
-        final picsumService = PicsumService(client: client);
+    test("throws PicsumException, not a raw FormatException, when the id segment isn't numeric", () async {
+      final client = MockClient((request) async {
+        if (request.url.host == "picsum.photos") {
+          return Response(
+            "",
+            302,
+            headers: {
+              "location": "https://fastly.picsum.photos/id/not-a-number/300/200.jpg?hmac=abc",
+            },
+          );
+        }
+        return Response.bytes(Uint8List.fromList([0x01]), 200);
+      });
+      final picsumService = PicsumService(client: client);
 
-        expect(
-          () => picsumService.randomPhoto(),
-          throwsA(isA<PicsumException>()),
-        );
-      },
-    );
+      expect(
+        () => picsumService.randomPhoto(),
+        throwsA(isA<PicsumException>()),
+      );
+    });
 
     test(
       "throws PicsumException instead of hanging when the request times out",

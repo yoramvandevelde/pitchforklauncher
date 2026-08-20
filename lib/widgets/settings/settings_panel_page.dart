@@ -50,9 +50,9 @@ class SettingsPanelPage extends StatelessWidget {
                 ),
               ],
             ),
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(ApplicationsPanelPage.routeName),
+            onPressed: () =>
+                Navigator.of(context)
+                    .pushNamed(ApplicationsPanelPage.routeName),
           ),
         ),
         TextButton(
@@ -102,9 +102,9 @@ class SettingsPanelPage extends StatelessWidget {
               ),
             ],
           ),
-          onPressed: () => Navigator.of(
-            context,
-          ).pushNamed(PitchforkSettingsPanelPage.routeName),
+          onPressed: () =>
+              Navigator.of(context)
+                  .pushNamed(PitchforkSettingsPanelPage.routeName),
         ),
         Divider(),
         TextButton(

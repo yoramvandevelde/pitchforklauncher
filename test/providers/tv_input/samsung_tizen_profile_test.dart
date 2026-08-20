@@ -119,9 +119,9 @@ void main() {
 
     await profile.selectInput({"host": "10.10.70.1", "key": "KEY_HDMI1"});
 
-    final sent =
-        jsonDecode(verify(socket.add(captureAny)).captured.single as String)
-            as Map<String, dynamic>;
+    final sent = jsonDecode(
+      verify(socket.add(captureAny)).captured.single as String,
+    ) as Map<String, dynamic>;
     expect(sent["method"], "ms.remote.control");
     expect(sent["params"], {
       "Cmd": "Click",
@@ -146,22 +146,19 @@ void main() {
     },
   );
 
-  test(
-    "returns the real pairing token from data.token, not the decoy under data.clients",
-    () async {
-      final profile = _profileConnectingTo(socket);
-      when(socket.first).thenAnswer(
-        (_) async => _channelConnectMessage(token: "real-pairing-token"),
-      );
+  test("returns the real pairing token from data.token, not the decoy under data.clients", () async {
+    final profile = _profileConnectingTo(socket);
+    when(socket.first).thenAnswer(
+      (_) async => _channelConnectMessage(token: "real-pairing-token"),
+    );
 
-      final result = await profile.selectInput({
-        "host": "10.10.70.1",
-        "key": "KEY_HDMI1",
-      });
+    final result = await profile.selectInput({
+      "host": "10.10.70.1",
+      "key": "KEY_HDMI1",
+    });
 
-      expect(result, {"token": "real-pairing-token"});
-    },
-  );
+    expect(result, {"token": "real-pairing-token"});
+  });
 
   test("returns null when the TV's response carries no token", () async {
     final profile = _profileConnectingTo(socket);

@@ -77,9 +77,9 @@ class PitchforkSettingsPanelPage extends StatelessWidget {
                 ),
               ],
             ),
-            onPressed: () => Navigator.of(
-              context,
-            ).pushNamed(ButtonMappingPanelPage.routeName),
+            onPressed: () =>
+                Navigator.of(context)
+                    .pushNamed(ButtonMappingPanelPage.routeName),
           ),
           Divider(),
           SwitchListTile(
