@@ -2,25 +2,26 @@
 
 ## Open
 
-- **Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.** Follows directly from
-  the KGP fix below: with both plugins fixed, the *only* remaining KGP warning is our own module
-  still applying `id "org.jetbrains.kotlin.android"` directly. See
-  https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers.
-  **Blocked on Flutter 3.47 (2026-07-30):** tried it (drop the plugin line, flip
-  `android.builtInKotlin=true` in `gradle.properties`, declare KGP in `settings.gradle`'s plugins
-  block, replace `kotlinOptions { }` with the `kotlin { compilerOptions { } }` DSL) and it fails at
-  build time regardless of correct config: `flutter_tools/gradle`'s
-  `FlutterPluginUtils.detectApplyingKotlinGradlePlugin` (in the pinned 3.44.8 SDK) unconditionally
-  force-applies `kotlin-android` onto every AGP subproject that doesn't declare KGP itself —
-  including plain-Java plugins like `flutter_plugin_android_lifecycle` — with no gating on the
-  `android.builtInKotlin` flag. That directly conflicts with AGP 9's built-in Kotlin, which refuses
-  the old plugin ID once applied elsewhere in the same build, so `assembleDebug` fails inside AGP's
-  own `com.android.internal.library` plugin application. Confirmed via the official migration doc:
-  "Enabling built-in Kotlin requires Flutter 3.47 or later". As of 2026-08-06, 3.47 is in active
-  beta (`3.47.0-0.4.pre`, landing roughly weekly since the 2026-07-07 branch cutoff, Flutter's own
-  schedule targets "August 2026" for stable) — getting close, revisit in a couple of weeks.
-
 ## Done
+
+~~**Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.**~~ -- done (2026-08-16):
+Flutter 3.47.0 went stable on 2026-08-12, which contains the fix this item was blocked on. First
+bumped the SDK to 3.47.0 alone (own commit, verified clean before touching Gradle config), then
+did the actual migration: dropped `id "org.jetbrains.kotlin.android"` from `app/build.gradle`'s
+plugins block, replaced the `kotlinOptions { jvmTarget = "17" }` block with `kotlin {
+compilerOptions { jvmTarget = ... JVM_17 } }`, and flipped `android.builtInKotlin` to `true` in
+`gradle.properties`. `settings.gradle` already declared KGP in its plugins block (`apply false`),
+no change needed there. Confirmed via reading `flutter_tools/gradle`'s
+`FlutterPluginUtils.kt` source in the 3.47.0 SDK that `detectApplyingKotlinGradlePlugin` now gates
+its force-applied `kotlin-android` behind `isBuiltInKotlinEnabled(...)` -- the exact check that was
+missing on 3.44.8 and caused the original failure. The deprecation warning
+("applies the Kotlin Gradle Plugin, which will cause build failures in future versions of
+Flutter...") is gone from the build output after the migration. Verified: `flutter pub get`,
+`flutter analyze --fatal-infos`, full `flutter test` suite (213 tests) all clean on 3.47.0 both
+before and after the Gradle changes; debug APK builds successfully with `android.builtInKotlin=
+true`; installed and launched clean (no crash, `MainActivity` resumed) on `GoogleTV_API34`. Release
+build not exercised locally (needs the signing secrets, which live in CI/the release pipeline, not
+this session) -- covered by the normal release workflow instead.
 
 ~~**`AppsService` micro-inefficiencies, all currently harmless at this app's data sizes.**~~ --
 decided (2026-08-12): not doing this. From the 2026-08-07 Kimi review pass, unverified against the
