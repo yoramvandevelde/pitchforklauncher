@@ -41,6 +41,16 @@ Future<void> main() async {
     yield LicenseEntryWithLineBreaks(['Open Sans'], license);
   });
 
+  // Same for Nebula Sans, the display face used for the home screen's category headers and
+  // clock. Also OFL 1.1, but a different copyright holder and a different Reserved Font Name,
+  // so it needs its own copy of the license text rather than sharing Open Sans' OFL.txt.
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString(
+      'assets/fonts/NebulaSans-OFL.txt',
+    );
+    yield LicenseEntryWithLineBreaks(['Nebula Sans'], license);
+  });
+
   // Not required by the Unsplash License (free to use, attribution merely appreciated), but
   // credited anyway per house convention for bundled assets.
   LicenseRegistry.addLicense(() async* {

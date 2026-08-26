@@ -45,3 +45,10 @@ flutter:
     - family: Open Sans
       fonts:
         - asset: assets/fonts/OpenSans-Variable.ttf
+    # Display face for the home screen's overlay titles (clock, category headers) only; the rest
+    # of the UI stays on Open Sans. Only the Black weight is bundled, so the styles that use it
+    # ask for w900 explicitly rather than letting Skia synthesise a fake bold on top of it.
+    - family: Nebula Sans
+      fonts:
+        - asset: assets/fonts/NebulaSans-Black.ttf
+          weight: 900
