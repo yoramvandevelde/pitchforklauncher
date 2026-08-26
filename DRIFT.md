@@ -208,6 +208,14 @@ hard clip. The bar's own height/alignment are back to Flutter's plain defaults (
 transparency already solves, and centering is also the only alignment that doesn't clip the
 settings icon's splash circle against the bar's edge.
 
+Material 3 undercuts that transparency with a second elevation, separate from the `elevation: 0`
+already set: `scrolledUnderElevation` (default 3.0) engages only once content is scrolled
+underneath the bar, and blends `surfaceTintColor` into the background at that elevation. On a
+transparent bar over a wallpaper that showed up as a dim band the full width of the screen and
+exactly `kToolbarHeight` tall, appearing the moment you scrolled, which is precisely when the
+categories are meant to pass behind the bar untouched. `AppBarTheme.scrolledUnderElevation` is
+therefore pinned to 0 as well.
+
 ## "Move to..." from the home screen's app context menu
 
 Long-pressing an app on the home screen already offered "Remove from `<category>`"; the only way
