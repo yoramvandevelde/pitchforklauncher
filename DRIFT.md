@@ -132,6 +132,17 @@ dependency, Flutter's "VIEW LICENSES" screen doesn't pick it up automatically â€
 (`assets/fonts/OFL.txt`) is registered manually via `LicenseRegistry.addLicense()` in `main.dart`
 (see AGENTS.md's License section for the general pattern).
 
+## Tighter category header spacing
+
+Upstream leaves 16 logical pixels between a category header and its first row of cards, spent
+differently per category type: a grid puts all 16 on its `GridView` padding, a row splits it 8 on
+the header's own `Padding` plus 8 on its `ListView`. Both are halved to 8, with the two headers'
+`Padding` kept literally identical so they stay in step.
+
+The gap measured about 21 logical pixels on screen rather than 16, because roughly 6 of it is the
+header's line box descending below the baseline: space the layout counts and the eye doesn't,
+since no category name in practice has a descender deep enough to fill it.
+
 ## Picsum wallpaper source
 
 The existing Unsplash wallpaper source needed a developer API key (and, in the original app,

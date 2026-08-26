@@ -55,7 +55,11 @@ class AppsGrid extends StatelessWidget {
               shrinkWrap: true,
               primary: false,
               gridDelegate: _buildSliverGridDelegate(),
-              padding: EdgeInsets.all(16),
+              // Top is 8, not 16: the header's own line box already carries ~6 logical pixels of
+              // descent under the baseline, which reads as part of the gap even though no
+              // category name in practice has a descender deep enough to fill it. CategoryRow
+              // spends the same 8 on its ListView for the same look.
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
               childrenDelegate: SliverChildBuilderDelegate(
                 (context, index) => EnsureVisible(
                   key: Key("${category.id}-${applications[index].packageName}"),
