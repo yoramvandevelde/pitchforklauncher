@@ -40,7 +40,9 @@ class CategoryRow extends StatelessWidget {
     children: [
       if (category.showName)
         Padding(
-          padding: EdgeInsets.only(left: 16, bottom: 8),
+          // No bottom padding: the ListView below already contributes 8, which is the whole gap
+          // a header gets. AppsGrid spends the same 8 on its GridView for the same look.
+          padding: EdgeInsets.only(left: 16),
           child: Text(
             category.name,
             style: Theme.of(context).textTheme.titleLarge!.copyWith(
