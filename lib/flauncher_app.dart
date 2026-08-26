@@ -137,6 +137,13 @@ class FLauncherApp extends StatelessWidget {
         ),
         appBarTheme: AppBarTheme(
           elevation: 0,
+          // Material 3 keeps a second, separate elevation that only kicks in once content
+          // scrolls beneath the bar (default 3.0), and it blends surfaceTintColor into the
+          // background at that elevation. With a deliberately transparent bar over the
+          // wallpaper that reads as a dim band across the top of the screen, tinted towards
+          // the swatch's near-black navy -- visible only while scrolled, which is exactly when
+          // the categories are meant to pass behind the bar untouched. Zero keeps it honest.
+          scrolledUnderElevation: 0,
           backgroundColor: Colors.transparent,
         ),
         typography: Typography.material2018(),
