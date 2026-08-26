@@ -18,6 +18,7 @@
  */
 
 import 'package:flauncher/database.dart';
+import 'package:flauncher/fonts.dart';
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/text_shadows.dart';
 import 'package:flauncher/widgets/app_card.dart';
@@ -43,7 +44,8 @@ class CategoryRow extends StatelessWidget {
           child: Text(
             category.name,
             style: Theme.of(context).textTheme.titleLarge!.copyWith(
-              fontWeight: FontWeight.bold,
+              fontFamily: kDisplayFontFamily,
+              fontWeight: kDisplayFontWeight,
               shadows: kOverlayTextShadows,
             ),
           ),

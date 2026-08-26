@@ -123,14 +123,18 @@ nothing on the home screen) over the accessibility-service approach. The YouTube
 working either way now, since the service handles it directly rather than relying on the stock
 launcher.
 
-## Open Sans font, bold category labels
+## Open Sans body font, Nebula Sans Black headers
 
 Switched the app's typeface to Open Sans (bundled as a variable font,
-`assets/fonts/OpenSans-Variable.ttf`) and made category labels bold, for a cleaner look than the
-platform-default font upstream uses. Since the font is a bundled non-pub asset rather than a pub
-dependency, Flutter's "VIEW LICENSES" screen doesn't pick it up automatically — its OFL license
-(`assets/fonts/OFL.txt`) is registered manually via `LicenseRegistry.addLicense()` in `main.dart`
-(see AGENTS.md's License section for the general pattern).
+`assets/fonts/OpenSans-Variable.ttf`) for a cleaner look than the platform-default font upstream
+uses. The home screen's category headers and clock use Nebula Sans Black
+(`assets/fonts/NebulaSans-Black.ttf`) instead, via `lib/fonts.dart`, a display face for those three
+call sites only; app names, dialogs and the settings panels stay on Open Sans.
+
+Both are SIL OFL 1.1 and both are bundled non-pub assets, so Flutter's "VIEW LICENSES" screen
+doesn't pick either up automatically. Each is registered manually via
+`LicenseRegistry.addLicense()` in `main.dart` (see AGENTS.md's License section for the pattern),
+with its own copy of the license text.
 
 ## Picsum wallpaper source
 
