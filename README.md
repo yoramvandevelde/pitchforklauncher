@@ -4,8 +4,9 @@
 
 A personal fork of FLauncher, an open source Android TV launcher, with a modernized stack and a
 few new features. Built for and tested on a Google TV Streamer 4K (Android 14). Untested on other
-devices. This is a personal project. No feature requests, no ongoing support. Shared in case
-others find it useful.
+devices. This is a personal project. This project is maintained but I take no feature requests. I
+update and add features to this for my personal use Shared in case others find it useful or  liek 
+it as it is.
 
 ## Features
 
