@@ -1,7 +1,17 @@
 name: CI
 
 on:
+  # Prose does not compile. A change that only touches documentation cannot break a build, so it
+  # does not get one. `**.md` covers the prose wherever it lives, including the files kept in the
+  # root (README, AGENTS, CLAUDE); `docs/**` is what catches the non-markdown documentation
+  # assets, such as the README screenshot. The list is repeated because GitHub Actions does not
+  # read YAML anchors. Note that none of these checks is a required status check -- if one ever
+  # becomes required, a skipped run never reports and a docs-only PR would block on it forever.
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
   # A merge is just a push to main under the hood (merge commit, squash, or rebase all land as a
   # new commit on main), so this also fires on every PR merge. Needed because GitHub Actions'
   # cache (and Gradle's enhanced cache) only writes to the default-branch scope on runs where
@@ -11,6 +21,10 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "docs/**"
 
 jobs:
   build:

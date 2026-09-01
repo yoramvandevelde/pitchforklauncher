@@ -1,6 +1,6 @@
 # PitchforkLauncher
 
-![PitchforkLauncher home screen](screenshot.png)
+![PitchforkLauncher home screen](docs/screenshot.png)
 
 A personal fork of FLauncher, an open source Android TV launcher, with a modernized stack and a
 few new features. Built for and tested on a Google TV Streamer 4K (Android 14). Untested on other
@@ -91,15 +91,15 @@ to remap the remote's Home button to PitchforkLauncher instead of enabling Optio
 ## Known limitations
 
 - **Back button exits the launcher** instead of doing nothing, when not using Option A. Not
-  something this fork tries to fix, see `TODO.md` for why.
+  something this fork tries to fix, see `docs/TODO.md` for why.
 - **Custom wallpaper images need a file explorer app** installed on the device to pick a file
   from. The built-in random wallpaper source (see Features) doesn't need this.
 
 ## About this fork
 
 Not an Android or Flutter developer — used Claude (Anthropic's AI) for almost all of the coding,
-made the design decisions and did the testing personally. See `DRIFT.md` and `UPGRADE_PLAN.md` for
-the detailed history of what changed and why.
+made the design decisions and did the testing personally. See `docs/DRIFT.md` and
+`docs/UPGRADE_PLAN.md` for the detailed history of what changed and why.
 
 ---
 
