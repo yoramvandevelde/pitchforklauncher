@@ -9,10 +9,15 @@ here — see that file for the criteria and for examples of what's been rejected
 
 - **Flutter pinned via FVM** (`.fvmrc`, `.fvm/`). The project didn't have a reproducible SDK
   version pinned to the working tree; FVM avoids depending on whatever Flutter happens to be
-  globally installed, without touching any global/system Flutter install. Currently pinned to
-  3.44.6 (bumped from the initial fork point, 3.7.5, through a series of intermediate stepping
-  stones — see `UPGRADE_PLAN.md`'s Phase 2 for the full history; 3.44.6 is the latest stable as of
-  Phase 2's completion).
+  globally installed, without touching any global/system Flutter install. Bumped from the initial
+  fork point, 3.7.5, to 3.44.6 through a series of intermediate stepping stones (see
+  `UPGRADE_PLAN.md`'s Phase 2 for the full history). Since then Renovate keeps `.fvmrc` on the
+  latest stable patch release, so `.fvmrc` is the source of truth for the current version.
+- **Dependencies kept current by Renovate** (`renovate.json`). Weekly runs open grouped PRs for
+  the Flutter SDK, Gradle + AGP + Kotlin, GitHub Actions, and `pubspec.lock` maintenance, each
+  held back until the release is at least 3 days old. Lock file maintenance is exempt from that
+  age check, because it has no single release date to measure against and the check would
+  otherwise stay pending forever.
 - **Android toolchain modernized alongside the Flutter SDK bumps** — see `UPGRADE_PLAN.md` for the
   phased plan (AGP/Gradle/Kotlin, then Flutter SDK, then dependencies) and the real landmines hit
   along the way (an old Flutter patch's Gradle script hard-incompatible with Gradle 8, AGP 8's
