@@ -1573,8 +1573,10 @@ class $$AppsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$AppsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$AppsTable, App>(table),
+                  $$AppsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({appsCategoriesRefs = false}) {
@@ -1926,7 +1928,7 @@ class $$CategoriesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CategoriesTable, Category>(table),
                   $$CategoriesTableReferences(db, table, e),
                 ),
               )
@@ -2276,7 +2278,7 @@ class $$AppsCategoriesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AppsCategoriesTable, AppCategory>(table),
                   $$AppsCategoriesTableReferences(db, table, e),
                 ),
               )
