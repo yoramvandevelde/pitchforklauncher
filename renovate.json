@@ -27,6 +27,12 @@
     {
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
+    },
+    // Lock file maintenance has no single release timestamp to age against, so the
+    // renovate/stability-days check stays pending forever on that PR.
+    {
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "minimumReleaseAge": null
     }
   ]
 }
