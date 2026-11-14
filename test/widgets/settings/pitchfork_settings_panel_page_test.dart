@@ -23,9 +23,9 @@ import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/pitchfork_settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 

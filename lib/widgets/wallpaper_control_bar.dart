@@ -18,7 +18,7 @@
 
 import 'package:flauncher/actions.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 const _picsumBlurAmount = 4;

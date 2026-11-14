@@ -27,8 +27,8 @@ import 'package:flauncher/widgets/application_info_panel.dart';
 import 'package:flauncher/widgets/color_helpers.dart';
 import 'package:flauncher/widgets/focus_keyboard_listener.dart';
 import 'package:flutter/foundation.dart' hide Category;
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 const _validationKeys = [

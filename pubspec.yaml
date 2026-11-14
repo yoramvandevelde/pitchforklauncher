@@ -21,6 +21,8 @@ dependencies:
   provider: ^6.1.5+1
   shared_preferences: ^2.3.3
   sqlite3: ^3.5.0
+  material_ui: ^1.11.0
+  cupertino_ui: ^1.1.6
 
 dev_dependencies:
   flutter_test:

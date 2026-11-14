@@ -17,8 +17,8 @@
  */
 
 import 'package:flauncher/providers/tv_input/tv_input_profiles.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class NewTvInput {
   final String label;
