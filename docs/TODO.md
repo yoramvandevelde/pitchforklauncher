@@ -4,6 +4,28 @@
 
 ## Done
 
+~~**Flutter 3.47.8 → 3.50.0 (Dart 3.13.7 → 3.14.0).**~~ -- done (2026-11-14): Renovate opened a
+Dart-only bump (#122) that could never pass: Flutter 3.47.x bundles Dart 3.13.7, and Renovate also
+collapsed the `sdk: ">=3.13.0 <3.14.0"` range into an exact `"3.14.0"` pin. Did it as a proper
+stop instead: `.fvmrc` to 3.50.0 and both `environment` ranges widened to the new minor
+(`sdk: ">=3.14.0 <3.15.0"` / `flutter: ">=3.50.0 <3.51.0"`), same convention as the
+`UPGRADE_PLAN.md` stops. Two things this stop brought along:
+- **`package:flutter/material.dart` and `package:flutter/cupertino.dart` are deprecated** ("after
+  v3.47.0-0.0.pre") in favour of the separately published `material_ui` and `cupertino_ui`
+  packages (publisher flutter.dev, both accept `flutter >=3.47.0`). 51 `deprecated_member_use`
+  infos, which fail the `--fatal-infos` CI gate. Fixed by adding both packages and swapping the
+  imports in 50 files, as its own mechanical commit listed in `.git-blame-ignore-revs`.
+  Suppressing the lint instead was rejected: it would also hide every future deprecation, which
+  is the early warning these stops rely on.
+- **`VoidCallback` and friends moved into a new transitive `listen` package.** Only visible in
+  the regenerated `test/mocks.mocks.dart`, which now imports `package:listen/src/listen.dart`
+  instead of `dart:ui`. No hand-written code affected.
+Verified: `dart format` (no changes), `flutter analyze --fatal-infos`, full `flutter test` suite
+(213 tests) all clean; debug APK built via `just build-install` and installed on
+`GoogleTV_API34`, opened and checked by hand. Random photo could not be verified: picsum.photos
+was down at the time (TLS handshake succeeds, no HTTP response; 2 days down, 96.9% uptime over
+30 days), which is a service outage, not a regression.
+
 ~~**Migrate this app's own `android/app/build.gradle` to Built-in Kotlin.**~~ -- done (2026-08-16):
 Flutter 3.47.0 went stable on 2026-08-12, which contains the fix this item was blocked on. First
 bumped the SDK to 3.47.0 alone (own commit, verified clean before touching Gradle config), then
