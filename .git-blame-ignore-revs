@@ -13,3 +13,6 @@
 
 # Reformat with dart format on Dart 3.13, after the Flutter 3.47 bump
 ef985cdeb943ca5779ac771816a2853ac57fa3bd
+
+# Migrate to material_ui/cupertino_ui imports (Flutter 3.50 deprecation)
+1a1c6a25b407b2d760506a443335b40750417f2f
