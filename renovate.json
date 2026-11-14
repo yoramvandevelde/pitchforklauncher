@@ -28,6 +28,15 @@
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
     },
+    // Flutter (.fvmrc) and Dart (pubspec.yaml's environment.sdk) only move together: every Flutter
+    // release bundles one specific Dart version, so a Dart-only bump can never pass CI (#122).
+    // Grouping them gives one "Flutter SDK" PR instead of two. A Flutter minor still needs a
+    // manual stop (environment ranges widened, codegen, real-device check), see docs/TODO.md's
+    // 3.50 entry: treat a red grouped PR as the signal to do that stop, not as something to merge.
+    {
+      "matchDepNames": ["flutter", "dart"],
+      "groupName": "Flutter SDK"
+    },
     // Lock file maintenance has no single release timestamp to age against, so the
     // renovate/stability-days check stays pending forever on that PR.
     {
