@@ -1,6 +1,7 @@
 /*
  * PitchforkLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AddCategoryDialog extends StatelessWidget {
   final String? initialValue;

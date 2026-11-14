@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Display face for the home screen's overlay titles (the clock and the category headers). Only
 /// those; the body text everywhere else -- app names, dialogs, the settings panels -- stays on the

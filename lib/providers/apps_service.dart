@@ -20,13 +20,13 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:drift/drift.dart';
 import 'package:flauncher/database.dart';
 import 'package:flauncher/default_app_categories.dart';
 import 'package:flauncher/flauncher_channel.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' hide Category;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppsService extends ChangeNotifier {

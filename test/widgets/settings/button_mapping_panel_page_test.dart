@@ -19,8 +19,8 @@
 import 'package:flauncher/providers/apps_service.dart';
 import 'package:flauncher/providers/button_mapping_service.dart';
 import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared drop-shadow behind text/icons that sit directly over the wallpaper (category headers,
 /// the clock, the settings icon) so they stay legible against any photo. One shared constant

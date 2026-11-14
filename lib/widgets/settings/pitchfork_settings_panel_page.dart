@@ -22,7 +22,7 @@ import 'package:flauncher/providers/settings_backup_service.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/widgets/settings/button_mapping_panel_page.dart';
 import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class PitchforkSettingsPanelPage extends StatelessWidget {

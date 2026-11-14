@@ -27,7 +27,7 @@ import 'package:flauncher/widgets/settings/pitchfork_settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/settings_panel_page.dart';
 import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
 import 'package:flauncher/widgets/settings/wallpaper_panel_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SettingsPanel extends StatefulWidget {
   final String? initialRoute;

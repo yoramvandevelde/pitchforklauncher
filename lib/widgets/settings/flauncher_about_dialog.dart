@@ -18,7 +18,7 @@
  */
 
 import 'package:flauncher/widgets/settings/app_log_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class FLauncherAboutDialog extends StatelessWidget {

@@ -19,7 +19,7 @@
 import 'package:flauncher/providers/tv_input/tv_input_profiles.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/widgets/settings/add_tv_input_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class TvInputsPanelPage extends StatelessWidget {

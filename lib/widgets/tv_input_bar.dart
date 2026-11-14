@@ -20,7 +20,7 @@ import 'package:flauncher/actions.dart';
 import 'package:flauncher/providers/tv_input_service.dart';
 import 'package:flauncher/widgets/settings/settings_panel.dart';
 import 'package:flauncher/widgets/settings/tv_inputs_panel_page.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 /// The "hold Up on the homescreen" slide-in bar listing configured [TvInputConfig]s. Mirrors

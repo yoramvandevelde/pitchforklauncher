@@ -1,6 +1,7 @@
 /*
  * PitchforkLauncher
  * Copyright (C) 2021  Étienne Fesser
+ * Copyright (C) 2026  Yoram van de Velde
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +20,7 @@
 import 'package:flauncher/gradients.dart';
 import 'package:flauncher/providers/wallpaper_service.dart';
 import 'package:flauncher/widgets/ensure_visible.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class GradientPanelPage extends StatelessWidget {

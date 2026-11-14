@@ -22,8 +22,8 @@ import 'dart:async';
 import 'package:flauncher/fonts.dart';
 import 'package:flauncher/providers/settings_service.dart';
 import 'package:flauncher/text_shadows.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class TimeWidget extends StatefulWidget {

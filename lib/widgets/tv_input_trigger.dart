@@ -17,8 +17,8 @@
  */
 
 import 'package:flauncher/widgets/tv_input_bar.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _holdDuration = Duration(seconds: 1);
 

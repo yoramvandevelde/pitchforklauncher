@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compute a color for a border (grey based), based on the provided value.
 /// The value must be between 0 and 1, otherwise an assertion error is raised.
